@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document is the source of truth for the current Zipnami MVP product design and technical contracts. Implementation tasks and their acceptance criteria are tracked in [GitHub Issues](https://github.com/kishimin/random-postal-code/issues). Branch order and completion gates are defined in [branch-design.md](./branch-design.md).
+This document is the source of truth for the current Zipnami MVP product design and technical contracts. Implementation tasks and their acceptance criteria are tracked in [GitHub Issues](https://github.com/kishimin/random-postal-code/issues).
 
 ## 2. Product Scope
 
@@ -108,7 +108,7 @@ On success, the API returns `200 application/json` with a `PostalCode` value.
 }
 ```
 
-The API does not provide authentication, history persistence, search, filters, or write operations. A data-loading failure must return a JSON error response instead of appearing successful. Issue #2 fixes the detailed error shape as part of the shared contract.
+The API does not provide authentication, history persistence, search, filters, or write operations. A data-loading failure must return a JSON error response instead of appearing successful. [api-design.md](./api-design.md) defines the shared error envelope and status mapping.
 
 ### 5.2 CORS and Configuration
 
@@ -206,7 +206,7 @@ The following details are resolved during the owning Issue's Red/Green cycles wi
 | Detail | Owning Issue | Resolution gate |
 | --- | ---: | --- |
 | Exact package versions and quality commands | #1 | Verify official toolchain compatibility and fix them in the lockfile and workspace scripts |
-| JSON API error shape | #2 | Fix a shared, tested contract that clients can discriminate safely |
+| Runtime-schema implementation | #2 | Implement the API contracts without coupling shared code to a client or server framework |
 | Postal artifact file format | #3 | Verify determinism, Worker size constraints, and loading failures |
 | Web and Android history keys and migration | #7, #14 | Fix the smallest first-release contract with persistence tests |
 | Production Pages origin, Worker URL, and project names | #19 | Fix them from the provisioned Cloudflare resources and deployment configuration |
