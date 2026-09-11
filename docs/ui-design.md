@@ -1,17 +1,16 @@
-# Zipnami UI Design
+# Zipnami Web MVP UI Design
 
 ## 1. Scope and Ownership
 
-This document is the source of truth for the Zipnami Web and Android MVP user interface. It refines [design.md](./design.md) and Issues [#5](https://github.com/kishimin/random-postal-code/issues/5) through [#10](https://github.com/kishimin/random-postal-code/issues/10), and [#12](https://github.com/kishimin/random-postal-code/issues/12) through [#17](https://github.com/kishimin/random-postal-code/issues/17).
+This document is the source of truth for the Zipnami Web MVP user interface. It refines [design.md](./design.md) and Issues [#5](https://github.com/kishimin/random-postal-code/issues/5) through [#10](https://github.com/kishimin/random-postal-code/issues/10), and [#16](https://github.com/kishimin/random-postal-code/issues/16) through [#17](https://github.com/kishimin/random-postal-code/issues/17).
 
-The UI owns presentation, client state, local history, map actions, optional advertising surfaces, consent presentation, and accessible feedback. It consumes but does not redefine the contracts in [api-design.md](./api-design.md).
+The Web UI owns presentation, client state, browser-local history, map actions, optional advertising surfaces, consent presentation, and accessible feedback. It consumes but does not redefine the contracts in [api-design.md](./api-design.md).
 
 ## 2. Experience Principles
 
 - One primary action generates a postal code; the initial screen never generates automatically.
 - The postal code and all associated addresses are the primary content.
 - Maps, ads, and consent are optional capabilities and never gate core results.
-- Web and Android share behavior but use platform-native navigation and controls.
 - Information remains usable with keyboard input, screen readers, zoom, large text, reduced motion, and third-party failures.
 - The MVP UI language is Japanese. Product and API type names remain implementation concerns, not display labels.
 
@@ -26,14 +25,7 @@ The UI owns presentation, client state, local history, map actions, optional adv
 
 Direct navigation and refresh must resolve both routes through the Pages SPA fallback.
 
-### 3.2 Android Routes
-
-| Route | Screen | Purpose |
-| --- | --- | --- |
-| `/` | Generator | Generate, inspect, open maps, and revisit results |
-| `/information` | Information | Show privacy link, attribution, advertising disclosure, and app information |
-
-The Android back action returns from Information to Generator without resetting a successful result.
+Android routes and navigation are V2 work tracked by Issues #12 through #15 and #20. They are not Web MVP requirements.
 
 ## 4. Primary State Model
 
@@ -123,38 +115,11 @@ Each history entry stores the canonical `PostalCode`, all addresses, and no serv
 
 History entries are initially collapsed to postal code plus primary address when space is constrained, but every stored address remains reachable through an explicit expand control. Expanding history must not change the current map selection unless the user explicitly chooses a map action from that entry.
 
-## 6. Android Screen Design
+## 6. Android V2 Boundary
 
-### 6.1 Generator Layout
+Android screen design, device-local history, external Android map intents, AdMob, UMP, and Google Play delivery are V2 work tracked by Issues #12 through #15 and #20. They are intentionally not implementation or acceptance requirements for this document.
 
-```text
-+----------------------------------+
-| App bar: Zipnami      Information|
-+----------------------------------+
-| Scrollable content               |
-| Intro                            |
-| [ Generate a postal code ]       |
-| Status / error / retry           |
-| Current postal code              |
-| Address list + external map      |
-| Recent history (up to 20)        |
-+----------------------------------+
-| Reserved AdMob banner region     |
-+----------------------------------+
-```
-
-The content scrolls independently of a reserved banner region. The banner never overlays controls or results. On large screens, constrain readable line length and allow additional horizontal space around the single content column; do not introduce an Android embedded map.
-
-### 6.2 Android Behavior
-
-- Use the same generator state transitions and history rules as the Web.
-- Open each full-address query through the platform's external URL or intent mechanism.
-- If no handler is available, show an error without discarding the result.
-- Request no location, camera, microphone, or contacts permission.
-- Keep history on-device and never synchronize it with the Web or backend.
-- Preserve the generator state when navigating to and back from Information during the same application session.
-
-## 7. Maps, Advertising, and Consent
+## 7. Web Maps, Advertising, and Consent
 
 The Web map occupies a labeled region after a result exists. Before generation, the region may be absent rather than displaying an empty iframe. Loading and failure states reserve enough space to avoid disruptive layout shifts. A map failure shows a fallback with the selected address and external link.
 
@@ -172,8 +137,6 @@ Advertising uses a dedicated region labeled as advertising where required. An un
 - Give every address map action a unique accessible name containing enough address context.
 - Support browser zoom to 200%, text enlargement, screen orientation changes, and reduced motion.
 - Do not convey selection, loading, success, error, or advertising status by color alone.
-
-Android controls expose equivalent labels, roles, disabled states, and selected states through React Native accessibility properties.
 
 ## 9. Visual and Content Contract
 
@@ -194,7 +157,6 @@ Verify at minimum:
 - tablet: `768px` width;
 - desktop: `1024px` and `1440px` widths;
 - 200% browser zoom;
-- Android phone and a representative large-screen emulator; and
 - portrait and landscape orientations where supported.
 
 Tests assert content availability and state behavior, not exact pixel appearance. Use visual regression baselines for stable representative states after visual tokens are fixed.
@@ -202,11 +164,11 @@ Tests assert content availability and state behavior, not exact pixel appearance
 ## 11. Test Contract
 
 - Small tests cover pure formatting, state reduction, history retention, storage validation, URL construction, and component behavior without real services.
-- Medium tests cover route navigation, API client boundaries, browser persistence, map/ad adapters with controlled substitutes, and Android external-link adapters.
-- Large tests cover representative deployed Pages-to-Workers and Android-to-Workers journeys and production-like SDK configuration without real advertisement interaction.
+- Medium tests cover route navigation, API client boundaries, browser persistence, and map/ad adapters with controlled substitutes.
+- Large tests cover representative deployed Pages-to-Workers journeys and production-like Web SDK configuration without real advertisement interaction.
 - User interaction tests use user-level interactions rather than dispatching isolated DOM events.
 - Route transition tests use the production route configuration rather than test-only routes.
-- Accessibility automation covers stable Web states, supplemented by keyboard, screen-reader, zoom, and Android manual checks.
+- Accessibility automation covers stable Web states, supplemented by keyboard, screen-reader, and zoom checks.
 
 Classify tests by actual dependencies, not by component, integration, or E2E labels. Every overall coverage metric must reach at least 80% when repository coverage commands exist.
 
@@ -216,7 +178,7 @@ The UI foundation Issues resolve:
 
 - exact design tokens and supported theme behavior;
 - the component library, if any;
-- browser and Android persistence adapters and version keys;
+- browser persistence adapters and version keys;
 - exact Japanese copy and contact destination;
 - clipboard output with or without the display hyphen; and
 - SDK-specific empty-ad and consent presentation.

@@ -2,9 +2,9 @@
 
 ## 1. Scope and Ownership
 
-This document is the source of truth for the Zipnami public API contract and backend boundaries. It refines the system contract in [design.md](./design.md) and the acceptance criteria in Issues [#2](https://github.com/kishimin/random-postal-code/issues/2), [#3](https://github.com/kishimin/random-postal-code/issues/3), [#4](https://github.com/kishimin/random-postal-code/issues/4), and [#11](https://github.com/kishimin/random-postal-code/issues/11).
+This document is the source of truth for the Zipnami Web MVP public API contract and backend boundaries. It refines the system contract in [design.md](./design.md) and the acceptance criteria in Issues [#2](https://github.com/kishimin/random-postal-code/issues/2), [#3](https://github.com/kishimin/random-postal-code/issues/3), [#4](https://github.com/kishimin/random-postal-code/issues/4), and [#11](https://github.com/kishimin/random-postal-code/issues/11).
 
-The API owns random selection from the normalized dataset, HTTP response mapping, CORS, and operational error reporting. It does not own UI state, client history, maps, advertising, authentication, search, or runtime retrieval from Japan Post.
+The API owns random selection from the normalized dataset, HTTP response mapping, CORS, and operational error reporting. It does not own Web UI state, browser history, maps, advertising, authentication, search, or runtime retrieval from Japan Post.
 
 ## 2. Runtime Boundary
 
@@ -174,7 +174,7 @@ Tests cover:
 - exact allowed origins, denied origins, `Vary: Origin`, and absence of wildcard CORS;
 - no runtime request to Japan Post or another address API;
 - one immutable dataset load per isolate where the runtime permits deterministic observation; and
-- Pages-to-Workers and Android-to-Workers release journeys.
+- Pages-to-Workers release journeys.
 
 Classify each test as Small, Medium, or Large by its actual dependencies, including Hono and Worker-runtime tests. Do not classify by the label API, integration, or E2E alone.
 
