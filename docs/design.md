@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document is the source of truth for the current Zipnami MVP product design and technical contracts. Implementation tasks and their acceptance criteria are tracked in [GitHub Issues](https://github.com/kishimin/random-postal-code/issues).
+This document is the source of truth for the current Zipnami MVP product design and technical contracts. Implementation tasks and their acceptance criteria are tracked in [GitHub Issues](https://github.com/kishimin/random-postal-code/issues). Detailed contracts are defined in [api-design.md](./api-design.md) and [ui-design.md](./ui-design.md).
 
 ## 2. Product Scope
 
