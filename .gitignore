@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+storybook-static/
+
+# Test, coverage, and mutation output
+coverage/
+test-result.json
+.stryker-tmp/
+reports/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+.vitest-attachments/
+**/__screenshots__/
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# User-specific IDE files
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.user
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.local
+*~

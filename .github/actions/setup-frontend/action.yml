@@ -1,0 +1,53 @@
+name: Set up the Zipnami frontend toolchain
+description: >-
+  Installs Bun, restores workspace dependencies from the committed lockfile, and
+  optionally installs Playwright browsers. Shared by every CI workflow so the
+  three event schedules cannot drift apart in how they build the environment.
+
+inputs:
+  playwright-browsers:
+    description: >-
+      Space-separated Playwright browsers to install, for example "chromium" or
+      "chromium webkit". Leave empty to skip the browser download entirely.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: 1.3.13
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      id: node_modules_cache
+      with:
+        path: |
+          node_modules
+          apps/web/frontend/node_modules
+        key: ${{ runner.os }}-bun-1.3.13-${{ hashFiles('bun.lock') }}
+
+    - name: Install dependencies
+      if: steps.node_modules_cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: bun install --frozen-lockfile
+
+    - name: Cache Playwright browsers
+      if: inputs.playwright-browsers != ''
+      uses: actions/cache@v3
+      id: playwright_cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: >-
+          ${{ runner.os }}-playwright-${{ inputs.playwright-browsers }}-${{
+          hashFiles('bun.lock') }}
+
+    - name: Install Playwright browsers
+      if: >-
+        inputs.playwright-browsers != '' &&
+        steps.playwright_cache.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: apps/web/frontend
+      run: bunx playwright install --with-deps ${{ inputs.playwright-browsers }}

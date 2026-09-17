@@ -1,0 +1,139 @@
+name: CI (Push)
+
+on:
+  push:
+    branches:
+      - main
+
+# Read-only by default: no job here needs to write to the repository, and CI
+# must not hand deployment, Maps, or advertising credentials to a build step.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-push-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # A placeholder origin keeps the production build representative without
+  # exposing a real endpoint. Nothing in CI calls it.
+  VITE_API_BASE_URL: http://127.0.0.1:8787
+
+jobs:
+  static-checks:
+    name: Static checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+
+      - name: Check formatting
+        run: bun run format:check
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Lint markup
+        run: bun run lint:markup
+
+      - name: Type check
+        run: bun run typecheck
+
+      - name: Test custom ESLint rules
+        run: bun run test:eslint
+
+      - name: Build production bundle
+        run: bun run build
+
+  frontend-small-tests:
+    name: Frontend Test (Small)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/web/frontend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          playwright-browsers: chromium
+
+      - name: Vitest Small tests
+        run: bun run test:small
+
+      - name: Summarize test results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { pathToFileURL } = require("node:url");
+            const { summarizeVitestRun } = await import(
+              pathToFileURL(
+                `${process.env.GITHUB_WORKSPACE}/.github/scripts/summarize-vitest-run.mjs`,
+              ).href
+            );
+
+            await summarizeVitestRun({ core, sizes: ["Small"] });
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-small-test-results
+          path: apps/web/frontend/test-result.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload coverage report
+        if: >-
+          ${{ !cancelled() &&
+          hashFiles('apps/web/frontend/coverage/**') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-small-coverage-report
+          path: apps/web/frontend/coverage
+          if-no-files-found: error
+          retention-days: 14
+
+  frontend-e2e-small:
+    name: Frontend E2E (Small)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/web/frontend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          playwright-browsers: chromium webkit
+
+      - name: Build frontend
+        run: bun run build
+
+      - name: Run Small browser tests
+        run: bun run e2e:small
+
+      - name: Upload browser test artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-e2e-small-results
+          path: |
+            apps/web/frontend/playwright-report
+            apps/web/frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 14

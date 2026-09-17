@@ -18,10 +18,10 @@ The Web UI owns presentation, client state, browser-local history, map actions, 
 
 ### 3.1 Web Routes
 
-| Route | Page | Purpose |
-| --- | --- | --- |
-| `/` | Generator | Generate, inspect, copy, map, and revisit results |
-| `/privacy` | Privacy | Explain first-party storage, third-party processing, attribution, and contact |
+| Route      | Page      | Purpose                                                                       |
+| ---------- | --------- | ----------------------------------------------------------------------------- |
+| `/`        | Generator | Generate, inspect, copy, map, and revisit results                             |
+| `/privacy` | Privacy   | Explain first-party storage, third-party processing, attribution, and contact |
 
 Direct navigation and refresh must resolve both routes through the Pages SPA fallback.
 

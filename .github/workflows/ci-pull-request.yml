@@ -1,0 +1,207 @@
+name: CI (Pull Request)
+
+on:
+  pull_request:
+
+# Read-only by default: no job here needs to write to the repository, and CI
+# must not hand deployment, Maps, or advertising credentials to a build step.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-pull-request-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # A placeholder origin keeps the production build representative without
+  # exposing a real endpoint. Nothing in CI calls it.
+  VITE_API_BASE_URL: http://127.0.0.1:8787
+
+jobs:
+  static-checks:
+    name: Static checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+
+      - name: Check formatting
+        run: bun run format:check
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Lint markup
+        run: bun run lint:markup
+
+      - name: Type check
+        run: bun run typecheck
+
+      - name: Test custom ESLint rules
+        run: bun run test:eslint
+
+      - name: Build production bundle
+        run: bun run build
+
+  frontend-tests:
+    name: Frontend Test (${{ matrix.size }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - size: Small
+            script: test:small
+          - size: Medium
+            script: test:medium
+          - size: Storybook
+            script: test:storybook
+    defaults:
+      run:
+        working-directory: apps/web/frontend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          playwright-browsers: chromium
+
+      - name: Vitest ${{ matrix.size }} tests
+        run: bun run ${{ matrix.script }}
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-${{ matrix.size }}-test-results
+          path: apps/web/frontend/test-result.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload coverage report
+        if: >-
+          ${{ !cancelled() &&
+          hashFiles('apps/web/frontend/coverage/**') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-${{ matrix.size }}-coverage-report
+          path: apps/web/frontend/coverage
+          if-no-files-found: error
+          retention-days: 14
+
+  frontend-coverage:
+    name: Frontend coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/web/frontend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          playwright-browsers: chromium
+
+      # Every metric in the overall summary must reach 80% (ADR-0048). The
+      # threshold is applied by the script through COVERAGE_THRESHOLD.
+      - name: Vitest coverage (Small and Medium)
+        run: bun run test:coverage:pr
+
+      - name: Upload coverage report
+        if: >-
+          ${{ !cancelled() &&
+          hashFiles('apps/web/frontend/coverage/**') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-coverage-report
+          path: apps/web/frontend/coverage
+          if-no-files-found: error
+          retention-days: 14
+
+  frontend-report:
+    name: Frontend Test Report
+    needs: frontend-tests
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Download test results
+        uses: actions/download-artifact@v7
+        continue-on-error: true
+        with:
+          pattern: frontend-*-test-results
+          path: results
+
+      - name: Download coverage reports
+        uses: actions/download-artifact@v7
+        continue-on-error: true
+        with:
+          pattern: frontend-*-coverage-report
+          path: coverage-reports
+
+      - name: Summarize test results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { pathToFileURL } = require("node:url");
+            const { summarizeDownloadedRuns } = await import(
+              pathToFileURL(
+                `${process.env.GITHUB_WORKSPACE}/.github/scripts/summarize-vitest-run.mjs`,
+              ).href
+            );
+
+            await summarizeDownloadedRuns({
+              core,
+              sizes: ["Small", "Medium", "Storybook"],
+            });
+
+  frontend-e2e-medium:
+    name: Frontend E2E (Medium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/web/frontend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          playwright-browsers: chromium webkit
+
+      - name: Build frontend
+        run: bun run build
+
+      - name: Run Medium browser tests
+        run: bun run e2e:medium
+
+      - name: Upload browser test artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-e2e-medium-results
+          path: |
+            apps/web/frontend/playwright-report
+            apps/web/frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 14

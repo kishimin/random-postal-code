@@ -193,13 +193,13 @@ When the design changes, update this contract and its affected scope before sync
 
 The following details are resolved during the owning Issue's Red/Green cycles without changing MVP externally observable behavior. They must not be guessed from this document alone.
 
-| Detail | Owning Issue | Resolution gate |
-| --- | ---: | --- |
-| Exact package versions and quality commands | #1 | Verify official toolchain compatibility and fix them in the lockfile and workspace scripts |
-| Runtime-schema implementation | #2 | Implement the API contracts without coupling shared code to a client or server framework |
-| Postal artifact file format | #3 | Verify determinism, Worker size constraints, and loading failures |
-| Web history keys and migration | #7 | Fix the smallest first-release contract with persistence tests |
-| Production Pages origin, Worker URL, and project names | #19 | Fix them from the provisioned Cloudflare resources and deployment configuration |
-| Exact AdSense and consent configuration | #9 | Human-review the production configuration before release |
+| Detail                                                 | Owning Issue | Resolution gate                                                                            |
+| ------------------------------------------------------ | -----------: | ------------------------------------------------------------------------------------------ |
+| Exact package versions and quality commands            |           #1 | Verify official toolchain compatibility and fix them in the lockfile and workspace scripts |
+| Runtime-schema implementation                          |           #2 | Implement the API contracts without coupling shared code to a client or server framework   |
+| Postal artifact file format                            |           #3 | Verify determinism, Worker size constraints, and loading failures                          |
+| Web history keys and migration                         |           #7 | Fix the smallest first-release contract with persistence tests                             |
+| Production Pages origin, Worker URL, and project names |          #19 | Fix them from the provisioned Cloudflare resources and deployment configuration            |
+| Exact AdSense and consent configuration                |           #9 | Human-review the production configuration before release                                   |
 
 External billing, API-key restrictions, and consent affect production accounts. Before release, a human must compare their configuration screens with the production Web build rather than relying only on automated output.
