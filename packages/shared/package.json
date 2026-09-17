@@ -1,0 +1,28 @@
+{
+  "name": "@zipnami/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -b --noEmit",
+    "lint": "oxlint && eslint .",
+    "test": "vitest run",
+    "test:small": "vitest run --coverage --passWithNoTests small.test",
+    "test:medium": "vitest run --coverage --passWithNoTests medium.test",
+    "test:large": "vitest run --coverage --passWithNoTests large.test",
+    "test:coverage:pr": "COVERAGE_THRESHOLD=80 vitest run --coverage --passWithNoTests small.test medium.test"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "9.39.5",
+    "oxlint": "^1.75.0",
+    "typescript": "~6.0.2",
+    "vitest": "4.1.10"
+  }
+}

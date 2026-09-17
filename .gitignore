@@ -6,6 +6,10 @@ dist/
 dist-ssr/
 storybook-static/
 
+# Wrangler local state and generated Worker types
+.wrangler/
+worker-configuration.d.ts
+
 # Test, coverage, and mutation output
 coverage/
 test-result.json
@@ -36,6 +40,9 @@ playwright/.cache/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Local pull request drafts
+pull-request/
 
 # Logs and temporary files
 *.log

@@ -20,8 +20,8 @@ env:
   VITE_API_BASE_URL: http://127.0.0.1:8787
 
 jobs:
-  frontend-tests:
-    name: Frontend Test (${{ matrix.size }})
+  package-tests:
+    name: Test (${{ matrix.size }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -36,9 +36,6 @@ jobs:
             script: test:large
           - size: Storybook
             script: test:storybook
-    defaults:
-      run:
-        working-directory: apps/web/frontend
 
     steps:
       - name: Check out repository
@@ -52,29 +49,22 @@ jobs:
       - name: Vitest ${{ matrix.size }} tests
         run: bun run ${{ matrix.script }}
 
-      - name: Upload test results
+      - name: Upload test results and coverage
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: frontend-${{ matrix.size }}-test-results
-          path: apps/web/frontend/test-result.json
+          name: ${{ matrix.size }}-test-results
+          path: |
+            apps/*/*/test-result.json
+            apps/*/*/coverage
+            packages/*/test-result.json
+            packages/*/coverage
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload coverage report
-        if: >-
-          ${{ !cancelled() &&
-          hashFiles('apps/web/frontend/coverage/**') != '' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: frontend-${{ matrix.size }}-coverage-report
-          path: apps/web/frontend/coverage
-          if-no-files-found: error
-          retention-days: 14
-
-  frontend-report:
-    name: Frontend Test Report
-    needs: frontend-tests
+  report:
+    name: Test Report
+    needs: package-tests
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -87,15 +77,8 @@ jobs:
         uses: actions/download-artifact@v7
         continue-on-error: true
         with:
-          pattern: frontend-*-test-results
+          pattern: "*-test-results"
           path: results
-
-      - name: Download coverage reports
-        uses: actions/download-artifact@v7
-        continue-on-error: true
-        with:
-          pattern: frontend-*-coverage-report
-          path: coverage-reports
 
       - name: Summarize test results
         uses: actions/github-script@v7

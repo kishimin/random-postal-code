@@ -1,31 +1,40 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-const FRONTEND_DIRECTORY = "apps/web/frontend";
+const RESULT_FILE = "test-result.json";
+const COVERAGE_FILE = path.join("coverage", "coverage-summary.json");
+const WORKSPACE_ROOTS = ["apps", "packages"];
 const DOWNLOADED_RESULTS_DIRECTORY = "results";
-const DOWNLOADED_COVERAGE_DIRECTORY = "coverage-reports";
+const IGNORED_DIRECTORIES = new Set([
+  "node_modules",
+  ".git",
+  "dist",
+  "coverage",
+]);
 
 const readJson = (filePath) =>
   existsSync(filePath) ? JSON.parse(readFileSync(filePath, "utf8")) : undefined;
 
-const localLocations = () => ({
-  result: path.join(FRONTEND_DIRECTORY, "test-result.json"),
-  coverage: path.join(FRONTEND_DIRECTORY, "coverage", "coverage-summary.json"),
-});
+/** Finds every directory under `root` that holds a Vitest result file. */
+const findResultDirectories = (root) => {
+  if (!existsSync(root)) return [];
 
-// actions/download-artifact places each artifact in a directory named after it.
-const downloadedLocations = (size) => ({
-  result: path.join(
-    DOWNLOADED_RESULTS_DIRECTORY,
-    `frontend-${size}-test-results`,
-    "test-result.json",
-  ),
-  coverage: path.join(
-    DOWNLOADED_COVERAGE_DIRECTORY,
-    `frontend-${size}-coverage-report`,
-    "coverage-summary.json",
-  ),
-});
+  const found = [];
+  const pending = [root];
+
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (existsSync(path.join(current, RESULT_FILE))) found.push(current);
+
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      if (entry.isDirectory() && !IGNORED_DIRECTORIES.has(entry.name)) {
+        pending.push(path.join(current, entry.name));
+      }
+    }
+  }
+
+  return found.sort();
+};
 
 const testRows = (result) => [
   ["Suites", `${result.numPassedTestSuites}/${result.numTotalTestSuites}`],
@@ -48,17 +57,11 @@ const asTable = (heading, rows) => [
   ...rows,
 ];
 
-const appendSection = (core, size, { result, coverage }) => {
-  core.summary.addHeading(size, 3);
+const appendPackage = (core, label, directory) => {
+  const result = readJson(path.join(directory, RESULT_FILE));
+  const coverage = readJson(path.join(directory, COVERAGE_FILE));
 
-  if (!result) {
-    // A missing file means the run never produced results — the job that was
-    // supposed to write them failed or was skipped. Reported rather than
-    // thrown: the failing job is where that belongs.
-    core.summary.addRaw(`No test results were produced for ${size}.`, true);
-    return;
-  }
-
+  core.summary.addHeading(label, 4);
   core.summary.addRaw(
     result.success ? "All tests passed." : "Some tests failed.",
     true,
@@ -77,24 +80,52 @@ const appendSection = (core, size, { result, coverage }) => {
   }
 };
 
-const summarize = async (core, sizes, locationsFor) => {
-  core.summary.addHeading("Frontend test results", 2);
+const summarize = async (core, sizes, rootFor, labelFor) => {
+  core.summary.addHeading("Test results", 2);
 
   for (const size of sizes) {
-    const { result, coverage } = locationsFor(size);
-    appendSection(core, size, {
-      result: readJson(result),
-      coverage: readJson(coverage),
-    });
+    core.summary.addHeading(size, 3);
+
+    const directories = rootFor(size).flatMap(findResultDirectories);
+    if (directories.length === 0) {
+      // A missing file means the run never produced results — the job that was
+      // supposed to write them failed or was skipped. Reported rather than
+      // thrown: the failing job is where that belongs.
+      core.summary.addRaw(`No test results were produced for ${size}.`, true);
+      continue;
+    }
+
+    for (const directory of directories) {
+      appendPackage(core, labelFor(size, directory), directory);
+    }
   }
 
   await core.summary.write();
 };
 
-/** Summarizes the Vitest run the current job just produced. */
+/** Summarizes the runs the current job just produced across every package. */
 export const summarizeVitestRun = async ({ core, sizes }) =>
-  summarize(core, sizes, localLocations);
+  summarize(
+    core,
+    sizes,
+    () => WORKSPACE_ROOTS,
+    (_size, directory) => directory.replaceAll("\\", "/"),
+  );
 
-/** Summarizes Vitest runs produced by other jobs and downloaded as artifacts. */
+/**
+ * Summarizes runs produced by other jobs and downloaded as one artifact per
+ * size, each preserving the workspace paths it was uploaded with.
+ */
 export const summarizeDownloadedRuns = async ({ core, sizes }) =>
-  summarize(core, sizes, downloadedLocations);
+  summarize(
+    core,
+    sizes,
+    (size) => [path.join(DOWNLOADED_RESULTS_DIRECTORY, `${size}-test-results`)],
+    (size, directory) =>
+      path
+        .relative(
+          path.join(DOWNLOADED_RESULTS_DIRECTORY, `${size}-test-results`),
+          directory,
+        )
+        .replaceAll("\\", "/") || "(root)",
+  );
