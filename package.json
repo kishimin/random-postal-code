@@ -1,0 +1,26 @@
+{
+  "name": "zipnami",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/web/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter @zipnami/web-frontend dev",
+    "build": "bun run --filter @zipnami/web-frontend build",
+    "preview": "bun run --filter @zipnami/web-frontend preview",
+    "typecheck": "bun run --filter '*' typecheck",
+    "lint": "bun run --filter '*' lint",
+    "lint:markup": "bun run --filter '*' lint:markup",
+    "test": "bun run --filter '*' test",
+    "test:small": "bun run --filter '*' test:small",
+    "test:medium": "bun run --filter '*' test:medium",
+    "test:large": "bun run --filter '*' test:large",
+    "test:storybook": "bun run --filter '*' test:storybook",
+    "test:coverage:pr": "bun run --filter '*' test:coverage:pr",
+    "e2e": "bun run --filter @zipnami/web-frontend e2e",
+    "storybook": "bun run --filter @zipnami/web-frontend storybook",
+    "mutation-test": "bun run --filter @zipnami/web-frontend mutation-test"
+  }
+}

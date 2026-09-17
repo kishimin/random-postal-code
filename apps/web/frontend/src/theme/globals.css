@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * Design tokens (color, typography, elevation) are fixed by the UI foundation
+ * work in Issue #5 and Issue #16, not here. ui-design.md section 9 requires them
+ * to be documented without changing the information hierarchy it defines, so
+ * this file intentionally carries no token values yet.
+ */
