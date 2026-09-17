@@ -93,13 +93,13 @@ X-Request-Id: 01JEXAMPLE0000000000000000
 
 ### 4.2 Error Responses
 
-| Condition | Status | Code | Retry guidance |
-| --- | ---: | --- | --- |
-| Unsupported query parameter or request body | 400 | `INVALID_REQUEST` | Correct the request; do not retry unchanged |
-| Dataset missing, unreadable, empty, or invalid | 503 | `DATA_UNAVAILABLE` | Retry may succeed after deployment recovery |
-| Unexpected application failure | 500 | `INTERNAL_ERROR` | Retry with bounded backoff |
-| Unknown route | 404 | `NOT_FOUND` | Do not retry unchanged |
-| Unsupported method on `/api/random` | 405 | `METHOD_NOT_ALLOWED` | Use `GET` |
+| Condition                                      | Status | Code                 | Retry guidance                              |
+| ---------------------------------------------- | -----: | -------------------- | ------------------------------------------- |
+| Unsupported query parameter or request body    |    400 | `INVALID_REQUEST`    | Correct the request; do not retry unchanged |
+| Dataset missing, unreadable, empty, or invalid |    503 | `DATA_UNAVAILABLE`   | Retry may succeed after deployment recovery |
+| Unexpected application failure                 |    500 | `INTERNAL_ERROR`     | Retry with bounded backoff                  |
+| Unknown route                                  |    404 | `NOT_FOUND`          | Do not retry unchanged                      |
+| Unsupported method on `/api/random`            |    405 | `METHOD_NOT_ALLOWED` | Use `GET`                                   |
 
 The stable error envelope applies to application failures:
 

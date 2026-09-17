@@ -12,7 +12,7 @@ const blockedMethods = new Set([
   "selectOption",
   "setInputFiles",
 ]);
-const e2eDirectoryPattern = /(?:^|\/)e2e\//;
+const e2eDirectoryPattern = /(?:^|\/)(?:e2e|acceptance)\//;
 
 export default {
   meta: {

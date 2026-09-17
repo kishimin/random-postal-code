@@ -17,21 +17,21 @@ ships to the browser.
 
 ## Commands
 
-| Command | Purpose |
-| --- | --- |
-| `bun run dev` | Vite development server |
-| `bun run build` | Type check, then build `dist/` for Cloudflare Pages |
-| `bun run preview` | Serve the production build on port 4173 |
-| `bun run typecheck` | `tsc -b --noEmit` across both project references |
-| `bun run lint` | `oxlint`, then `eslint` with the rules oxlint already covers disabled |
-| `bun run lint:markup` | markuplint over JSX, for HTML semantics |
-| `bun run test` | Vitest unit project in headless Chromium |
-| `bun run test:small` / `test:medium` / `test:large` | Run one test size with coverage |
-| `bun run test:storybook` | Run stories as tests, including the a11y addon |
-| `bun run test:coverage:pr` | Small and medium tests with an 80% coverage threshold |
-| `bun run storybook` | Storybook on port 6006 |
-| `bun run e2e` | Playwright against the preview build and Storybook |
-| `bun run mutation-test` | Stryker mutation testing |
+| Command                                             | Purpose                                                               |
+| --------------------------------------------------- | --------------------------------------------------------------------- |
+| `bun run dev`                                       | Vite development server                                               |
+| `bun run build`                                     | Type check, then build `dist/` for Cloudflare Pages                   |
+| `bun run preview`                                   | Serve the production build on port 4173                               |
+| `bun run typecheck`                                 | `tsc -b --noEmit` across both project references                      |
+| `bun run lint`                                      | `oxlint`, then `eslint` with the rules oxlint already covers disabled |
+| `bun run lint:markup`                               | markuplint over JSX, for HTML semantics                               |
+| `bun run test`                                      | Vitest unit project in headless Chromium                              |
+| `bun run test:small` / `test:medium` / `test:large` | Run one test size with coverage                                       |
+| `bun run test:storybook`                            | Run stories as tests, including the a11y addon                        |
+| `bun run test:coverage:pr`                          | Small and medium tests with an 80% coverage threshold                 |
+| `bun run storybook`                                 | Storybook on port 6006                                                |
+| `bun run e2e`                                       | Playwright against the preview build and Storybook                    |
+| `bun run mutation-test`                             | Stryker mutation testing                                              |
 
 Every command is also reachable from the repository root, which delegates through the Bun workspace.
 

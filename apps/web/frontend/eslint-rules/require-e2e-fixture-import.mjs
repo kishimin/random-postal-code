@@ -1,5 +1,5 @@
 const testFilePattern = /(?:\.test|\.spec)\.[cm]?[jt]sx?$/;
-const e2eDirectoryPattern = /(?:^|\/)e2e\//;
+const e2eDirectoryPattern = /(?:^|\/)(?:e2e|acceptance)\//;
 const fixtureImportPattern = /(?:^|\/)fixtures(?:\/test)?(?:\.[cm]?[jt]sx?)?$/;
 
 export default {

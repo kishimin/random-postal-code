@@ -1,6 +1,9 @@
 const testFilePattern = /(?:\.test|\.spec)\.[cm]?[jt]sx?$/;
-const e2eDirectoryPattern = /(?:^|\/)e2e\//;
-const allowedDirectoryPattern = /(?:^|\/)e2e\/(?:tests|specs)\//;
+// Acceptance tests are browser tests too, so the same Page Object conventions
+// apply to them. They sit directly under acceptance/ rather than in a tests
+// subdirectory, because that path is what the ATDD guard protects.
+const e2eDirectoryPattern = /(?:^|\/)(?:e2e|acceptance)\//;
+const allowedDirectoryPattern = /(?:^|\/)(?:e2e\/(?:tests|specs)|acceptance)\//;
 
 export default {
   meta: {

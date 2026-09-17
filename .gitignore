@@ -11,11 +11,11 @@ coverage/
 test-result.json
 .stryker-tmp/
 reports/
-/playwright-report/
-/test-results/
-/blob-report/
-/playwright/.cache/
-/.vitest-attachments/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+.vitest-attachments/
 **/__screenshots__/
 
 # Environment files and secrets

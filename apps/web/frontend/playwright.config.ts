@@ -1,7 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
-  testDir: "./e2e",
+  // Acceptance tests live at the repository root because they describe the whole
+  // system, not this package. Both roots are scanned from here so a single
+  // command runs the outer ATDD loop and this package's own E2E tests.
+  testDir: "../../..",
+  testMatch: [
+    "acceptance/**/*.test.ts",
+    "apps/web/frontend/e2e/tests/**/*.test.ts",
+  ],
   fullyParallel: false,
   workers: 5,
   forbidOnly: !!process.env.CI,

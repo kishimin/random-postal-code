@@ -7,13 +7,17 @@
     "packages/*"
   ],
   "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "dev": "bun run --filter @zipnami/web-frontend dev",
     "build": "bun run --filter @zipnami/web-frontend build",
     "preview": "bun run --filter @zipnami/web-frontend preview",
     "typecheck": "bun run --filter '*' typecheck",
-    "lint": "bun run --filter '*' lint",
+    "lint": "bun run --filter '*' lint && bun run lint:acceptance",
+    "lint:acceptance": "eslint acceptance --no-error-on-unmatched-pattern",
     "lint:markup": "bun run --filter '*' lint:markup",
     "test": "bun run --filter '*' test",
+    "test:eslint": "node --test eslint.config.rule-tests.mjs",
     "test:small": "bun run --filter '*' test:small",
     "test:medium": "bun run --filter '*' test:medium",
     "test:large": "bun run --filter '*' test:large",
@@ -22,5 +26,11 @@
     "e2e": "bun run --filter @zipnami/web-frontend e2e",
     "storybook": "bun run --filter @zipnami/web-frontend storybook",
     "mutation-test": "bun run --filter @zipnami/web-frontend mutation-test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "eslint": "9.39.5",
+    "prettier": "^3.9.7",
+    "typescript-eslint": "^8.70.0"
   }
 }

@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import js from "@eslint/js";
 import vitest from "@vitest/eslint-plugin";
 import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
@@ -416,5 +417,9 @@ export default defineConfig([
 
   // Turn off every rule oxlint already covers (see .oxlintrc.json) so the
   // same violation isn't reported twice; run `oxlint` before `eslint`.
-  ...oxlint.buildFromOxlintConfigFile("./.oxlintrc.json"),
+  // Resolved from this file rather than the working directory, so the config
+  // behaves the same when ESLint is invoked from the repository root.
+  ...oxlint.buildFromOxlintConfigFile(
+    fileURLToPath(new URL("./.oxlintrc.json", import.meta.url)),
+  ),
 ]);
