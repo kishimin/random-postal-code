@@ -24,6 +24,9 @@
     "test:storybook": "bun run --filter '*' test:storybook",
     "test:coverage:pr": "bun run --filter '*' test:coverage:pr",
     "e2e": "bun run --filter @zipnami/web-frontend e2e",
+    "e2e:small": "bun run --filter @zipnami/web-frontend e2e:small",
+    "e2e:medium": "bun run --filter @zipnami/web-frontend e2e:medium",
+    "e2e:large": "bun run --filter @zipnami/web-frontend e2e:large",
     "storybook": "bun run --filter @zipnami/web-frontend storybook",
     "mutation-test": "bun run --filter @zipnami/web-frontend mutation-test"
   },

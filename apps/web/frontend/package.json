@@ -18,7 +18,10 @@
     "test:coverage:pr": "COVERAGE_THRESHOLD=80 vitest run --project=unit --coverage --passWithNoTests small.test medium.test",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "e2e": "playwright test",
+    "e2e": "playwright test --pass-with-no-tests",
+    "e2e:small": "playwright test --pass-with-no-tests small.test",
+    "e2e:medium": "playwright test --pass-with-no-tests medium.test",
+    "e2e:large": "playwright test --pass-with-no-tests large.test",
     "mutation-test": "stryker run"
   },
   "dependencies": {
