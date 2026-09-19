@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { apiErrorResponseSchema } from "../index.ts";
 
+const validCode = "NOT_FOUND";
 const message = "Postal code data is temporarily unavailable.";
 const requestId = "01JEXAMPLE0000000000000000";
 
@@ -23,6 +24,15 @@ describe("apiErrorResponseSchema", () => {
     const result = apiErrorResponseSchema.safeParse({
       error: { code: "UNKNOWN_CODE", message, requestId },
     });
+
+    expect(result.success).toBe(false);
+  });
+
+  test.each([
+    ["message", { code: validCode, requestId }],
+    ["requestId", { code: validCode, message }],
+  ])("rejects an error response missing %s", (_field, error) => {
+    const result = apiErrorResponseSchema.safeParse({ error });
 
     expect(result.success).toBe(false);
   });
