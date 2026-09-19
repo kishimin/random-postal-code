@@ -16,4 +16,13 @@ describe("postalCodeSchema", () => {
 
     expect(result.success).toBe(true);
   });
+
+  test("rejects a PostalCode whose addresses array is empty", () => {
+    const result = postalCodeSchema.safeParse({
+      postalCode: "1000001",
+      addresses: [],
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
