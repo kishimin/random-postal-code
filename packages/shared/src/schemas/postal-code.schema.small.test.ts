@@ -73,4 +73,13 @@ describe("postalCodeSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  test("rejects a postalCode that is a number instead of a string", () => {
+    const result = postalCodeSchema.safeParse({
+      postalCode: 1000001,
+      addresses: [validAddress],
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
