@@ -1,9 +1,5 @@
 import { describe, expect, expectTypeOf, test } from "vitest";
-import {
-  type Address,
-  type PostalCode,
-  postalCodeSchema,
-} from "../index.ts";
+import { type Address, type PostalCode, postalCodeSchema } from "../index.ts";
 
 const validAddress = {
   prefecture: "Tokyo",
