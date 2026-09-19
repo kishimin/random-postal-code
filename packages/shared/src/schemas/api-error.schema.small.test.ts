@@ -19,4 +19,16 @@ describe("apiErrorResponseSchema", () => {
 
     expect(result.success).toBe(true);
   });
+
+  test("rejects an error response whose code is not one of the defined values", () => {
+    const result = apiErrorResponseSchema.safeParse({
+      error: {
+        code: "UNKNOWN_CODE",
+        message: "Postal code data is temporarily unavailable.",
+        requestId: "01JEXAMPLE0000000000000000",
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
