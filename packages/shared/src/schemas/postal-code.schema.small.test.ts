@@ -7,11 +7,26 @@ const validAddress = {
   town: "Chiyoda",
 };
 
+const anotherValidAddress = {
+  prefecture: "Osaka",
+  city: "Osaka City",
+  town: "Umeda",
+};
+
 describe("postalCodeSchema", () => {
   test("accepts a seven-digit postalCode with a non-empty addresses array", () => {
     const result = postalCodeSchema.safeParse({
       postalCode: "1000001",
       addresses: [validAddress],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test("accepts a postalCode with more than one address", () => {
+    const result = postalCodeSchema.safeParse({
+      postalCode: "1000001",
+      addresses: [validAddress, anotherValidAddress],
     });
 
     expect(result.success).toBe(true);
