@@ -36,4 +36,13 @@ describe("apiErrorResponseSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  test.each([
+    ["message", { code: validCode, message: 42, requestId }],
+    ["requestId", { code: validCode, message, requestId: null }],
+  ])("rejects an error response whose %s is not a string", (_field, error) => {
+    const result = apiErrorResponseSchema.safeParse({ error });
+
+    expect(result.success).toBe(false);
+  });
 });
