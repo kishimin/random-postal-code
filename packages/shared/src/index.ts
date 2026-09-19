@@ -15,3 +15,9 @@ export {
   postalCodeSchema,
   type PostalCode,
 } from "./schemas/postal-code.schema.ts";
+export {
+  apiErrorCodeSchema,
+  type ApiErrorCode,
+  apiErrorResponseSchema,
+  type ApiErrorResponse,
+} from "./schemas/api-error.schema.ts";
