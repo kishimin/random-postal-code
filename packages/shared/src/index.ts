@@ -11,3 +11,7 @@
  */
 
 export { addressSchema, type Address } from "./schemas/address.schema.ts";
+export {
+  postalCodeSchema,
+  type PostalCode,
+} from "./schemas/postal-code.schema.ts";
