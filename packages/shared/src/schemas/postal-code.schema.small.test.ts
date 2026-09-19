@@ -25,4 +25,23 @@ describe("postalCodeSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  test.each([
+    ["too short", "100001"],
+    ["too long", "10000011"],
+    ["non-digit characters", "100000a"],
+  ])("rejects a postalCode that is %s", (_reason, postalCode) => {
+    const result = postalCodeSchema.safeParse({
+      postalCode,
+      addresses: [
+        {
+          prefecture: "Tokyo",
+          city: "Chiyoda City",
+          town: "Chiyoda",
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
