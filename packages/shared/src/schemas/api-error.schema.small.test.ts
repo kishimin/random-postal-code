@@ -45,4 +45,10 @@ describe("apiErrorResponseSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  test("rejects a response missing the error key entirely", () => {
+    const result = apiErrorResponseSchema.safeParse({});
+
+    expect(result.success).toBe(false);
+  });
 });
