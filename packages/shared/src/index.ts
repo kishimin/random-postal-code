@@ -5,11 +5,9 @@
  * Native, Hono, and Cloudflare dependencies, so both sides can import the same
  * schemas without inheriting the other side's runtime.
  *
- * The schemas themselves — Address, PostalCode, and the error envelope — are
- * written by Issue #2 from the acceptance criteria that own them. zod is the
- * runtime-schema library: types are inferred from the schemas rather than
- * declared beside them, and the OpenAPI document is derived from the same
- * schemas instead of being maintained separately.
+ * zod is the runtime-schema library: types are inferred from the schemas
+ * (z.infer) rather than declared by hand beside them, so a consumer cannot
+ * drift into an incompatible handwritten copy of a contract.
  */
 
-export {};
+export { addressSchema, type Address } from "./schemas/address.schema.ts";
