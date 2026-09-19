@@ -19,12 +19,14 @@ const anotherValidAddress = {
 
 describe("postalCodeSchema", () => {
   test("accepts a seven-digit postalCode with a non-empty addresses array", () => {
-    const result = postalCodeSchema.safeParse({
+    const input = {
       postalCode: "1000001",
       addresses: [validAddress],
-    });
+    };
+    const result = postalCodeSchema.safeParse(input);
 
     expect(result.success).toBe(true);
+    expect(result.data).toEqual(input);
   });
 
   test("types addresses as a non-empty tuple, not a plain array", () => {

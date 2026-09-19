@@ -3,13 +3,15 @@ import { addressSchema } from "../index.ts";
 
 describe("addressSchema", () => {
   test("accepts an address whose prefecture, city, and town are strings", () => {
-    const result = addressSchema.safeParse({
+    const input = {
       prefecture: "Tokyo",
       city: "Chiyoda City",
       town: "Chiyoda",
-    });
+    };
+    const result = addressSchema.safeParse(input);
 
     expect(result.success).toBe(true);
+    expect(result.data).toEqual(input);
   });
 
   test.each([

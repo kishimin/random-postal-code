@@ -12,11 +12,11 @@ describe("apiErrorResponseSchema", () => {
     "DATA_UNAVAILABLE",
     "INTERNAL_ERROR",
   ])("accepts an error response whose code is %s", (code) => {
-    const result = apiErrorResponseSchema.safeParse({
-      error: { code, message, requestId },
-    });
+    const input = { error: { code, message, requestId } };
+    const result = apiErrorResponseSchema.safeParse(input);
 
     expect(result.success).toBe(true);
+    expect(result.data).toEqual(input);
   });
 
   test("rejects an error response whose code is not one of the defined values", () => {
