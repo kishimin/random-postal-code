@@ -50,13 +50,10 @@ jobs:
       - name: Build production bundle
         run: bun run build
 
-  frontend-small-tests:
-    name: Frontend Test (Small)
+  package-tests:
+    name: Test (Small)
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: apps/web/frontend
 
     steps:
       - name: Check out repository
@@ -67,6 +64,8 @@ jobs:
         with:
           playwright-browsers: chromium
 
+      # Run from the repository root so every workspace package is covered. A
+      # package that defines no test:small script is skipped rather than failed.
       - name: Vitest Small tests
         run: bun run test:small
 
@@ -84,23 +83,16 @@ jobs:
 
             await summarizeVitestRun({ core, sizes: ["Small"] });
 
-      - name: Upload test results
+      - name: Upload test results and coverage
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: frontend-small-test-results
-          path: apps/web/frontend/test-result.json
-          if-no-files-found: error
-          retention-days: 14
-
-      - name: Upload coverage report
-        if: >-
-          ${{ !cancelled() &&
-          hashFiles('apps/web/frontend/coverage/**') != '' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: frontend-small-coverage-report
-          path: apps/web/frontend/coverage
+          name: Small-test-results
+          path: |
+            apps/*/*/test-result.json
+            apps/*/*/coverage
+            packages/*/test-result.json
+            packages/*/coverage
           if-no-files-found: error
           retention-days: 14
 

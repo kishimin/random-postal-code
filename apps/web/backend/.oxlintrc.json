@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "oxc", "unicorn", "import", "jsdoc", "vitest"],
+  "ignorePatterns": [
+    "dist/**",
+    ".wrangler/**",
+    "coverage/**",
+    "worker-configuration.d.ts"
+  ]
+}

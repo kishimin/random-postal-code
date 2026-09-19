@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "zipnami-api",
+  "main": "src/index.ts",
+  // Must not exceed the newest date the bundled workerd supports, or the local
+  // runtime refuses to start and every test fails before it runs.
+  "compatibility_date": "2026-08-22",
+
+  // api-design.md section 7 requires structured request logs that distinguish
+  // dataset unavailability from unexpected failures.
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+    },
+  },
+}

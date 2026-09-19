@@ -20,17 +20,23 @@ runs:
       with:
         bun-version: 1.3.13
 
-    - name: Cache dependencies
+    # Bun's download cache is cached instead of the installed trees. Listing
+    # node_modules directories meant naming every workspace, and a workspace
+    # added without a matching line here still restored a cache hit: install was
+    # then skipped and its binaries were simply absent, so its scripts failed
+    # with exit 127 on the second run and passed on the first. Caching upstream
+    # of the install keeps one entry correct for any number of workspaces.
+    - name: Cache Bun downloads
       uses: actions/cache@v3
-      id: node_modules_cache
       with:
-        path: |
-          node_modules
-          apps/web/frontend/node_modules
+        path: ~/.bun/install/cache
         key: ${{ runner.os }}-bun-1.3.13-${{ hashFiles('bun.lock') }}
+        restore-keys: ${{ runner.os }}-bun-1.3.13-
 
+    # Always run: the lockfile is frozen, so this resolves to the same tree
+    # every time, and a warm download cache makes it cheap. Skipping it on a
+    # cache hit is what allowed a partial tree to reach the test steps.
     - name: Install dependencies
-      if: steps.node_modules_cache.outputs.cache-hit != 'true'
       shell: bash
       run: bun install --frozen-lockfile
 
