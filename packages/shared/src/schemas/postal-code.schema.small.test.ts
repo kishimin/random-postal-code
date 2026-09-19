@@ -1,5 +1,9 @@
-import { describe, expect, test } from "vitest";
-import { postalCodeSchema } from "../index.ts";
+import { describe, expect, expectTypeOf, test } from "vitest";
+import {
+  type Address,
+  type PostalCode,
+  postalCodeSchema,
+} from "../index.ts";
 
 const validAddress = {
   prefecture: "Tokyo",
@@ -21,6 +25,13 @@ describe("postalCodeSchema", () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  test("types addresses as a non-empty tuple, not a plain array", () => {
+    expectTypeOf<PostalCode["addresses"]>().toEqualTypeOf<
+      [Address, ...Address[]]
+    >();
+    expectTypeOf<Address[]>().not.toExtend<PostalCode["addresses"]>();
   });
 
   test("accepts a postalCode with more than one address", () => {
