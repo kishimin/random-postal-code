@@ -32,6 +32,15 @@ describe("postalCodeSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  test("rejects a PostalCode whose second address is invalid", () => {
+    const result = postalCodeSchema.safeParse({
+      postalCode: "1000001",
+      addresses: [validAddress, { prefecture: "Osaka", city: "Osaka City" }],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   test("rejects a PostalCode whose addresses array is empty", () => {
     const result = postalCodeSchema.safeParse({
       postalCode: "1000001",
