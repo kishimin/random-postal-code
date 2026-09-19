@@ -1,4 +1,4 @@
-import { coverageConfigDefaults, defineConfig } from "vitest/config";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
@@ -19,7 +19,6 @@ export default defineConfig({
             branches: Number(process.env.COVERAGE_THRESHOLD),
           }
         : undefined,
-      exclude: coverageConfigDefaults.exclude,
     },
   },
 });
