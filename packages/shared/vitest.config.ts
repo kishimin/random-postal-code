@@ -19,7 +19,7 @@ export default defineConfig({
             branches: Number(process.env.COVERAGE_THRESHOLD),
           }
         : undefined,
-      exclude: [...coverageConfigDefaults.exclude],
+      exclude: coverageConfigDefaults.exclude,
     },
   },
 });
