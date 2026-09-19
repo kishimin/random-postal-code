@@ -59,6 +59,20 @@ export default defineConfig({
         "**/*.stories.{ts,tsx}",
         ".storybook/**",
         "src/tests/**",
+        // Test support rather than product behavior, like src/tests above.
+        "src/api/mocks/**",
+        // Scaffolding with no behavior to prove. A test covering these would
+        // restate the implementation — that createApp returns a Hono, that a
+        // provider renders its children — and raise the number without adding
+        // a reason to trust the suite. ADR-0048 asks for 80% of meaningful
+        // code, so these are left out until they have some.
+        //
+        // Delete the matching line when the file gains behavior. Each path is
+        // listed individually on purpose: a directory glob would go on hiding
+        // the real code that lands next to it.
+        "src/app/views/App.tsx",
+        "src/app/providers/AppProviders.tsx",
+        "src/lib/utils.ts",
       ],
     },
     projects: [

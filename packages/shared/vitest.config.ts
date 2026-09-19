@@ -19,7 +19,15 @@ export default defineConfig({
             branches: Number(process.env.COVERAGE_THRESHOLD),
           }
         : undefined,
-      exclude: [...coverageConfigDefaults.exclude],
+      exclude: [
+        ...coverageConfigDefaults.exclude,
+        // Currently `export {}` — a placeholder with nothing to cover. The
+        // Address, PostalCode, and error-envelope schemas arrive with Issue #2;
+        // delete this line then, so the schemas are measured like any other
+        // code. Listed as a single path rather than a glob, so a new file in
+        // src/ is measured by default.
+        "src/index.ts",
+      ],
     },
   },
 });

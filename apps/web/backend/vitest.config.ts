@@ -30,7 +30,22 @@ export default defineConfig({
             branches: Number(process.env.COVERAGE_THRESHOLD),
           }
         : undefined,
-      exclude: [...coverageConfigDefaults.exclude],
+      exclude: [
+        ...coverageConfigDefaults.exclude,
+        // Scaffolding with no behavior to prove. createApp returns a bare Hono
+        // and index.ts only wires it to the fetch handler, so a test over them
+        // would restate the implementation and raise the number without adding
+        // a reason to trust the suite. ADR-0048 asks for 80% of meaningful
+        // code, so these are left out until they have some.
+        //
+        // Delete the matching line when the file gains behavior: routes and the
+        // error envelope arrive with Issues #4 and #11. Each path is listed
+        // individually on purpose, so a later src/ file is measured by default.
+        "src/app.ts",
+        // The Worker entry point, excluded for the same reason the frontend
+        // excludes src/main.tsx: it composes, it does not decide.
+        "src/index.ts",
+      ],
     },
   },
 });
