@@ -11,4 +11,14 @@ describe("addressSchema", () => {
 
     expect(result.success).toBe(true);
   });
+
+  test.each([
+    ["prefecture", { city: "Chiyoda City", town: "Chiyoda" }],
+    ["city", { prefecture: "Tokyo", town: "Chiyoda" }],
+    ["town", { prefecture: "Tokyo", city: "Chiyoda City" }],
+  ])("rejects an address missing %s", (_field, address) => {
+    const result = addressSchema.safeParse(address);
+
+    expect(result.success).toBe(false);
+  });
 });
