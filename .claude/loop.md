@@ -39,9 +39,13 @@ Issueを選ぶときは `needs-decision` ラベルの付いたものを除外す
 
 - Acceptance TestがGreen
 - `bun run lint`、`bun run typecheck`、`bun run format:check`、`bun run test:coverage:pr` が成功
-- `git status --porcelain -- acceptance/` が空
+- `git diff --name-only $(git merge-base main HEAD)..HEAD -- acceptance/` が、
+  そのIssueのATを確定したコミットで追加したファイルだけを挙げる
 
 **検証は実際にコマンドを実行し、その出力を残す。** 通ったと述べるだけにしない。
+
+`git status --porcelain` ではなく分岐点との差分を見る。`git status` はHEADと比べるので、
+ATを書き換えてコミットすれば空になる。それは無改変の証明ではない。
 
 ## 守ること
 

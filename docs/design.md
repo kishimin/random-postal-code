@@ -44,7 +44,7 @@ apps/
   web/
     frontend/     # React, Vite, Pages, and browser-specific behavior
     backend/      # Hono, Workers, public API, and CORS
-  packages/
+packages/
   shared/         # Pure types and validation contracts shared by clients and API
   postal-data/    # Japan Post data retrieval, normalization, and artifacts
 ```

@@ -1,0 +1,22 @@
+# Line endings are LF in the index and in the working tree, on every platform.
+#
+# Without this, core.autocrlf on Windows checks files out as CRLF while the
+# tools here write LF, and git reports every touched file as modified with an
+# empty diff. That is not only noise: `git status --porcelain -- acceptance/`
+# is what this repository uses to prove an acceptance test was not reshaped to
+# make an implementation pass, and it reported all nine of them as changed when
+# none had been. A check that cries wolf is a check nobody reads.
+* text=auto eol=lf
+
+# Binary files git must not touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+
+# Generated. Keep it out of diffs and out of language statistics.
+bun.lock linguist-generated=true

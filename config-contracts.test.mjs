@@ -165,3 +165,117 @@ test("the build refuses plain http for a host a browser would block", () => {
   assert.notEqual(status, 0, "the build should have failed");
   assert.match(stdout + stderr, /https/);
 });
+
+/*
+ * The root README is where a contributor looks for the commands that run this
+ * workspace. A table that drifts from package.json is worse than no table: it
+ * names a command that fails, and the reader has no reason to doubt it.
+ */
+const documentedRootCommands = () => {
+  const readme = readRepositoryFile("README.md");
+
+  // Every mention, not only the ones inside backticks: the two commands a
+  // contributor runs first sit in a fenced block, which an inline-code pattern
+  // would step over. The name class is anything but whitespace and a backtick,
+  // so a hyphen or a digit in a script name cannot make it invisible either.
+  return new Set(
+    [...readme.matchAll(/bun run ([^\s`]+)/g)].map(([, name]) => name),
+  );
+};
+
+const rootScripts = () =>
+  new Set(Object.keys(JSON.parse(readRepositoryFile("package.json")).scripts));
+
+test("every command the README documents exists in the workspace", () => {
+  const documented = documentedRootCommands();
+
+  // An extractor that matched nothing would satisfy the assertion below while
+  // checking nothing at all, and would read as though the README agreed.
+  assert.ok(
+    documented.size >= 6,
+    `extracted ${documented.size} commands from the README; the pattern is broken`,
+  );
+
+  const missing = [...documented].filter((name) => !rootScripts().has(name));
+
+  assert.deepEqual(missing, []);
+});
+
+test("the README documents the commands Issue #1 asks it to", () => {
+  // Formatting, type checking, linting, tests, coverage and builds. Not every
+  // script — the point is that a contributor can find each kind of check, not
+  // that the table is exhaustive.
+  const documented = documentedRootCommands();
+
+  for (const name of [
+    "format",
+    "typecheck",
+    "lint",
+    "test",
+    "test:coverage:pr",
+    "build",
+  ]) {
+    assert.ok(documented.has(name), `README does not document bun run ${name}`);
+  }
+});
+
+test("the Worker wrangler deploys is the one the test imports", () => {
+  // worker.medium.test.ts reaches the entry point by relative path. Pointed at
+  // a different module, wrangler would deploy something no test has run.
+  const wrangler = readFileSync(
+    path.join(backendRoot, "wrangler.jsonc"),
+    "utf8",
+  );
+
+  assert.match(wrangler, /"main"\s*:\s*"src\/index\.ts"/);
+});
+
+/*
+ * Issue #1 asks that secrets, generated builds, dependencies and
+ * machine-specific files stay out of version control. Nothing held that: the
+ * .gitignore is correct today, and one deleted line would publish a .env with
+ * no check going red.
+ */
+const isIgnored = (relativePath) =>
+  spawnSync("git", ["check-ignore", "-q", relativePath], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+  }).status === 0;
+
+test("git ignores secrets, build output, dependencies and editor state", () => {
+  const shouldBeIgnored = [
+    "apps/web/frontend/.env",
+    "apps/web/frontend/dist/index.html",
+    "apps/web/frontend/coverage/index.html",
+    "node_modules/anything",
+    "apps/web/backend/.wrangler/state",
+    ".idea/workspace.xml",
+  ];
+
+  assert.deepEqual(
+    shouldBeIgnored.filter((candidate) => !isIgnored(candidate)),
+    [],
+  );
+});
+
+test("git keeps the example env file the README tells you to copy", () => {
+  // The .env rule is broad enough to swallow this one, so it is exempted on
+  // purpose. A rewrite that drops the exemption removes the file a new
+  // contributor starts from.
+  assert.equal(isIgnored("apps/web/frontend/.env.example"), false);
+});
+
+test("nothing that should be ignored is already tracked", () => {
+  // check-ignore describes the rules; this describes what happened. A file
+  // committed before a rule existed stays tracked and the rule never applies.
+  const tracked = spawnSync("git", ["ls-files"], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+  }).stdout.split("\n");
+
+  const escaped = tracked.filter((file) =>
+    /(^|\/)(node_modules|dist|coverage|\.wrangler|\.idea)\//.test(file),
+  );
+
+  assert.deepEqual(escaped, []);
+});
