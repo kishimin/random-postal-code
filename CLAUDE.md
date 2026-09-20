@@ -5,11 +5,11 @@
 **このリポジトリはIssue方式を採用する。** 受け入れ条件の唯一の正は、対象GitHub Issue本文の
 `## Acceptance criteria` である。
 
-| 入力 | 場所 |
-| --- | --- |
-| なぜ作るか | Issue本文の `## Problem` と `## Proposed solution` |
-| 何を満たせば完成か | Issue本文の `## Acceptance criteria` |
-| どこまでやらないか | Issue本文の `## Out of scope` |
+| 入力               | 場所                                               |
+| ------------------ | -------------------------------------------------- |
+| なぜ作るか         | Issue本文の `## Problem` と `## Proposed solution` |
+| 何を満たせば完成か | Issue本文の `## Acceptance criteria`               |
+| どこまでやらないか | Issue本文の `## Out of scope`                      |
 
 進捗はIssueのチェックボックスとIssueのクローズで表す。
 
