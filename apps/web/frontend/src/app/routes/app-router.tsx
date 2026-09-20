@@ -4,6 +4,7 @@ import {
   createRouter,
   type RouterHistory,
 } from "@tanstack/react-router";
+import { AppErrorView } from "../views/AppErrorView";
 import { GeneratorView } from "../views/GeneratorView";
 import { NotFoundView } from "../views/NotFoundView";
 import { PrivacyView } from "../views/PrivacyView";
@@ -39,4 +40,28 @@ const routeTree = rootRoute.addChildren([generatorRoute, privacyRoute]);
  * when `history` is omitted.
  */
 export const createAppRouter = (history?: RouterHistory) =>
-  createRouter({ routeTree, history });
+  createRouter({
+    routeTree,
+    history,
+    // The router catches a failing route component before any boundary above
+    // it can, and its default screen says "Something went wrong!" in English,
+    // unstyled, with a button that reveals the thrown message. Without this,
+    // the global error screen was unreachable from the failure that reaches it
+    // most often.
+    defaultErrorComponent: AppErrorView,
+  });
+
+/*
+ * Registers the router's type so `<Link to>` is checked against the routes
+ * that exist. Without it the library falls back to AnyRouter, `to` degrades to
+ * plain string, and a link to a path no route claims compiles.
+ *
+ * Declared from the factory's return type rather than from a module-scope
+ * instance, so the router stays constructed per mount and a test can still
+ * inject history.
+ */
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: ReturnType<typeof createAppRouter>;
+  }
+}
