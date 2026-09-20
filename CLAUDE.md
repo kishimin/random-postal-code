@@ -1,0 +1,35 @@
+# Zipnami
+
+## 受け入れ条件の正
+
+**このリポジトリはIssue方式を採用する。** 受け入れ条件の唯一の正は、対象GitHub Issue本文の
+`## Acceptance criteria` である。
+
+| 入力 | 場所 |
+| --- | --- |
+| なぜ作るか | Issue本文の `## Problem` と `## Proposed solution` |
+| 何を満たせば完成か | Issue本文の `## Acceptance criteria` |
+| どこまでやらないか | Issue本文の `## Out of scope` |
+
+進捗はIssueのチェックボックスとIssueのクローズで表す。
+
+`docs/ACCEPTANCE.md` と `docs/PRD.md` は作らない。同じ受け入れ条件が2か所に並ぶと、
+必ず片方が古くなる。
+
+`docs/design.md`、`docs/api-design.md`、`docs/ui-design.md` は**横断的な設計契約**であり、
+受け入れ条件の源泉ではない。Issueの受け入れ条件はこれらの契約を前提に書かれる。
+設計が変わったときは、先に契約を更新してからIssueの受け入れ条件を同期する。
+
+この記載があるため、ATを書く前に「どちらの情報源が正か」をユーザーへ確認する必要はない。
+
+## 無人実行
+
+`/loop` や定期タスクから起動された場合、確認を求めて待たない。判断できない事項に当たったら、
+そこで停止して理由を報告する。待ち続けるとループが空転する。
+
+## Acceptance Test
+
+`acceptance/` 配下に置く。コミット済みのATは編集できない。実装を通すためにATを変更しない。
+
+テスト基盤（`acceptance/fixtures`、`acceptance/pages`、`acceptance/selectors`）も同じ場所に
+あるため、既存ファイルは編集できない。新しい画面のPage Objectは新規ファイルとして追加する。
