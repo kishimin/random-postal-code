@@ -165,3 +165,45 @@ test("the build refuses plain http for a host a browser would block", () => {
   assert.notEqual(status, 0, "the build should have failed");
   assert.match(stdout + stderr, /https/);
 });
+
+/*
+ * The root README is where a contributor looks for the commands that run this
+ * workspace. A table that drifts from package.json is worse than no table: it
+ * names a command that fails, and the reader has no reason to doubt it.
+ */
+const documentedRootCommands = () => {
+  const readme = readRepositoryFile("README.md");
+
+  return new Set(
+    [...readme.matchAll(/`bun run ([a-z:]+)`/g)].map(([, name]) => name),
+  );
+};
+
+const rootScripts = () =>
+  new Set(Object.keys(JSON.parse(readRepositoryFile("package.json")).scripts));
+
+test("every command the README documents exists in the workspace", () => {
+  const missing = [...documentedRootCommands()].filter(
+    (name) => !rootScripts().has(name),
+  );
+
+  assert.deepEqual(missing, []);
+});
+
+test("the README documents the commands Issue #1 asks it to", () => {
+  // Formatting, type checking, linting, tests, coverage and builds. Not every
+  // script — the point is that a contributor can find each kind of check, not
+  // that the table is exhaustive.
+  const documented = documentedRootCommands();
+
+  for (const name of [
+    "format",
+    "typecheck",
+    "lint",
+    "test",
+    "test:coverage:pr",
+    "build",
+  ]) {
+    assert.ok(documented.has(name), `README does not document bun run ${name}`);
+  }
+});
