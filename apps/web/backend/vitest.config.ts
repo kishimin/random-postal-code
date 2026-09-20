@@ -5,6 +5,12 @@ import { coverageConfigDefaults, defineConfig } from "vitest/config";
 // Workers runtime — available APIs, request handling, bindings — fails here
 // instead of only in production. The pool reads wrangler.jsonc so the test
 // environment and the deployed Worker are configured from one file.
+//
+// The pool applies to every test in this package, which reads wrangler.jsonc
+// from disk and runs the Worker in a second process. Both put any test here
+// past what a small test may use, so this package has no .small.test.ts and
+// should not gain one: the size filter reads the name, not the runtime, and a
+// mis-named file would run on push where ADR-0043 puts medium tests later.
 export default defineConfig({
   test: {
     pool: cloudflarePool({
@@ -43,7 +49,9 @@ export default defineConfig({
         // individually on purpose, so a later src/ file is measured by default.
         "src/app.ts",
         // The Worker entry point, excluded for the same reason the frontend
-        // excludes src/main.tsx: it composes, it does not decide.
+        // excludes src/main.tsx: it composes, it does not decide. Excluded from
+        // behavior coverage, not from testing — worker.medium.test.ts runs it
+        // to show the runtime starts, which is a different claim.
         "src/index.ts",
       ],
     },

@@ -24,8 +24,12 @@ describe("the Worker in the local Workers runtime", () => {
     const response = await worker.fetch(
       new Request("https://zipnami.example/a-path-no-route-claims"),
       {},
-      // The handler passes this straight to Hono, which does not reach for it
-      // while answering an unmatched path.
+      // Hono stores this and does not reach for it while answering a path no
+      // route matches. That holds only until a wildcard middleware lands:
+      // `app.use("*", ...)` runs on unmatched paths too, and a logger calling
+      // waitUntil would throw here and surface as `expected 500 to be 404`.
+      // Issues #4 and #11 bring the request logging api-design.md section 7
+      // asks for; replace this with a real context then.
       {} as ExecutionContext,
     );
 
