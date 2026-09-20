@@ -2,6 +2,7 @@ import {
   RouterProvider,
   createMemoryHistory,
   createRootRoute,
+  createRoute,
   createRouter,
 } from "@tanstack/react-router";
 import { render, screen } from "@testing-library/react";
@@ -9,8 +10,50 @@ import { describe, expect, test, vi } from "vitest";
 import { AppProviders } from "../providers/AppProviders";
 import { createAppRouter } from "../routes/app-router";
 import { App } from "../views/App";
+import { RootLayout } from "../views/RootLayout";
 
 const thrownDetail = "a route component threw while rendering";
+
+/*
+ * A child route that throws, under the production frame and the production
+ * fallback.
+ *
+ * The root route carries RootLayout, as it does in the application, because
+ * the fallback renders at the failing route's match rather than in place of
+ * the whole tree. A root route that throws would skip the frame entirely and
+ * hide what that nesting does.
+ *
+ * defaultErrorComponent is read off the production router rather than named
+ * directly, so removing the option fails here instead of quietly restoring the
+ * library's own screen — "Something went wrong!" in English, unstyled, with a
+ * button that reveals the thrown message.
+ */
+const failingRoute = () => {
+  const { defaultErrorComponent } = createAppRouter().options;
+  const rootRoute = createRootRoute({ component: RootLayout });
+
+  const routeTree = rootRoute.addChildren([
+    createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/",
+      component: () => {
+        throw new Error(thrownDetail);
+      },
+    }),
+  ]);
+
+  return (
+    <AppProviders>
+      <RouterProvider
+        router={createRouter({
+          routeTree,
+          history: createMemoryHistory({ initialEntries: ["/"] }),
+          defaultErrorComponent,
+        })}
+      />
+    </AppProviders>
+  );
+};
 
 /*
  * Holds the composition itself, which no other test renders.
@@ -38,30 +81,7 @@ describe("application composition", () => {
   test("a failing route reaches the global error screen, not the router's own", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-    // The router catches a failing route before any boundary above it can, so
-    // what it falls back to is the screen a visitor gets. Left unset, that is
-    // the library's default: "Something went wrong!" in English, unstyled,
-    // with a button that reveals the thrown message.
-    //
-    // Taken from the production router rather than named directly, so removing
-    // the option fails here instead of quietly restoring that default.
-    const { defaultErrorComponent } = createAppRouter().options;
-
-    const router = createRouter({
-      routeTree: createRootRoute({
-        component: () => {
-          throw new Error(thrownDetail);
-        },
-      }),
-      history: createMemoryHistory({ initialEntries: ["/"] }),
-      defaultErrorComponent,
-    });
-
-    render(
-      <AppProviders>
-        <RouterProvider router={router} />
-      </AppProviders>,
-    );
+    render(failingRoute());
 
     expect(
       await screen.findByRole("heading", {
@@ -70,5 +90,24 @@ describe("application composition", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.queryByText(thrownDetail)).not.toBeInTheDocument();
+  });
+
+  test("the failing route replaces the page content, not the frame around it", async () => {
+    // The router renders its fallback at the failing route's own match, so
+    // RootLayout stays mounted around it. A fallback that carried its own
+    // header and footer would nest a second main landmark inside the first and
+    // show the visitor two of everything.
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    render(failingRoute());
+
+    await screen.findByRole("heading", {
+      name: /問題が発生しました/,
+      level: 1,
+    });
+
+    expect(screen.getAllByRole("banner")).toHaveLength(1);
+    expect(screen.getAllByRole("main")).toHaveLength(1);
+    expect(screen.getAllByRole("contentinfo")).toHaveLength(1);
   });
 });

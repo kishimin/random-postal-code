@@ -4,7 +4,7 @@ import {
   createRouter,
   type RouterHistory,
 } from "@tanstack/react-router";
-import { AppErrorView } from "../views/AppErrorView";
+import { AppErrorContent } from "../views/AppErrorContent";
 import { GeneratorView } from "../views/GeneratorView";
 import { NotFoundView } from "../views/NotFoundView";
 import { PrivacyView } from "../views/PrivacyView";
@@ -46,9 +46,13 @@ export const createAppRouter = (history?: RouterHistory) =>
     // The router catches a failing route component before any boundary above
     // it can, and its default screen says "Something went wrong!" in English,
     // unstyled, with a button that reveals the thrown message. Without this,
-    // the global error screen was unreachable from the failure that reaches it
-    // most often.
-    defaultErrorComponent: AppErrorView,
+    // the error screen was unreachable from the failure that reaches it most
+    // often.
+    //
+    // The content rather than the full screen: this renders at the failing
+    // route's match, inside RootLayout's Outlet, so a version with its own
+    // header and footer would show the frame twice.
+    defaultErrorComponent: AppErrorContent,
   });
 
 /*
