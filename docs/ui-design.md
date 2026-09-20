@@ -39,6 +39,28 @@ destination. Both destinations keep the header, the main landmark, and the
 footer attribution that the routed screens carry. Neither exposes internal error
 detail.
 
+### 3.2 Where the Global Error Destination Renders
+
+The global error destination has two forms. Which one answers is decided by
+where the failure happened, because that decides how much of the frame is left.
+
+| Failure                   | Renders                  | Why                                                       |
+| ------------------------- | ------------------------ | --------------------------------------------------------- |
+| A route's own component   | Content without a frame  | The layout is still mounted around it                     |
+| The shared layout itself  | A full screen with frame | The router replaced the layout; nothing else supplies one |
+| Anything above the router | A full screen with frame | There is no router left to render a frame                 |
+
+A single full-screen form cannot serve all three. Inside a layout that is still
+mounted it produces a second banner, a second contentinfo, and a `main`
+landmark nested in another. A single content-only form cannot either: the two
+lower rows leave nothing around it, so the header and footer attribution this
+section requires would be absent.
+
+The router decides this before any error boundary above it can, so the choice
+belongs to the route configuration rather than to a boundary. A boundary
+outside the router is still required — it answers the third row, which the
+router never sees.
+
 Android routes and navigation are V2 work tracked by Issues #12 through #15 and #20. They are not Web MVP requirements.
 
 ## 4. Primary State Model
