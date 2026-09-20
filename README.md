@@ -36,24 +36,27 @@ agreement.
 Every command runs from the repository root and delegates through the workspace, so a
 package added later is picked up without changing them.
 
-| Command                    | Purpose                                                      |
-| -------------------------- | ------------------------------------------------------------ |
-| `bun run format`           | Rewrite every file to the Prettier style                     |
-| `bun run format:check`     | Fail instead of rewriting, for CI                            |
-| `bun run typecheck`        | `tsc -b --noEmit` across every package                       |
-| `bun run lint`             | oxlint, then ESLint, then the acceptance tests               |
-| `bun run lint:markup`      | markuplint over JSX, for HTML semantics                      |
-| `bun run test`             | Every package's default test run                             |
-| `bun run test:small`       | One test size at a time; also `test:medium` and `test:large` |
-| `bun run test:coverage:pr` | Small and medium tests against the coverage threshold        |
-| `bun run test:eslint`      | The repository's own ESLint rules                            |
-| `bun run test:config`      | Contracts between packages and the platforms they deploy to  |
-| `bun run build`            | Build every package for deployment                           |
-| `bun run e2e:medium`       | Acceptance tests in five browser projects                    |
-| `bun run storybook`        | Storybook on port 6006                                       |
+| Command                    | Purpose                                                              |
+| -------------------------- | -------------------------------------------------------------------- |
+| `bun run format`           | Rewrite every file to the Prettier style                             |
+| `bun run format:check`     | Fail instead of rewriting, for CI                                    |
+| `bun run typecheck`        | `tsc -b --noEmit` across every package                               |
+| `bun run lint`             | oxlint, then ESLint, then the acceptance tests                       |
+| `bun run lint:markup`      | markuplint over JSX, for HTML semantics                              |
+| `bun run test`             | Every package's default test run                                     |
+| `bun run test:small`       | One size at a time; also `bun run test:medium`, `bun run test:large` |
+| `bun run test:coverage:pr` | Small and medium tests against the coverage threshold                |
+| `bun run test:eslint`      | The repository's own ESLint rules                                    |
+| `bun run test:config`      | Contracts between packages and the platforms they deploy to          |
+| `bun run build`            | Build every package for deployment                                   |
+| `bun run e2e:medium`       | Acceptance tests in five browser projects                            |
+| `bun run storybook`        | Storybook on port 6006                                               |
 
 `bun run test:config` and `bun run test:eslint` run at the root rather than in a
 package, because what they hold spans packages or has no package at all.
+
+This table is the set of commands worth knowing, not every script. `package.json` has
+the full list, and CI runs a few that are not here.
 
 ## Tests
 
@@ -62,9 +65,12 @@ decided by how far the dependencies reach, not by how much code is under test.
 [ui-design.md](./docs/ui-design.md) section 11 sets what belongs in each.
 
 Acceptance tests live in `acceptance/` at the repository root. They are fixed before
-the implementation is written and cannot be edited afterwards: a hook refuses to write
-to a committed file under that directory. An implementation that cannot pass them is
-the thing that has to change.
+the implementation is written, and a pull request that modifies one fails CI: the check
+compares `acceptance/` against the merge base, so committing the edit does not hide it.
+An implementation that cannot pass them is the thing that has to change.
+
+Some editors also refuse the write outright, but that depends on the machine. The CI
+check does not.
 
 ## Where decisions are written
 

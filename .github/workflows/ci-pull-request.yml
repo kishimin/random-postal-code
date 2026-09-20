@@ -26,12 +26,31 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          # The acceptance check below needs the merge base, which a shallow
+          # clone does not contain.
+          fetch-depth: 0
 
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
 
       - name: Test cross-package and deployment config contracts
         run: bun run test:config
+
+      # An acceptance test is fixed before the implementation is written, so a
+      # pull request may add one and must not edit one. A local `git status`
+      # cannot see this: edit an acceptance test, commit it, and the working
+      # tree is clean again. Comparing against the merge base can.
+      - name: Check that no acceptance test was modified
+        run: |
+          base=$(git merge-base origin/${{ github.base_ref }} HEAD)
+          modified=$(git diff --diff-filter=MDR --name-only "$base"..HEAD -- acceptance/)
+          if [ -n "$modified" ]; then
+            echo "::error::An acceptance test was modified or deleted:"
+            echo "$modified"
+            exit 1
+          fi
+          echo "No acceptance test was modified."
 
       - name: Check formatting
         run: bun run format:check
