@@ -34,11 +34,24 @@ export default {
             specifier.imported.type === "Identifier" &&
             specifier.imported.name === "test",
         );
-        if (
-          importsTest &&
-          (node.source.value === "@playwright/test" ||
-            !fixtureImportPattern.test(node.source.value))
-        ) {
+        if (!importsTest) {
+          return;
+        }
+
+        // acceptance/ can also hold a non-Playwright acceptance test (Issue
+        // #3's dataset build has no screen to drive, so it runs under
+        // Vitest). Its `test` import is unrelated to the Playwright fixture
+        // this rule protects, so only a source that is actually trying to be
+        // Playwright — either the fixture path or a direct @playwright/test
+        // import — is in scope.
+        const isFixtureImport = fixtureImportPattern.test(node.source.value);
+        const isDirectPlaywrightImport =
+          node.source.value === "@playwright/test";
+        if (!isDirectPlaywrightImport && !isFixtureImport) {
+          return;
+        }
+
+        if (isDirectPlaywrightImport) {
           context.report({ node, messageId: "directImport" });
         }
       },
