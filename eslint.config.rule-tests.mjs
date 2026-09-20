@@ -406,3 +406,72 @@ test("generates a postal code", async ({ page }) => {
     "local/require-e2e-page-fixture",
   ]);
 });
+
+// The frontend foundation places feature-specific UI and state under
+// src/features. A directory alone does not hold that: without the boundaries
+// policy, feature code could sit in src/app or reach into a sibling feature and
+// nothing would say so. These lint real files through the plugin, so the
+// element patterns and the policy are both exercised as the plugin reads them.
+const lintBoundaries = async (filePath, code) => {
+  const [result] = await frontendEslint.lintText(code, { filePath });
+
+  return result.messages.filter(
+    ({ ruleId }) => ruleId === "boundaries/dependencies",
+  );
+};
+
+test("the boundaries policy is enforced for feature, app, and shared code", async () => {
+  for (const filePath of [
+    "src/features/postal-generator/views/GeneratorForm.tsx",
+    "src/app/views/GeneratorView.tsx",
+    "src/api/api-client.ts",
+  ]) {
+    await assertRuleEnabled(
+      frontendEslint,
+      filePath,
+      "boundaries/dependencies",
+    );
+  }
+});
+
+test("shared code may not reach into the application layer", async () => {
+  const messages = await lintBoundaries(
+    "src/api/api-client.ts",
+    `import { RootLayout } from "../app/views/RootLayout";
+
+export const layout = RootLayout;
+`,
+  );
+
+  assert.equal(
+    messages.length,
+    1,
+    `expected one boundaries violation, got ${JSON.stringify(messages)}`,
+  );
+});
+
+test("shared code may depend on other shared code", async () => {
+  // The companion to the test above: a policy that reported everything would
+  // satisfy it just as well.
+  const messages = await lintBoundaries(
+    "src/api/api-client.ts",
+    `import { cn } from "../lib/utils";
+
+export const merge = cn;
+`,
+  );
+
+  assert.deepEqual(messages, []);
+});
+
+test("nothing outside a policy may depend on anything", async () => {
+  // default: "disallow" is what makes the policies exhaustive. Were it
+  // "allow", an unlisted direction — app imported from a feature, say — would
+  // pass silently.
+  const config = await frontendEslint.calculateConfigForFile(
+    "src/features/postal-generator/views/GeneratorForm.tsx",
+  );
+  const [, options] = config.rules["boundaries/dependencies"];
+
+  assert.equal(options.default, "disallow");
+});

@@ -32,6 +32,9 @@ jobs:
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
 
+      - name: Test cross-package and deployment config contracts
+        run: bun run test:config
+
       - name: Check formatting
         run: bun run format:check
 

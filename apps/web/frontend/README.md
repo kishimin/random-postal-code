@@ -8,9 +8,19 @@ defined in [api-design.md](../../../docs/api-design.md) and implements the inter
 
 ```sh
 bun install                 # from the repository root
-cp .env.example .env        # point VITE_API_BASE_URL at your local backend
-bun run dev
+cp .env.example .env        # already points at the local backend
 ```
+
+Then run the two servers in separate terminals, from the repository root:
+
+```sh
+bun run dev:api             # Hono on the Workers runtime, port 8787
+bun run dev                 # Vite, which calls the address in .env
+```
+
+`.env.example` needs no edit for local development: the port it names is the one
+`apps/web/backend/wrangler.jsonc` pins for `wrangler dev`. A root-level test holds the two in
+agreement, so a change to either shows up as a failure rather than as a request that never arrives.
 
 `VITE_API_BASE_URL` is read at build time. It must not contain secrets: everything in this package
 ships to the browser.

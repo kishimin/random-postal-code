@@ -1,0 +1,4 @@
+# Cloudflare Pages SPA fallback. Without it, a deep link such as /privacy asks
+# Pages for a file that does not exist and returns 404 before the router runs.
+# Status 200 serves index.html at the requested path, so the router resolves it.
+/*    /index.html   200

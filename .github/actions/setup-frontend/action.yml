@@ -50,10 +50,22 @@ runs:
           ${{ runner.os }}-playwright-${{ inputs.playwright-browsers }}-${{
           hashFiles('bun.lock') }}
 
+    # Always run, like `bun install` above and for the same reason. The cache
+    # holds ~/.cache/ms-playwright, which is browser binaries; the system
+    # libraries `--with-deps` installs live in /usr and are not in it. Skipping
+    # this on a cache hit restored a WebKit that could not start, and the job
+    # failed with "libevent-2.1.so.7: cannot open shared object file" — a
+    # message that names a runner image, not anything in this repository.
+    - name: Install Playwright system dependencies
+      if: inputs.playwright-browsers != ''
+      shell: bash
+      working-directory: apps/web/frontend
+      run: bunx playwright install-deps ${{ inputs.playwright-browsers }}
+
     - name: Install Playwright browsers
       if: >-
         inputs.playwright-browsers != '' &&
         steps.playwright_cache.outputs.cache-hit != 'true'
       shell: bash
       working-directory: apps/web/frontend
-      run: bunx playwright install --with-deps ${{ inputs.playwright-browsers }}
+      run: bunx playwright install ${{ inputs.playwright-browsers }}

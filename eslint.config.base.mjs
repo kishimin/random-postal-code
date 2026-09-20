@@ -72,7 +72,11 @@ export const createBaseConfig = ({ tsconfigRootDir, oxlintConfigPath }) =>
         "no-restricted-syntax": [
           "error",
           {
-            selector: "FunctionDeclaration, FunctionExpression",
+            // Class methods are excluded: a method's value is a
+            // FunctionExpression in the AST, but an arrow has no equivalent
+            // that keeps prototype semantics.
+            selector:
+              "FunctionDeclaration, FunctionExpression:not(MethodDefinition > FunctionExpression)",
             message: "Use an arrow function instead.",
           },
           {

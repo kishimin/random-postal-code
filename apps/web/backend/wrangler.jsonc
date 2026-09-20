@@ -6,6 +6,13 @@
   // runtime refuses to start and every test fails before it runs.
   "compatibility_date": "2026-08-22",
 
+  // Pinned rather than left to wrangler's default, because the frontend's
+  // .env.example hard-codes this port. A default that moved in a wrangler
+  // release would break local development with no diff to point at.
+  "dev": {
+    "port": 8787,
+  },
+
   // api-design.md section 7 requires structured request logs that distinguish
   // dataset unavailability from unexpected failures.
   "observability": {

@@ -19,6 +19,7 @@
     "lint:markup": "bun run --filter '*' lint:markup",
     "test": "bun run --filter '*' test",
     "test:eslint": "node --test eslint.config.rule-tests.mjs",
+    "test:config": "node --test config-contracts.test.mjs",
     "test:small": "bun run --filter '*' test:small",
     "test:medium": "bun run --filter '*' test:medium",
     "test:large": "bun run --filter '*' test:large",
