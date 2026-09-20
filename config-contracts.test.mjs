@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -128,21 +130,38 @@ test("Pages serves index.html for a path no file matches", () => {
   );
 });
 
-test("the build refuses to bake in an environment it cannot validate", () => {
-  // Asserted against the config source rather than by running a build without
-  // the variable: Vite loads .env for every mode, so a developer who has one
-  // could not express "no variable" to the build from the outside.
-  //
-  // What the build then does with the variable is covered by
-  // env.schema.small.test.ts; this holds that the check is wired in at all.
-  const viteConfig = readRepositoryFile(
-    "apps",
-    "web",
-    "frontend",
-    "vite.config.ts",
+/*
+ * Runs a real build with the variable overridden.
+ *
+ * A variable already present in the environment outranks any .env file, which
+ * is what makes an unusable value expressible from out here. The build fails
+ * while resolving its config, before bundling, so each of these costs about a
+ * second.
+ */
+const buildWith = (apiBaseUrl) =>
+  spawnSync(
+    "bunx vite build --outDir " +
+      JSON.stringify(path.join(tmpdir(), "zipnami-build-contract")),
+    {
+      cwd: frontendRoot,
+      shell: true,
+      encoding: "utf8",
+      env: { ...process.env, VITE_API_BASE_URL: apiBaseUrl },
+    },
   );
-  const plugins = /plugins:\s*\[([^\]]*)\]/.exec(viteConfig)?.[1];
 
-  assert.match(viteConfig, /apply:\s*"build"/);
-  assert.match(String(plugins), /validateBuildEnvironment\(\)/);
+test("the build refuses an API base URL the application cannot use", () => {
+  const { status, stdout, stderr } = buildWith("not-a-url");
+
+  assert.notEqual(status, 0, "the build should have failed");
+  assert.match(stdout + stderr, /VITE_API_BASE_URL/);
+});
+
+test("the build refuses plain http for a host a browser would block", () => {
+  // Pages serves over HTTPS, so mixed content stops every call in the browser
+  // after the deploy. localhost is exempt, which is why .env.example works.
+  const { status, stdout, stderr } = buildWith("http://api.example.com");
+
+  assert.notEqual(status, 0, "the build should have failed");
+  assert.match(stdout + stderr, /https/);
 });

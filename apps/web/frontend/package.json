@@ -20,7 +20,7 @@
     "build-storybook": "storybook build",
     "e2e": "playwright test --pass-with-no-tests",
     "e2e:small": "playwright test --pass-with-no-tests small.test",
-    "e2e:medium": "playwright test --pass-with-no-tests medium.test",
+    "e2e:medium": "playwright test medium.test",
     "e2e:large": "playwright test --pass-with-no-tests large.test",
     "mutation-test": "stryker run"
   },

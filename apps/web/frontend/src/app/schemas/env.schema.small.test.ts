@@ -8,6 +8,14 @@ describe("parseAppEnv", () => {
     expect(env.apiBaseUrl).toBe("https://api.example.com");
   });
 
+  test("accepts the http localhost URL .env.example documents", () => {
+    // Local development points at wrangler dev over plain http. A rule that
+    // allowed only https would reject the file the README tells you to copy.
+    const env = parseAppEnv({ VITE_API_BASE_URL: "http://localhost:8787" });
+
+    expect(env.apiBaseUrl).toBe("http://localhost:8787");
+  });
+
   test("rejects a missing API base URL", () => {
     // A build that shipped without the variable would call undefined at
     // runtime. Failing here names the missing variable instead.

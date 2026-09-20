@@ -45,7 +45,6 @@
     "eslint-plugin-oxlint": "^1.78.0",
     "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^17.11.0",
-    "micromatch": "^4.0.8",
     "prettier": "^3.9.7",
     "typescript-eslint": "^8.70.0"
   }
