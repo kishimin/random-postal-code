@@ -39,6 +39,8 @@ destination. Both destinations keep the header, the main landmark, and the
 footer attribution that the routed screens carry. Neither exposes internal error
 detail.
 
+Android routes and navigation are V2 work tracked by Issues #12 through #15 and #20. They are not Web MVP requirements.
+
 ### 3.2 Where the Global Error Destination Renders
 
 The global error destination has two forms. Which one answers is decided by
@@ -60,8 +62,6 @@ The router decides this before any error boundary above it can, so the choice
 belongs to the route configuration rather than to a boundary. A boundary
 outside the router is still required — it answers the third row, which the
 router never sees.
-
-Android routes and navigation are V2 work tracked by Issues #12 through #15 and #20. They are not Web MVP requirements.
 
 ## 4. Primary State Model
 
