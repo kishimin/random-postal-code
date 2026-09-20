@@ -4,11 +4,31 @@ import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
+import type { Plugin } from "vite";
 import {
   configDefaults,
   coverageConfigDefaults,
   defineConfig,
 } from "vitest/config";
+// Extension included because this file is type checked under module: nodenext,
+// where an extensionless relative specifier does not resolve.
+import { parseAppEnv } from "./src/app/schemas/env.schema.ts";
+
+/*
+ * Fails the build when the environment it bakes in is not usable.
+ *
+ * main.tsx validates the same thing, but it runs in the browser, after the
+ * bundle has already shipped. A build with no .env therefore succeeded and
+ * produced a page that threw on load and rendered nothing — silent locally,
+ * invisible in CI, where the workflow supplies the variable.
+ */
+const validateBuildEnvironment = (): Plugin => ({
+  name: "zipnami:validate-build-environment",
+  apply: "build",
+  configResolved: ({ env }) => {
+    parseAppEnv(env);
+  },
+});
 
 const dirname =
   typeof __dirname !== "undefined"
@@ -16,7 +36,7 @@ const dirname =
     : path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), validateBuildEnvironment()],
   resolve: {
     alias: {
       "@": path.resolve(dirname, "./src"),
