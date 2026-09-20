@@ -23,7 +23,21 @@ The Web UI owns presentation, client state, browser-local history, map actions, 
 | `/`        | Generator | Generate, inspect, copy, map, and revisit results                             |
 | `/privacy` | Privacy   | Explain first-party storage, third-party processing, attribution, and contact |
 
+Two further destinations have no route of their own.
+
+| Destination  | Reached when                                            | Purpose                                                               |
+| ------------ | ------------------------------------------------------- | --------------------------------------------------------------------- |
+| Not found    | A requested path matches no route above                 | State that the address is wrong and offer a way back to the generator |
+| Global error | A render fails in a way that would leave no usable page | State that the screen could not be shown and offer a way back         |
+
 Direct navigation and refresh must resolve both routes through the Pages SPA fallback.
+
+The fallback answers every path with `index.html`, so Pages cannot distinguish a
+mistyped address from a real one and never returns a 404 itself. The router is
+what draws that line: a path it does not claim renders the not-found
+destination. Both destinations keep the header, the main landmark, and the
+footer attribution that the routed screens carry. Neither exposes internal error
+detail.
 
 Android routes and navigation are V2 work tracked by Issues #12 through #15 and #20. They are not Web MVP requirements.
 

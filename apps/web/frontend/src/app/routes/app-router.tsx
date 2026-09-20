@@ -5,10 +5,16 @@ import {
   type RouterHistory,
 } from "@tanstack/react-router";
 import { GeneratorView } from "../views/GeneratorView";
+import { NotFoundView } from "../views/NotFoundView";
 import { PrivacyView } from "../views/PrivacyView";
 import { RootLayout } from "../views/RootLayout";
 
-const rootRoute = createRootRoute({ component: RootLayout });
+// notFoundComponent renders inside the root route, so an unknown path keeps the
+// header, the footer attribution, and the main landmark the other screens have.
+const rootRoute = createRootRoute({
+  component: RootLayout,
+  notFoundComponent: NotFoundView,
+});
 
 const generatorRoute = createRoute({
   getParentRoute: () => rootRoute,

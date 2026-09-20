@@ -34,4 +34,18 @@ describe("application routes", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
   });
+
+  test("a path no route claims renders the not-found screen, not the generator", async () => {
+    renderAt("/this-path-does-not-exist");
+
+    expect(
+      await screen.findByRole("heading", {
+        name: /ページが見つかりません/,
+        level: 1,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /Zipnami/, level: 1 }),
+    ).not.toBeInTheDocument();
+  });
 });
