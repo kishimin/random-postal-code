@@ -25,6 +25,10 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       "@tanstack/react-query",
+      // Without pre-bundling, the router loads as its own module graph in
+      // browser-mode tests and resolves a second, empty React, which surfaces
+      // as "Cannot read properties of null (reading 'useContext')".
+      "@tanstack/react-router",
       "aria-query",
       "lucide-react",
       "lz-string",

@@ -29,7 +29,6 @@ const envSchema = z.object({
  * Throws instead of falling back to a default. A build that shipped without the
  * variable would otherwise request `undefined/api/random` at runtime, and the
  * first sign of it would be a failed request in a user's browser.
- * @param env - The raw environment record to validate.
  */
 export const parseAppEnv = (env: Record<string, unknown>): AppEnv => {
   const result = envSchema.safeParse(env);

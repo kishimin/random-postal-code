@@ -1,19 +1,20 @@
+import { RouterProvider } from "@tanstack/react-router";
+import { useState } from "react";
 import { AppProviders } from "../providers/AppProviders";
+import { createAppRouter } from "../routes/app-router";
 
 /**
- * Application shell.
+ * Application root.
  *
- * Routing, the generator experience, history, maps, and advertising are added by
- * the acceptance tests of their owning Issues (#5 through #9). This shell exists
- * so the toolchain — build, type check, lint, and test — is verifiable before
- * any product behavior is written.
+ * The router is created once in state rather than on every render, because
+ * rebuilding it would discard the navigation history it holds.
  */
 export const App = () => {
+  const [router] = useState(() => createAppRouter());
+
   return (
     <AppProviders>
-      <main>
-        <h1>{"Zipnami"}</h1>
-      </main>
+      <RouterProvider router={router} />
     </AppProviders>
   );
 };
