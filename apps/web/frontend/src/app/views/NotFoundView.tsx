@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { siteText } from "../site-text";
+import { tapTargetClass } from "../styles";
 
 /**
  * Destination for a path no route claims.
@@ -15,7 +16,9 @@ export const NotFoundView = () => {
       <p>
         {"お探しのページは移動したか、アドレスが誤っている可能性があります。"}
       </p>
-      <Link to={"/"}>{siteText.backToGenerator}</Link>
+      <Link className={tapTargetClass} to={"/"}>
+        {siteText.backToGenerator}
+      </Link>
     </>
   );
 };

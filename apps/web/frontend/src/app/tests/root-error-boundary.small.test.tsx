@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import { AppProviders } from "../providers/AppProviders";
+import { siteText } from "../site-text";
 
 const thrownDetail = "connection string leaked into the message";
 
@@ -37,6 +38,36 @@ describe("root error boundary", () => {
     expect(
       screen.getByRole("link", { name: /トップへ戻る/ }),
     ).toBeInTheDocument();
+  });
+
+  test("the screen keeps the header and the footer attribution", () => {
+    // AppErrorView repeats the frame by hand instead of reusing RootLayout, so
+    // nothing but this keeps the two from drifting apart.
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    render(
+      <AppProviders>
+        <Throwing />
+      </AppProviders>,
+    );
+
+    expect(screen.getByRole("banner")).toBeInTheDocument();
+    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
+    expect(screen.getByText(siteText.attribution)).toBeInTheDocument();
+  });
+
+  test("focus moves to the error summary the crash would otherwise strand", () => {
+    // The live region mounts already filled in, so a screen reader may never
+    // announce it. The crash also replaced the page under the visitor's focus.
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    render(
+      <AppProviders>
+        <Throwing />
+      </AppProviders>,
+    );
+
+    expect(screen.getByRole("alert")).toHaveFocus();
   });
 
   test("the screen does not expose the thrown detail", () => {
