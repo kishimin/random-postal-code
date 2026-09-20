@@ -3,6 +3,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { ESLint, RuleTester } from "eslint";
+import micromatch from "micromatch";
 import tseslint from "typescript-eslint";
 import limitPropsKeys from "./apps/web/frontend/eslint-rules/limit-props-keys.mjs";
 import noRawPageOperationsInE2e from "./apps/web/frontend/eslint-rules/no-raw-page-operations-in-e2e.mjs";
@@ -405,4 +406,60 @@ test("generates a postal code", async ({ page }) => {
     "local/require-e2e-fixture-import",
     "local/require-e2e-page-fixture",
   ]);
+});
+
+// The frontend foundation places feature-specific UI and state under
+// src/features. A directory alone does not hold that: without the boundaries
+// policy, feature code could sit in src/app or reach into a sibling feature and
+// nothing would say so. These assert the policy is live for those paths.
+const assertElementType = async (filePath, expectedType) => {
+  const config = await frontendEslint.calculateConfigForFile(filePath);
+  const elements = config.settings["boundaries/elements"];
+  // micromatch is what eslint-plugin-boundaries matches with. Re-deriving the
+  // glob semantics here would test this file's regex, not the policy.
+  // `(*)` is the plugin's capture syntax, which micromatch does not know.
+  const matched = elements.find(({ pattern }) =>
+    micromatch.isMatch(filePath, pattern.replaceAll("(*)", "*")),
+  );
+
+  assert.equal(
+    matched?.type,
+    expectedType,
+    `${filePath} must be classified as ${expectedType}`,
+  );
+};
+
+test("the boundaries policy is enforced for feature, app, and shared code", async () => {
+  for (const filePath of [
+    "src/features/postal-generator/views/GeneratorForm.tsx",
+    "src/app/views/GeneratorView.tsx",
+    "src/api/api-client.ts",
+  ]) {
+    await assertRuleEnabled(
+      frontendEslint,
+      filePath,
+      "boundaries/dependencies",
+    );
+  }
+});
+
+test("feature code is classified by the directory it must live in", async () => {
+  await assertElementType(
+    "src/features/postal-generator/views/GeneratorForm.tsx",
+    "feature",
+  );
+  await assertElementType("src/app/views/GeneratorView.tsx", "app");
+  await assertElementType("src/api/api-client.ts", "shared");
+});
+
+test("nothing outside a policy may depend on anything", async () => {
+  // default: "disallow" is what makes the policies exhaustive. Were it
+  // "allow", an unlisted direction — app imported from a feature, say — would
+  // pass silently.
+  const config = await frontendEslint.calculateConfigForFile(
+    "src/features/postal-generator/views/GeneratorForm.tsx",
+  );
+  const [, options] = config.rules["boundaries/dependencies"];
+
+  assert.equal(options.default, "disallow");
 });

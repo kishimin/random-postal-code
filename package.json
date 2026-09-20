@@ -19,6 +19,7 @@
     "lint:markup": "bun run --filter '*' lint:markup",
     "test": "bun run --filter '*' test",
     "test:eslint": "node --test eslint.config.rule-tests.mjs",
+    "test:config": "node --test config-contracts.test.mjs",
     "test:small": "bun run --filter '*' test:small",
     "test:medium": "bun run --filter '*' test:medium",
     "test:large": "bun run --filter '*' test:large",
@@ -44,6 +45,7 @@
     "eslint-plugin-oxlint": "^1.78.0",
     "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^17.11.0",
+    "micromatch": "^4.0.8",
     "prettier": "^3.9.7",
     "typescript-eslint": "^8.70.0"
   }
