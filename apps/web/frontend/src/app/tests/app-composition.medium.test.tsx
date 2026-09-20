@@ -9,6 +9,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import { AppProviders } from "../providers/AppProviders";
 import { createAppRouter } from "../routes/app-router";
+import { siteText } from "../site-text";
 import { App } from "../views/App";
 import { RootLayout } from "../views/RootLayout";
 
@@ -64,6 +65,37 @@ const failingRoute = () => {
  * went unexercised, and the screen it reached was not the one this application
  * ships.
  */
+/*
+ * The frame itself failing, with the production fallback for that match.
+ *
+ * The router handles a root failure at the root match, which means it replaces
+ * RootLayout rather than rendering inside it. Whatever answers there has to
+ * carry the header and footer itself, because nothing else is left to.
+ *
+ * RootErrorBoundary does not cover this: the router catches the error first.
+ */
+const failingFrame = () => {
+  const production = createAppRouter();
+  const rootRoute = createRootRoute({
+    component: () => {
+      throw new Error(thrownDetail);
+    },
+    errorComponent: production.routeTree.options.errorComponent,
+  });
+
+  return (
+    <AppProviders>
+      <RouterProvider
+        router={createRouter({
+          routeTree: rootRoute,
+          history: createMemoryHistory({ initialEntries: ["/"] }),
+          defaultErrorComponent: production.options.defaultErrorComponent,
+        })}
+      />
+    </AppProviders>
+  );
+};
+
 describe("application composition", () => {
   test("the application mounts the production router", async () => {
     // App builds its router from browser history, which is what production
@@ -109,5 +141,24 @@ describe("application composition", () => {
     expect(screen.getAllByRole("banner")).toHaveLength(1);
     expect(screen.getAllByRole("main")).toHaveLength(1);
     expect(screen.getAllByRole("contentinfo")).toHaveLength(1);
+  });
+
+  test("a failure in the frame itself still leaves a frame", async () => {
+    // Issue #26 asks both error screens to keep the header and the footer
+    // attribution. A root failure takes RootLayout down with it, so the
+    // fallback for that match has to bring its own.
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    render(failingFrame());
+
+    await screen.findByRole("heading", {
+      name: /問題が発生しました/,
+      level: 1,
+    });
+
+    expect(screen.getByRole("banner")).toBeInTheDocument();
+    expect(screen.getByRole("main")).toBeInTheDocument();
+    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
+    expect(screen.getByText(siteText.attribution)).toBeInTheDocument();
   });
 });

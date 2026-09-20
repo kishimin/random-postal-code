@@ -5,6 +5,7 @@ import {
   type RouterHistory,
 } from "@tanstack/react-router";
 import { AppErrorContent } from "../views/AppErrorContent";
+import { AppErrorView } from "../views/AppErrorView";
 import { GeneratorView } from "../views/GeneratorView";
 import { NotFoundView } from "../views/NotFoundView";
 import { PrivacyView } from "../views/PrivacyView";
@@ -12,9 +13,14 @@ import { RootLayout } from "../views/RootLayout";
 
 // notFoundComponent renders inside the root route, so an unknown path keeps the
 // header, the footer attribution, and the main landmark the other screens have.
+//
+// errorComponent is the full screen rather than the content: a failure here is
+// RootLayout failing, and the router answers it by replacing the layout. There
+// is no frame left to render inside, so this one brings its own.
 const rootRoute = createRootRoute({
   component: RootLayout,
   notFoundComponent: NotFoundView,
+  errorComponent: AppErrorView,
 });
 
 const generatorRoute = createRoute({
