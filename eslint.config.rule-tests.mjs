@@ -189,6 +189,13 @@ run("require-e2e-fixture-import", requireE2eFixtureImport, {
       filename: "e2e/tests/generate-postal-code.medium.test.ts",
       code: 'import { expect } from "@playwright/test";',
     },
+    {
+      // A Vitest acceptance test (Issue #3's dataset build has no screen to
+      // drive) imports `test` from vitest, not from a Playwright fixture.
+      // That is not the violation this rule watches for.
+      filename: "acceptance/postal-data-normalization.medium.test.ts",
+      code: 'import { test } from "vitest";',
+    },
   ],
   invalid: [
     {
@@ -254,6 +261,13 @@ run("require-e2e-page-fixture", requireE2ePageFixture, {
       // A planned but unimplemented test has no Page Object yet.
       filename: "acceptance/generate-postal-code.large.test.ts",
       code: 'test.skip("generates a postal code", async ({ page }) => {});',
+    },
+    {
+      // A Vitest acceptance test (Issue #3) never receives a Playwright Page
+      // Object fixture; it is not a Playwright test at all, so the rule must
+      // not ask it for one.
+      filename: "acceptance/postal-data-normalization.medium.test.ts",
+      code: 'import { test } from "vitest";\n\ntest("documents the source", () => {});',
     },
   ],
   invalid: [
