@@ -14,19 +14,39 @@ import {
 // where an extensionless relative specifier does not resolve.
 import { parseAppEnv } from "./src/app/schemas/env.schema.ts";
 
+// A production bundle served over HTTPS cannot call these, but a build aimed at
+// a developer's own machine legitimately does.
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
 /*
  * Fails the build when the environment it bakes in is not usable.
  *
- * main.tsx validates the same thing, but it runs in the browser, after the
- * bundle has already shipped. A build with no .env therefore succeeded and
- * produced a page that threw on load and rendered nothing — silent locally,
- * invisible in CI, where the workflow supplies the variable.
+ * Validating in the browser instead — which is where this check used to live —
+ * means the bundle has already shipped. A build with no .env therefore
+ * succeeded and produced a page that threw on load and rendered nothing:
+ * silent locally, invisible in CI, where the workflow supplies the variable.
+ *
+ * Not restricted to `apply: "build"`. A dev server that starts without the
+ * variable serves the same blank page, and the message that names the variable
+ * belongs in the terminal that started it.
  */
 const validateBuildEnvironment = (): Plugin => ({
   name: "zipnami:validate-build-environment",
-  apply: "build",
-  configResolved: ({ env }) => {
-    parseAppEnv(env);
+  configResolved: ({ env, isProduction }) => {
+    const { apiBaseUrl } = parseAppEnv(env);
+
+    if (!isProduction) return;
+
+    const { protocol, hostname } = new URL(apiBaseUrl);
+
+    // Pages serves over HTTPS, so a plain-http API is not merely insecure: the
+    // browser blocks every call as mixed content, after the deploy, with
+    // nothing in the build to point at.
+    if (protocol !== "https:" && !LOCAL_HOSTNAMES.has(hostname)) {
+      throw new Error(
+        `VITE_API_BASE_URL must use https in a production build; got ${apiBaseUrl}.`,
+      );
+    }
   },
 });
 
@@ -85,17 +105,14 @@ export default defineConfig({
         "src/tests/**",
         // Test support rather than product behavior, like src/tests above.
         "src/api/mocks/**",
-        // Scaffolding with no behavior to prove. A test covering these would
-        // restate the implementation — that createApp returns a Hono, that a
-        // provider renders its children — and raise the number without adding
-        // a reason to trust the suite. ADR-0048 asks for 80% of meaningful
-        // code, so these are left out until they have some.
+        // Scaffolding with no behavior to prove. A test covering this would
+        // restate the implementation — that cn() calls twMerge — and raise the
+        // number without adding a reason to trust the suite. ADR-0048 asks for
+        // 80% of meaningful code, so it is left out until it has some.
         //
         // Delete the matching line when the file gains behavior. Each path is
         // listed individually on purpose: a directory glob would go on hiding
         // the real code that lands next to it.
-        "src/app/views/App.tsx",
-        "src/app/providers/AppProviders.tsx",
         "src/lib/utils.ts",
       ],
     },
