@@ -32,6 +32,9 @@ jobs:
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
 
+      - name: Test cross-package and deployment config contracts
+        run: bun run test:config
+
       - name: Check formatting
         run: bun run format:check
 
@@ -46,9 +49,6 @@ jobs:
 
       - name: Test custom ESLint rules
         run: bun run test:eslint
-
-      - name: Test cross-package and deployment config contracts
-        run: bun run test:config
 
       - name: Build production bundle
         run: bun run build
