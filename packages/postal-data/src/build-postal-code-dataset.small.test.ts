@@ -90,4 +90,18 @@ describe("buildPostalCodeDataset", () => {
       },
     ]);
   });
+
+  test("keeps the postal code as a string, so a leading zero is not lost", async () => {
+    const source = kenAllLine({
+      postalCode: "0600000",
+      prefecture: "Hokkaido",
+      city: "Sapporo",
+      town: "Chuo Ward",
+    });
+
+    const dataset = await buildPostalCodeDataset(source);
+
+    expect(dataset[0]?.postalCode).toBe("0600000");
+    expect(typeof dataset[0]?.postalCode).toBe("string");
+  });
 });
