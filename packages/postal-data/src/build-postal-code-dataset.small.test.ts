@@ -104,4 +104,34 @@ describe("buildPostalCodeDataset", () => {
     expect(dataset[0]?.postalCode).toBe("0600000");
     expect(typeof dataset[0]?.postalCode).toBe("string");
   });
+
+  test.each([
+    [
+      "prefecture",
+      { prefecture: "Tokyo", city: "Same City", town: "Same Town" },
+      { prefecture: "Osaka", city: "Same City", town: "Same Town" },
+    ],
+    [
+      "city",
+      { prefecture: "Same Pref", city: "Chiyoda City", town: "Same Town" },
+      { prefecture: "Same Pref", city: "Osaka City", town: "Same Town" },
+    ],
+    [
+      "town",
+      { prefecture: "Same Pref", city: "Same City", town: "Chiyoda" },
+      { prefecture: "Same Pref", city: "Same City", town: "Marunouchi" },
+    ],
+  ] as const)(
+    "retains both addresses under one postal code when they differ only by %s",
+    async (_field, first, second) => {
+      const source = [
+        kenAllLine({ postalCode: "1000001", ...first }),
+        kenAllLine({ postalCode: "1000001", ...second }),
+      ].join("\n");
+
+      const dataset = await buildPostalCodeDataset(source);
+
+      expect(dataset[0]?.addresses).toEqual([first, second]);
+    },
+  );
 });
