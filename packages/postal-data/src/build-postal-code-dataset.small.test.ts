@@ -156,4 +156,113 @@ describe("buildPostalCodeDataset", () => {
 
     expect(dataset[0]?.addresses).toEqual([record]);
   });
+
+  test("orders addresses within a postal code by first appearance in the source rather than sorting them", async () => {
+    // "Zenith" sorts after "Anchor" by code point, so a sort step would
+    // reorder them; only preserving source order keeps this order.
+    const source = [
+      kenAllLine({
+        postalCode: "1000001",
+        prefecture: "Tokyo",
+        city: "Chiyoda City",
+        town: "Zenith",
+      }),
+      kenAllLine({
+        postalCode: "1000001",
+        prefecture: "Tokyo",
+        city: "Chiyoda City",
+        town: "Anchor",
+      }),
+    ].join("\n");
+
+    const dataset = await buildPostalCodeDataset(source);
+
+    expect(dataset[0]?.addresses.map((address) => address.town)).toEqual([
+      "Zenith",
+      "Anchor",
+    ]);
+  });
+
+  test("keeps postal codes separate even when their records are not adjacent in the source", async () => {
+    const source = [
+      kenAllLine({
+        postalCode: "1000001",
+        prefecture: "Tokyo",
+        city: "Chiyoda City",
+        town: "Chiyoda",
+      }),
+      kenAllLine({
+        postalCode: "5300001",
+        prefecture: "Osaka",
+        city: "Osaka City",
+        town: "Umeda",
+      }),
+      kenAllLine({
+        postalCode: "1000001",
+        prefecture: "Tokyo",
+        city: "Chiyoda City",
+        town: "Marunouchi",
+      }),
+    ].join("\n");
+
+    const dataset = await buildPostalCodeDataset(source);
+
+    expect(dataset.map((entry) => entry.postalCode).sort()).toEqual([
+      "1000001",
+      "5300001",
+    ]);
+    expect(
+      dataset.find((entry) => entry.postalCode === "1000001")?.addresses,
+    ).toHaveLength(2);
+  });
+
+  test("returns exactly one entry per unique postal code across the whole dataset", async () => {
+    const source = [
+      kenAllLine({
+        postalCode: "1000001",
+        prefecture: "Tokyo",
+        city: "Chiyoda City",
+        town: "Chiyoda",
+      }),
+      kenAllLine({
+        postalCode: "1000001",
+        prefecture: "Tokyo",
+        city: "Chiyoda City",
+        town: "Marunouchi",
+      }),
+      kenAllLine({
+        postalCode: "5300001",
+        prefecture: "Osaka",
+        city: "Osaka City",
+        town: "Umeda",
+      }),
+    ].join("\n");
+
+    const dataset = await buildPostalCodeDataset(source);
+    const postalCodes = dataset.map((entry) => entry.postalCode);
+
+    expect(postalCodes).toHaveLength(new Set(postalCodes).size);
+  });
+
+  test("returns byte-identical JSON when run twice against the same input", async () => {
+    const source = [
+      kenAllLine({
+        postalCode: "1000001",
+        prefecture: "Tokyo",
+        city: "Chiyoda City",
+        town: "Chiyoda",
+      }),
+      kenAllLine({
+        postalCode: "5300001",
+        prefecture: "Osaka",
+        city: "Osaka City",
+        town: "Umeda",
+      }),
+    ].join("\n");
+
+    const first = await buildPostalCodeDataset(source);
+    const second = await buildPostalCodeDataset(source);
+
+    expect(JSON.stringify(second)).toBe(JSON.stringify(first));
+  });
 });
