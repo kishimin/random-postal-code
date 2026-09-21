@@ -134,4 +134,26 @@ describe("buildPostalCodeDataset", () => {
       expect(dataset[0]?.addresses).toEqual([first, second]);
     },
   );
+
+  test("collapses two records under one postal code into a single address when their prefecture, city, and town are all identical", async () => {
+    const record = {
+      prefecture: "Tokyo",
+      city: "Chiyoda City",
+      town: "Chiyoda",
+    };
+    const source = [
+      kenAllLine({ postalCode: "1000001", ...record }),
+      // Reading columns differ, but Address is never built from them, so
+      // this must still count as the same address as the record above.
+      kenAllLine({
+        postalCode: "1000001",
+        ...record,
+        prefectureKana: "A_DIFFERENT_READING",
+      }),
+    ].join("\n");
+
+    const dataset = await buildPostalCodeDataset(source);
+
+    expect(dataset[0]?.addresses).toEqual([record]);
+  });
 });
