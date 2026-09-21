@@ -13,7 +13,9 @@ import { buildPostalCodeDataset } from "../src/index.ts";
 const [inputPath, outputPath] = process.argv.slice(2);
 
 if (inputPath === undefined) {
-  console.error("Usage: bun run scripts/build-dataset.ts <input.csv> [output.json]");
+  console.error(
+    "Usage: bun run scripts/build-dataset.ts <input.csv> [output.json]",
+  );
   process.exit(1);
 }
 
