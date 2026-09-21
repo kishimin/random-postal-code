@@ -51,6 +51,13 @@ const parseRecord = (line: string): ParsedRecord => {
   };
 };
 
+// Two records are the same address only when prefecture, city, and town all
+// match; JSON.stringify of the tuple gives each distinct combination a
+// distinct key without picking a delimiter that real address text could
+// coincidentally contain.
+const addressDedupeKey = (address: Address): string =>
+  JSON.stringify([address.prefecture, address.city, address.town]);
+
 /**
  * Builds the Zipnami postal-code dataset from Japan Post's KEN_ALL.CSV-shaped
  * text, already decoded to UTF-8. Groups records by their seven-digit postal
@@ -65,7 +72,11 @@ const parseRecord = (line: string): ParsedRecord => {
 export const buildPostalCodeDataset = (
   source: string,
 ): Promise<PostalCode[]> => {
-  const addressesByPostalCode = new Map<string, Address[]>();
+  // A Map of Maps keyed first by postal code, then by the address's
+  // dedupe key. The inner Map both deduplicates (re-setting an existing
+  // key keeps its original position) and preserves first-appearance order,
+  // so no separate sort or seen-set is needed.
+  const addressGroupsByPostalCode = new Map<string, Map<string, Address>>();
 
   for (const line of source.split(/\r\n|\n/)) {
     if (line.trim() === "") {
@@ -73,24 +84,22 @@ export const buildPostalCodeDataset = (
     }
 
     const { postalCode, address } = parseRecord(line);
-    const addresses = addressesByPostalCode.get(postalCode);
+    const addresses =
+      addressGroupsByPostalCode.get(postalCode) ?? new Map<string, Address>();
 
-    if (addresses === undefined) {
-      addressesByPostalCode.set(postalCode, [address]);
-    } else {
-      addresses.push(address);
-    }
+    addresses.set(addressDedupeKey(address), address);
+    addressGroupsByPostalCode.set(postalCode, addresses);
   }
 
   const dataset = Array.from(
-    addressesByPostalCode,
+    addressGroupsByPostalCode,
     ([postalCode, addresses]) => ({
       postalCode,
-      // Every group is created from one pushed address, so it is never
-      // empty; PostalCode's tuple type requires that non-emptiness
-      // statically, which a plain Address[] built by this loop cannot
-      // express on its own.
-      addresses: addresses as [Address, ...Address[]],
+      // Every group is created from one set address, so it is never empty;
+      // PostalCode's tuple type requires that non-emptiness statically,
+      // which a plain Address[] built by this loop cannot express on its
+      // own.
+      addresses: [...addresses.values()] as [Address, ...Address[]],
     }),
   );
 
