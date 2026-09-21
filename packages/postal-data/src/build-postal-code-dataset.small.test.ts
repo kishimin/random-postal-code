@@ -61,4 +61,33 @@ describe("buildPostalCodeDataset", () => {
       },
     ]);
   });
+
+  test("groups two records that share a seven-digit postal code into one entry holding both addresses", async () => {
+    const source = [
+      kenAllLine({
+        postalCode: "1000001",
+        prefecture: "Tokyo",
+        city: "Chiyoda City",
+        town: "Chiyoda",
+      }),
+      kenAllLine({
+        postalCode: "1000001",
+        prefecture: "Tokyo",
+        city: "Chiyoda City",
+        town: "Marunouchi",
+      }),
+    ].join("\n");
+
+    const dataset = await buildPostalCodeDataset(source);
+
+    expect(dataset).toEqual([
+      {
+        postalCode: "1000001",
+        addresses: [
+          { prefecture: "Tokyo", city: "Chiyoda City", town: "Chiyoda" },
+          { prefecture: "Tokyo", city: "Chiyoda City", town: "Marunouchi" },
+        ],
+      },
+    ]);
+  });
 });
