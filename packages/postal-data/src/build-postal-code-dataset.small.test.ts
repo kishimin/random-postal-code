@@ -285,7 +285,7 @@ describe("buildPostalCodeDataset", () => {
     expect(JSON.stringify(second)).toBe(JSON.stringify(first));
   });
 
-  test("rejects instead of throwing synchronously when an internal step fails", async () => {
+  test("rejects instead of throwing synchronously when the source is not a string", async () => {
     // A caller that bypasses the type system (plain JS, or an `any`-typed
     // value) can still pass a non-string source. buildPostalCodeDataset's
     // contract is a Promise, so an idiomatic `buildPostalCodeDataset(source)
@@ -305,7 +305,70 @@ describe("buildPostalCodeDataset", () => {
     const { error, promise } = capture();
 
     expect(error).toBeUndefined();
-    expect(promise).toBeDefined();
     await expect(promise).rejects.toBeInstanceOf(Error);
+  });
+
+  test("returns an empty dataset for an empty source string", async () => {
+    const dataset = await buildPostalCodeDataset("");
+
+    expect(dataset).toEqual([]);
+  });
+
+  test("treats a comma inside a quoted field as part of the field, not a field separator", async () => {
+    // This is the entire reason splitCsvLine tracks inQuotes: every other
+    // test's input has no embedded comma. A parser that closed a field on
+    // every comma regardless of quoting would split this reading column in
+    // two, shifting every column after it by one - which would make the
+    // address below read from the wrong columns entirely (prefecture would
+    // come out as "READING_COLUMN_NOT_USED", not "Tokyo").
+    const source = kenAllLine({
+      postalCode: "1000001",
+      prefecture: "Tokyo",
+      city: "Chiyoda City",
+      town: "Chiyoda",
+      prefectureKana: "A,B",
+    });
+
+    const dataset = await buildPostalCodeDataset(source);
+
+    expect(dataset).toEqual([
+      {
+        postalCode: "1000001",
+        addresses: [
+          { prefecture: "Tokyo", city: "Chiyoda City", town: "Chiyoda" },
+        ],
+      },
+    ]);
+  });
+
+  test("parses records the same way whether lines are separated by CRLF or LF", async () => {
+    // Real KEN_ALL.CSV ships CRLF; every other test in this file uses LF
+    // only.
+    const source = [
+      kenAllLine({
+        postalCode: "1000001",
+        prefecture: "Tokyo",
+        city: "Chiyoda City",
+        town: "Chiyoda",
+      }),
+      kenAllLine({
+        postalCode: "1000001",
+        prefecture: "Tokyo",
+        city: "Chiyoda City",
+        town: "Marunouchi",
+      }),
+    ].join("\r\n");
+
+    const dataset = await buildPostalCodeDataset(source);
+
+    expect(dataset).toEqual([
+      {
+        postalCode: "1000001",
+        addresses: [
+          { prefecture: "Tokyo", city: "Chiyoda City", town: "Chiyoda" },
+          { prefecture: "Tokyo", city: "Chiyoda City", town: "Marunouchi" },
+        ],
+      },
+    ]);
   });
 });
