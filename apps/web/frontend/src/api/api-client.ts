@@ -86,6 +86,15 @@ export const fetchRandomPostalCode = async (
 ): Promise<PostalCode> => {
   const response = await fetch(client.resolveUrl(RANDOM_POSTAL_CODE_PATH), {
     headers: { Accept: "application/json" },
+    // api-design.md section 4.1: "an intermediary must not turn repeated
+    // generation into a cached result." The server states this with its own
+    // Cache-Control: no-store response header, but that only governs caches
+    // that read it -- a browser can still serve a stale response for this
+    // identical GET URL from its own heuristic cache without ever revisiting
+    // the header. Requesting `no-store` here means this client never reuses
+    // a prior response regardless of what any layer between it and the
+    // server does.
+    cache: "no-store",
   });
 
   if (!response.ok) {
