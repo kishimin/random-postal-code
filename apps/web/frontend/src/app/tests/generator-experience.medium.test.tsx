@@ -181,6 +181,25 @@ describe("the generator experience", () => {
     );
   });
 
+  // A result arriving must not take focus away from the action that asked
+  // for it (acceptance/random-postal-code-experience.medium.test.ts's
+  // keyboard scenario), even though the action was disabled -- and so lost
+  // focus -- while the request it started was in flight.
+  test("keeps focus on the generate action once a result arrives, even though the action was disabled meanwhile", async () => {
+    const user = userEvent.setup();
+    const { resolve } = holdRandomResponse();
+    renderAt("/");
+    const generateButton = await screen.findByRole("button", { name: /生成/ });
+
+    await user.click(generateButton);
+    await waitFor(() => expect(generateButton).toBeDisabled());
+
+    resolve(firstResult);
+
+    await waitFor(() => expect(generateButton).toBeEnabled());
+    expect(generateButton).toHaveFocus();
+  });
+
   test("activating the generate action displays the returned postal code and every returned address", async () => {
     const user = userEvent.setup();
     queueRandomResponses([{ outcome: "success", result: firstResult }]);
