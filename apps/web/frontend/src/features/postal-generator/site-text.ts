@@ -19,8 +19,10 @@ export const postalGeneratorText = {
     offline: "インターネット接続を確認してから、もう一度お試しください。",
     "service-unavailable":
       "サーバーが混み合っています。しばらくしてからもう一度お試しください。",
-    "invalid-response": "予期しない応答を受信しました。もう一度お試しください。",
-    unexpected: "サーバーで問題が発生しました。しばらくしてからもう一度お試しください。",
+    "invalid-response":
+      "予期しない応答を受信しました。もう一度お試しください。",
+    unexpected:
+      "サーバーで問題が発生しました。しばらくしてからもう一度お試しください。",
   },
   copyFailureAnnouncement: "コピーできませんでした。もう一度お試しください。",
 } as const;

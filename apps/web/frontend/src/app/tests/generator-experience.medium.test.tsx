@@ -384,7 +384,9 @@ describe("the generator experience", () => {
       renderAt("/");
       await user.click(await screen.findByRole("button", { name: /生成/ }));
       await screen.findByText("100-0001");
-      const announcedBeforeCopy = screen.getByRole("status").textContent?.trim();
+      const announcedBeforeCopy = screen
+        .getByRole("status")
+        .textContent?.trim();
 
       await user.click(screen.getByRole("button", { name: /コピー/ }));
 
@@ -430,7 +432,7 @@ describe("the generator experience", () => {
       expect(announced).not.toBe(announcedBeforeRetry);
     });
 
-    // design.md section 4: a failure keeps the previous result on screen.
+    // ui-design.md section 4: a failure keeps the previous result on screen.
     expect(screen.getByText("100-0001")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /生成/ }));

@@ -13,10 +13,10 @@ type AddressListProps = {
  */
 export const AddressList = ({ addresses }: AddressListProps) => (
   <ul>
-    {addresses.map((address, index) => (
-      <li
-        key={`${index}-${address.prefecture}-${address.city}-${address.town}`}
-      >
+    {addresses.map((address) => (
+      // design.md section 4.2 dedupes identical prefecture/city/town triples
+      // before this ever renders, so the triple itself is already a unique key.
+      <li key={`${address.prefecture}-${address.city}-${address.town}`}>
         {`${address.prefecture}${address.city}${address.town}`}
       </li>
     ))}

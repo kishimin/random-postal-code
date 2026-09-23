@@ -37,7 +37,9 @@ export const GeneratorView = () => {
           attribute is present even on a first generation, before any result
           exists to render. */}
       <div data-testid={"result-region"} aria-busy={state.status === "loading"}>
-        {currentResult && <CurrentResult result={currentResult} onCopy={copy} />}
+        {currentResult && (
+          <CurrentResult result={currentResult} onCopy={copy} />
+        )}
       </div>
       <GeneratorAnnouncer announcement={announcement} />
     </>

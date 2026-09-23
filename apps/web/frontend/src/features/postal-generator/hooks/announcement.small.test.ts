@@ -43,7 +43,7 @@ describe("announcementTextOf", () => {
     ).not.toBe("");
   });
 
-  // design.md section 4 defines four UiError kinds precisely so a visitor
+  // ui-design.md section 4 defines four UiError kinds precisely so a visitor
   // can be told something different depending on which one happened;
   // collapsing them into one shared sentence would throw that distinction
   // away right before it reaches the person who needs it.
@@ -54,7 +54,11 @@ describe("announcementTextOf", () => {
     "unexpected",
   ] as const)("gives the %s error kind its own message", (kind) => {
     expect(
-      announcementTextOf({ status: "error", error: { kind }, previousResult: undefined }),
+      announcementTextOf({
+        status: "error",
+        error: { kind },
+        previousResult: undefined,
+      }),
     ).not.toBe("");
   });
 
@@ -67,7 +71,11 @@ describe("announcementTextOf", () => {
     ] as const;
 
     const messages = kinds.map((kind) =>
-      announcementTextOf({ status: "error", error: { kind }, previousResult: undefined }),
+      announcementTextOf({
+        status: "error",
+        error: { kind },
+        previousResult: undefined,
+      }),
     );
 
     expect(new Set(messages).size).toBe(kinds.length);

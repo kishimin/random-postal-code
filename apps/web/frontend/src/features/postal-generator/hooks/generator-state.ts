@@ -1,7 +1,7 @@
 import type { PostalCode } from "@zipnami/shared";
 
 /**
- * The generator's request lifecycle as one exclusive state (design.md
+ * The generator's request lifecycle as one exclusive state (ui-design.md
  * section 4), rather than independent loading, data, and error booleans that
  * could otherwise disagree with each other.
  */
@@ -12,7 +12,7 @@ export type GeneratorState =
   | { status: "error"; error: UiError; previousResult?: PostalCode };
 
 /**
- * What a failed generation looked like (design.md section 4), without
+ * What a failed generation looked like (ui-design.md section 4), without
  * deciding how each kind reads on screen -- ui-design.md section 12 leaves
  * that wording to this Issue.
  */
@@ -33,7 +33,7 @@ export const initialGeneratorState: GeneratorState = { status: "idle" };
 /**
  * The result currently on screen, whichever state produced it: a fresh
  * success, or the one a loading or failed regeneration left in place
- * (design.md section 4: a prior result "remains visible" through both).
+ * (ui-design.md section 4: a prior result "remains visible" through both).
  */
 export const currentResultOf = (
   state: GeneratorState,
@@ -51,7 +51,7 @@ export const currentResultOf = (
 
 /**
  * Advances the generator's state for one request-lifecycle action
- * (design.md section 4).
+ * (ui-design.md section 4).
  */
 export const generatorReducer = (
   state: GeneratorState,

@@ -3,7 +3,7 @@ import type { UiError } from "./generator-state";
 
 /**
  * Maps a rejection from `fetchRandomPostalCode` to the `UiError` kind
- * design.md section 4 defines, without deciding how each kind is presented
+ * ui-design.md section 4 defines, without deciding how each kind is presented
  * (ui-design.md section 12 leaves that wording to this Issue).
  */
 export const classifyGeneratorError = (error: unknown): UiError => {

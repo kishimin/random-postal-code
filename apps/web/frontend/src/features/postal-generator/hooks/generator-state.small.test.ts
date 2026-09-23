@@ -45,7 +45,7 @@ describe("currentResultOf", () => {
 });
 
 describe("generatorReducer", () => {
-  // design.md section 4: idle shows an empty result region, so starting a
+  // ui-design.md section 4: idle shows an empty result region, so starting a
   // generation from idle has nothing to carry forward.
   test("moves from idle to loading with no previous result", () => {
     const next = generatorReducer(initialGeneratorState, {
@@ -55,7 +55,7 @@ describe("generatorReducer", () => {
     expect(next).toEqual({ status: "loading", previousResult: undefined });
   });
 
-  // design.md section 4: "Loading disables only duplicate generation.
+  // ui-design.md section 4: "Loading disables only duplicate generation.
   // Navigation, prior result, and history remain usable" -- the prior
   // result has to survive the transition into loading.
   test("keeps the current result as the previous result when regenerating from success", () => {
@@ -79,8 +79,8 @@ describe("generatorReducer", () => {
     expect(next).toEqual({ status: "success", result: secondResult });
   });
 
-  // design.md section 4: "When a prior result exists, it remains visible and
-  // is not reinserted into history" on failure.
+  // ui-design.md section 4: "When a prior result exists, it remains visible
+  // and is not reinserted into history" on failure.
   test("moves from loading to error while keeping the previous result", () => {
     const next = generatorReducer(
       { status: "loading", previousResult: firstResult },

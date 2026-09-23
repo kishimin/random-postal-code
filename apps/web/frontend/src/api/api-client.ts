@@ -78,8 +78,8 @@ export const createApiClient = (baseUrl: string): ApiClient => {
  * Throws `ApiRequestError` for the JSON error envelope api-design.md section
  * 4.2 defines. A network failure or a success body that fails
  * `postalCodeSchema` propagates as whatever `fetch` or zod raised instead of
- * being wrapped, so the caller can tell the two apart (design.md section 4's
- * `UiError` distinguishes "offline" from "invalid-response").
+ * being wrapped, so the caller can tell the two apart (ui-design.md section
+ * 4's `UiError` distinguishes "offline" from "invalid-response").
  */
 export const fetchRandomPostalCode = async (
   client: ApiClient,
