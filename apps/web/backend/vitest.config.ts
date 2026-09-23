@@ -13,6 +13,21 @@ import { coverageConfigDefaults, defineConfig } from "vitest/config";
 // mis-named file would run on push where ADR-0043 puts medium tests later.
 export default defineConfig({
   test: {
+    // The acceptance test for Issue #4 lives outside every package (ADR-0062
+    // isolates acceptance/ from implementation code) and is not a Playwright
+    // test, so it matches no testMatch entry in playwright.config.ts. This
+    // package is the one the test exercises — it imports app.ts and index.ts
+    // directly — so its own Vitest run is the one that includes it, alongside
+    // the package's own small/medium/large test files.
+    //
+    // Removing or renaming this entry breaks nothing that CI checks today:
+    // the only automated guard is over the acceptance/ diff itself (ADR-0069),
+    // and this line sits outside that path. Do not treat a passing CI run as
+    // proof this entry is still wired up.
+    include: [
+      "**/*.{test,spec}.ts",
+      "../../../acceptance/random-postal-code-api.medium.test.ts",
+    ],
     pool: cloudflarePool({
       wrangler: { configPath: "./wrangler.jsonc" },
     }),
