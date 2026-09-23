@@ -21,7 +21,7 @@ export const GeneratorView = () => {
   const [client] = useState(() =>
     createApiClient(parseAppEnv(import.meta.env).apiBaseUrl),
   );
-  const { state, currentResult, announcement, generate, copy } =
+  const { state, currentResult, announcement, copyFeedback, generate, copy } =
     useGenerator(client);
 
   return (
@@ -38,7 +38,11 @@ export const GeneratorView = () => {
           exists to render. */}
       <div data-testid={"result-region"} aria-busy={state.status === "loading"}>
         {currentResult && (
-          <CurrentResult result={currentResult} onCopy={copy} />
+          <CurrentResult
+            result={currentResult}
+            onCopy={copy}
+            copyFeedback={copyFeedback}
+          />
         )}
       </div>
       <GeneratorAnnouncer announcement={announcement} />

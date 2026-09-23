@@ -14,7 +14,10 @@ import {
 export type UseGeneratorResult = {
   state: GeneratorState;
   currentResult: PostalCode | undefined;
+  /** The request lifecycle's own announcement (loading, success, failure) -- never a copy outcome. */
   announcement: string;
+  /** The most recent copy attempt's outcome, or "" when there is nothing to report. */
+  copyFeedback: string;
   generate: () => void;
   copy: () => void;
 };
@@ -39,8 +42,12 @@ export const useGenerator = (client: ApiClient): UseGeneratorResult => {
   // copying is orthogonal to the request lifecycle that state models, and a
   // copy result should not be mistaken for a generation result. Cleared at
   // the start of the next generate or copy so it never outlives the attempt
-  // it describes.
-  const [copyAnnouncement, setCopyAnnouncement] = useState("");
+  // it describes. Exposed as `copyFeedback`, entirely separate from
+  // `announcement` below -- PR #36 review found that merging the two let a
+  // copy attempt which settled while a regeneration was still in flight set
+  // this with no later occasion to clear it, permanently hiding the
+  // generation's own announcement behind a stale copy message.
+  const [copyFeedback, setCopyFeedback] = useState("");
 
   // Identifies the most recently started copy attempt. `copy` closes over
   // the value it incremented to, and only applies its settled promise's
@@ -58,7 +65,7 @@ export const useGenerator = (client: ApiClient): UseGeneratorResult => {
     // A new generation supersedes any copy attempt still in flight: its
     // result describes a postal code that is no longer the current result.
     copyAttemptRef.current += 1;
-    setCopyAnnouncement("");
+    setCopyFeedback("");
     dispatch({ type: "generate/started" });
 
     void fetchRandomPostalCode(client)
@@ -78,29 +85,31 @@ export const useGenerator = (client: ApiClient): UseGeneratorResult => {
   const copy = useCallback(() => {
     if (!currentResult) return;
     const attempt = ++copyAttemptRef.current;
-    setCopyAnnouncement("");
+    setCopyFeedback("");
 
     // ui-design.md section 5.3: "Copy success is announced in a polite
     // status region and does not move focus. Copy failure leaves the result
     // usable and offers a concise error near the action." Both outcomes are
-    // announced through the same live region the request lifecycle already
-    // uses (announcement, below) rather than a new UI surface.
+    // reported through `copyFeedback`, which CurrentResult renders in its own
+    // status region next to the copy action -- not through the generation
+    // announcement below.
     void navigator.clipboard
       .writeText(currentResult.postalCode)
       .then(() => {
         if (copyAttemptRef.current !== attempt) return;
-        setCopyAnnouncement(postalGeneratorText.copySuccessAnnouncement);
+        setCopyFeedback(postalGeneratorText.copySuccessAnnouncement);
       })
       .catch(() => {
         if (copyAttemptRef.current !== attempt) return;
-        setCopyAnnouncement(postalGeneratorText.copyFailureAnnouncement);
+        setCopyFeedback(postalGeneratorText.copyFailureAnnouncement);
       });
   }, [currentResult]);
 
   return {
     state,
     currentResult,
-    announcement: copyAnnouncement || announcementTextOf(state),
+    announcement: announcementTextOf(state),
+    copyFeedback,
     generate,
     copy,
   };
