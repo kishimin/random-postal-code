@@ -317,6 +317,48 @@ describe("createApp", () => {
       expect(loggedLine).not.toContain(secret);
     });
 
+    // PR #35 review found that an exception escaping a handler or middleware
+    // before it returns a promise -- e.g. a repository throwing
+    // synchronously -- reaches app.onError() without ever going through
+    // registerRandomPostalCodeRoute's own respondAndLog, so nothing logs it.
+    // A synchronous throw (not a rejected promise) is what reproduces this:
+    // selectRandomPostalCode's `repository.listPostalCodes().catch(...)`
+    // never gets to attach its `.catch` handler when the call itself throws,
+    // so the failure propagates past the service's own classification and
+    // out through the route handler to app.onError().
+    test("logs a structured entry for an exception that escapes to app.onError, without leaking the underlying failure's message", async () => {
+      const secret = "some-internal-detail-that-must-not-leak";
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const app = createApp({
+        postalCodeRepository: {
+          listPostalCodes: () => {
+            throw new Error(secret);
+          },
+        },
+      });
+
+      const response = await app.request("/api/random");
+      const text = await response.clone().text();
+
+      expect(response.status).toBe(500);
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const loggedLine = logSpy.mock.calls[0]?.[0] as string;
+      const entry = parseLoggedEntry(logSpy.mock.calls[0]);
+
+      expect(entry).toMatchObject({
+        route: "/api/random",
+        method: "GET",
+        status: 500,
+        code: "INTERNAL_ERROR",
+      });
+      expect(typeof entry.requestId).toBe("string");
+      expect(entry.requestId).not.toBe("");
+      expect(Number.isNaN(Date.parse(entry.timestamp as string))).toBe(false);
+      expect(typeof entry.durationMs).toBe("number");
+      expect(text).not.toContain(secret);
+      expect(loggedLine).not.toContain(secret);
+    });
+
     test("registers the log write with waitUntil when a real ExecutionContext is available, rather than writing it directly", async () => {
       const waitUntilPromises: Promise<unknown>[] = [];
       const executionCtx = {
