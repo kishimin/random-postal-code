@@ -23,6 +23,21 @@ if (inputPath === undefined) {
 const source = readFileSync(inputPath, "utf8");
 const dataset = await buildPostalCodeDataset(source);
 
+// An empty or blank-lines-only input (for example a failed or truncated
+// upstream download) makes buildPostalCodeDataset legitimately return [].
+// The per-entry PostalCode-contract check below iterates that array, so on
+// zero entries it finds zero failures and would otherwise let an unusable
+// artifact through. Random selection requires at least one postal code, so
+// the collection itself is validated as non-empty before that per-entry
+// check runs.
+if (dataset.length === 0) {
+  console.error(
+    "Refusing to write an empty dataset: the input produced zero " +
+      "postal-code entries",
+  );
+  process.exit(1);
+}
+
 // KEN_ALL.CSV is Japan Post's real, untrusted-format input, and this
 // package's tsconfig has no noUncheckedIndexedAccess: a short or malformed
 // line makes buildPostalCodeDataset produce an entry with an undefined

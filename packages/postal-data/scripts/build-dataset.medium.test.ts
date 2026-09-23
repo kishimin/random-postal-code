@@ -43,6 +43,13 @@ const wellFormedSource =
 const emptyPostalCodeSource =
   '00000,"100  ","","AAA","BBB","CCC",東京都,千代田区,千代田,0,0,0,0,0,0\n';
 
+// Blank lines only: parseRecords filters every line out, so
+// buildPostalCodeDataset legitimately returns []. The per-entry PostalCode
+// contract loop finds nothing to fail on an empty array, so without a guard
+// on the collection itself the CLI would exit 0 and write an unusable "[]"
+// artifact — exactly what a failed or truncated upstream download produces.
+const blankOnlySource = "\n\n   \n";
+
 describe("build-dataset CLI", () => {
   test("exits non-zero, writes no output file, and reports the failing entry when a record fails the shared PostalCode contract", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "postal-data-guard-"));
@@ -122,6 +129,29 @@ describe("build-dataset CLI", () => {
       // fix this matched nothing, since the empty-string postal code was
       // used verbatim as the identifier.
       expect(result.stderr).toMatch(/PostalCode contract: \S/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("exits non-zero and writes no output file when the input produces zero postal-code entries", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "postal-data-guard-"));
+    const inputPath = path.join(dir, "input.csv");
+    const outputPath = path.join(dir, "output.json");
+    writeFileSync(inputPath, blankOnlySource);
+
+    try {
+      const result = spawnSync(
+        "bun",
+        ["run", scriptPath, inputPath, outputPath],
+        { encoding: "utf8", timeout: SPAWN_TIMEOUT_MS },
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.signal).toBeNull();
+      expect(result.status).toBe(1);
+      expect(result.stderr).toMatch(/Refusing to write an empty dataset/);
+      expect(existsSync(outputPath)).toBe(false);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
