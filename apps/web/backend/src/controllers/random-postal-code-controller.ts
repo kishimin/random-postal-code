@@ -4,6 +4,7 @@ import type { PostalCodeRepository } from "../repositories/postal-code-repositor
 import { selectRandomPostalCode } from "../services/random-postal-code-service.ts";
 import { respondWithApiError } from "./api-error-response.ts";
 import type { RequestIdVariables } from "./request-id-middleware.ts";
+import { writeRequestLog, type RequestLogStatus } from "./request-log.ts";
 
 const RANDOM_POSTAL_CODE_PATH = "/api/random";
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
@@ -13,48 +14,23 @@ type RandomPostalCodeControllerDependencies = {
 };
 
 /**
- * One structured log line for a completed selection attempt (CR-003,
- * api-design.md section 7): timestamp, requestId, route, method, status,
- * duration, and a bounded code, the last of which is what lets a log reader
- * tell `DATA_UNAVAILABLE` apart from `INTERNAL_ERROR`. Deliberately excludes
- * the served postal code, any address, and the underlying error's raw
- * message or stack -- section 7 forbids complete response bodies and
- * secrets in logs, and `"ok"` carries a payload none of these fields need.
+ * True when `c.req`'s headers describe a request body the client is sending
+ * -- a non-zero `content-length`, or `transfer-encoding` for a body whose
+ * length is not known up front. A `GET`/`HEAD` `Request` cannot be
+ * constructed with a `body` init option (the Fetch spec, and this project's
+ * workerd test runtime, both throw on the attempt), so these headers are
+ * what a client actually sending a body on a `GET` looks like once the
+ * request reaches this handler.
  */
-type SelectionLogEntry = {
-  readonly timestamp: string;
-  readonly requestId: string;
-  readonly route: string;
-  readonly method: string;
-  readonly status: 200 | 500 | 503;
-  readonly durationMs: number;
-  readonly code: ApiErrorCode | "OK";
-};
-
-/**
- * Writes one structured log entry through `c.executionCtx.waitUntil`, so
- * logging does not delay the response that already went out.
- *
- * Accessing `c.executionCtx` throws outside a real Workers
- * `ExecutionContext` -- Hono's `.request()`/`.fetch()` test helpers do not
- * supply one, and several tests in this repository (this package's own
- * `app.medium.test.ts`, and the acceptance test's non-`respond()` paths)
- * call `createApp(...).fetch()` directly. Falling back to a synchronous
- * `console.log` there keeps every one of those callers answering correctly
- * instead of turning a successful response into a 500 because logging
- * itself failed.
- */
-const logSelection = (
+const hasRequestBody = (
   c: Context<{ Variables: RequestIdVariables }>,
-  entry: SelectionLogEntry,
-): void => {
-  const write = () => console.log(JSON.stringify(entry));
+): boolean => {
+  const contentLength = c.req.header("content-length");
 
-  try {
-    c.executionCtx.waitUntil(Promise.resolve().then(write));
-  } catch {
-    write();
-  }
+  return (
+    (contentLength !== undefined && contentLength !== "0") ||
+    c.req.header("transfer-encoding") !== undefined
+  );
 };
 
 /**
@@ -78,41 +54,22 @@ export const registerRandomPostalCodeRoute = (
   // rejects against `Promise<Response>` -- turning a runtime 500 (Hono
   // answering a handler that returned nothing) into a build failure instead.
   app.all(RANDOM_POSTAL_CODE_PATH, async (c): Promise<Response> => {
-    // A server that supports GET must support HEAD (CR-004); Hono/the
-    // Workers runtime drops the body of a HEAD response automatically, so
-    // HEAD takes the exact same branch as GET rather than a copy of it.
-    if (c.req.method !== "GET" && c.req.method !== "HEAD") {
-      return respondWithApiError(
-        c,
-        405,
-        "METHOD_NOT_ALLOWED",
-        "Only GET is supported on this endpoint.",
-        // RFC 9110 section 15.5.6 requires a 405 to name what is allowed
-        // (CR-004); nothing did before this.
-        { Allow: "GET, HEAD" },
-      );
-    }
-
-    if (Object.keys(c.req.query()).length > 0) {
-      return respondWithApiError(
-        c,
-        400,
-        "INVALID_REQUEST",
-        "This endpoint accepts no query parameters.",
-      );
-    }
-
+    // Captured before any rejection branch below, so every response this
+    // handler produces -- accepted or rejected alike -- logs a duration
+    // measured from the same point (CR-003, api-design.md section 7).
     const startedAt = Date.now();
-    const result = await selectRandomPostalCode(deps.postalCodeRepository);
 
     // Logs after the outcome and the HTTP status are both settled (CR-003),
     // so `code` always matches the status the client actually received.
+    // Defined before the early-return branches below (a 405, 400, or the
+    // eventual 200/503/500) so every one of them logs through this same
+    // function instead of only the selection outcomes doing so.
     const respondAndLog = (
-      status: 200 | 500 | 503,
+      status: RequestLogStatus,
       code: ApiErrorCode | "OK",
       response: Response,
     ): Response => {
-      logSelection(c, {
+      writeRequestLog(c, {
         timestamp: new Date().toISOString(),
         requestId: c.get("requestId"),
         route: RANDOM_POSTAL_CODE_PATH,
@@ -124,6 +81,56 @@ export const registerRandomPostalCodeRoute = (
 
       return response;
     };
+
+    // A server that supports GET must support HEAD (CR-004); Hono/the
+    // Workers runtime drops the body of a HEAD response automatically, so
+    // HEAD takes the exact same branch as GET rather than a copy of it.
+    if (c.req.method !== "GET" && c.req.method !== "HEAD") {
+      return respondAndLog(
+        405,
+        "METHOD_NOT_ALLOWED",
+        respondWithApiError(
+          c,
+          405,
+          "METHOD_NOT_ALLOWED",
+          "Only GET is supported on this endpoint.",
+          // RFC 9110 section 15.5.6 requires a 405 to name what is allowed
+          // (CR-004); nothing did before this.
+          { Allow: "GET, HEAD" },
+        ),
+      );
+    }
+
+    // docs/api-design.md section 4.2 rejects "Unsupported query parameter or
+    // request body" alike with 400 INVALID_REQUEST; a GET carrying a body is
+    // as much an unsupported request shape as an unknown query parameter.
+    if (hasRequestBody(c)) {
+      return respondAndLog(
+        400,
+        "INVALID_REQUEST",
+        respondWithApiError(
+          c,
+          400,
+          "INVALID_REQUEST",
+          "This endpoint accepts no request body.",
+        ),
+      );
+    }
+
+    if (Object.keys(c.req.query()).length > 0) {
+      return respondAndLog(
+        400,
+        "INVALID_REQUEST",
+        respondWithApiError(
+          c,
+          400,
+          "INVALID_REQUEST",
+          "This endpoint accepts no query parameters.",
+        ),
+      );
+    }
+
+    const result = await selectRandomPostalCode(deps.postalCodeRepository);
 
     switch (result.outcome) {
       case "ok":
