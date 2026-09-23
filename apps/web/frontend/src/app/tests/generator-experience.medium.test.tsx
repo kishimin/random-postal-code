@@ -1,5 +1,5 @@
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import type { Address, PostalCode } from "@zipnami/shared";
 import { HttpResponse, http } from "msw";
@@ -186,6 +186,40 @@ describe("the generator experience", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /生成/ })).toBeEnabled(),
     );
+  });
+
+  // use-generator.ts's own docstring: a ref refuses a second activation
+  // synchronously, at the moment it is requested, because state alone would
+  // not reflect "loading" again until the next render -- by which point a
+  // second call may already have started its own fetch. The button's own
+  // `disabled` attribute cannot be relied on to prove this guard exists: it
+  // only takes effect once React commits the re-render the first click
+  // triggers, and a real browser refuses to deliver a click to an already-
+  // disabled button regardless of how it is dispatched. Dispatching both
+  // clicks inside one `act` call keeps that commit from happening in
+  // between, so the second click still reaches the handler while the DOM
+  // still shows the button enabled -- the exact race the ref exists for.
+  test("a second activation while a generation is in flight starts no second request", async () => {
+    const { resolve, requests } = holdRandomResponse();
+    renderAt("/");
+    const generateButton = await screen.findByRole("button", { name: /生成/ });
+
+    act(() => {
+      generateButton.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true }),
+      );
+      generateButton.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true }),
+      );
+    });
+
+    // The stub's handler receives the request asynchronously (through MSW's
+    // own request pipeline), so the count only settles after a tick even
+    // though both clicks were dispatched synchronously.
+    await waitFor(() => expect(requests).toHaveLength(1));
+
+    resolve(firstResult);
+    await waitFor(() => expect(generateButton).toBeEnabled());
   });
 
   // ui-design.md section 8: "Set aria-busy on the result region during
