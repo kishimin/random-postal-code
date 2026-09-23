@@ -22,4 +22,5 @@ export const postalGeneratorText = {
     "invalid-response": "予期しない応答を受信しました。もう一度お試しください。",
     unexpected: "サーバーで問題が発生しました。しばらくしてからもう一度お試しください。",
   },
+  copyFailureAnnouncement: "コピーできませんでした。もう一度お試しください。",
 } as const;
