@@ -98,16 +98,21 @@ const toDataset = (
     addresses: [...addressGroup.values()] as [Address, ...Address[]],
   }));
 
+/* eslint-disable @typescript-eslint/require-await -- the `async` keyword itself is what converts a synchronous throw into a rejection; that guarantee does not depend on the body containing an `await`. */
 /**
  * Builds the Zipnami postal-code dataset from Japan Post's KEN_ALL.CSV-shaped
  * text, already decoded to UTF-8: converts each record, groups the results by
  * their seven-digit postal code, and deduplicates each group's addresses.
  *
- * The contract is async because the eventual data-pipeline caller treats
- * dataset construction as an I/O-adjacent step, but today's parsing is
- * synchronous throughout; wrapping the result in `Promise.resolve` keeps the
- * signature honest without an `async` function body that has no `await` in
- * it.
+ * The function is `async` despite having no `await` in its body: the
+ * contract is a Promise, so an idiomatic `buildPostalCodeDataset(source)
+ * .catch(handleError)` must have `handleError` invoked for any internal
+ * failure. Only an `async` function body turns a synchronous throw into a
+ * rejection; a plain function returning `Promise.resolve(...)` would still
+ * throw synchronously, past the point where `.catch()` could observe it.
  */
-export const buildPostalCodeDataset = (source: string): Promise<PostalCode[]> =>
-  Promise.resolve(toDataset(groupAddressesByPostalCode(parseRecords(source))));
+export const buildPostalCodeDataset = async (
+  source: string,
+): Promise<PostalCode[]> =>
+  toDataset(groupAddressesByPostalCode(parseRecords(source)));
+/* eslint-enable @typescript-eslint/require-await -- scoped to this one intentionally await-less async function */

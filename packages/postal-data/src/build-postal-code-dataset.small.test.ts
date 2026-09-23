@@ -265,4 +265,28 @@ describe("buildPostalCodeDataset", () => {
 
     expect(JSON.stringify(second)).toBe(JSON.stringify(first));
   });
+
+  test("rejects instead of throwing synchronously when an internal step fails", async () => {
+    // A caller that bypasses the type system (plain JS, or an `any`-typed
+    // value) can still pass a non-string source. buildPostalCodeDataset's
+    // contract is a Promise, so an idiomatic `buildPostalCodeDataset(source)
+    // .catch(handleError)` must have handleError invoked for any internal
+    // failure; a synchronous throw from the call itself would escape that
+    // .catch() entirely. The call is captured once, inside a try/catch that
+    // returns rather than reassigns, so the same promise is both proven not
+    // to have thrown synchronously and observed to reject.
+    const invalidSource = null as unknown as string;
+    const capture = (): { error?: unknown; promise?: Promise<unknown> } => {
+      try {
+        return { promise: buildPostalCodeDataset(invalidSource) };
+      } catch (error) {
+        return { error };
+      }
+    };
+    const { error, promise } = capture();
+
+    expect(error).toBeUndefined();
+    expect(promise).toBeDefined();
+    await expect(promise).rejects.toBeInstanceOf(Error);
+  });
 });
