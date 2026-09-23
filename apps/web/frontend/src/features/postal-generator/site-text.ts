@@ -11,5 +11,15 @@ export const postalGeneratorText = {
   loadingAnnouncement: "郵便番号を生成しています",
   resultAnnouncement: (displayedPostalCode: string) =>
     `郵便番号 ${displayedPostalCode} を生成しました`,
-  failureAnnouncement: "郵便番号の生成に失敗しました。もう一度お試しください。",
+  // One message per UiError kind (generator-state.ts) so a visitor is told
+  // something that actually matches what went wrong, rather than one shared
+  // sentence that reads the same whether their connection dropped or the
+  // server had a problem.
+  failureAnnouncement: {
+    offline: "インターネット接続を確認してから、もう一度お試しください。",
+    "service-unavailable":
+      "サーバーが混み合っています。しばらくしてからもう一度お試しください。",
+    "invalid-response": "予期しない応答を受信しました。もう一度お試しください。",
+    unexpected: "サーバーで問題が発生しました。しばらくしてからもう一度お試しください。",
+  },
 } as const;

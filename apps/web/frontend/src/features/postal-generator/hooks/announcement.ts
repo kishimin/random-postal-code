@@ -17,7 +17,7 @@ export const announcementTextOf = (state: GeneratorState): string => {
         formatPostalCode(state.result.postalCode),
       );
     case "error":
-      return postalGeneratorText.failureAnnouncement;
+      return postalGeneratorText.failureAnnouncement[state.error.kind];
     case "idle":
       return "";
   }
