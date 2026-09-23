@@ -94,9 +94,9 @@ describe("build-dataset CLI", () => {
       expect(result.signal).toBeNull();
       expect(result.status).toBe(0);
       expect(existsSync(outputPath)).toBe(true);
-      expect(() =>
-        JSON.parse(readFileSync(outputPath, "utf8")),
-      ).not.toThrow();
+      expect(() => {
+        JSON.parse(readFileSync(outputPath, "utf8"));
+      }).not.toThrow();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
