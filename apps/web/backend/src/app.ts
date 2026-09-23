@@ -65,14 +65,35 @@ export const createApp = (deps: CreateAppDependencies) => {
 
     return response;
   });
-  app.onError((_err, c) =>
-    respondWithApiError(
+  // PR #35 review found that an exception escaping a handler or middleware
+  // before it returns a promise -- for example a repository throwing
+  // synchronously -- reaches this fallback without ever going through
+  // registerRandomPostalCodeRoute's own respondAndLog, so a genuinely
+  // unexpected failure had no structured entry or request-id correlation
+  // even though the classified `INTERNAL_ERROR` results are logged. Logged
+  // the same way app.notFound() above is: a request that ends here was
+  // still rejected, not one that never happened.
+  app.onError((_err, c) => {
+    const startedAt = Date.now();
+    const response = respondWithApiError(
       c,
       500,
       "INTERNAL_ERROR",
       "An unexpected error occurred.",
-    ),
-  );
+    );
+
+    writeRequestLog(c, {
+      timestamp: new Date().toISOString(),
+      requestId: c.get("requestId"),
+      route: c.req.path,
+      method: c.req.method,
+      status: 500,
+      durationMs: Date.now() - startedAt,
+      code: "INTERNAL_ERROR",
+    });
+
+    return response;
+  });
 
   return app;
 };
