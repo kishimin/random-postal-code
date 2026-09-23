@@ -7,7 +7,7 @@ CSV (`KEN_ALL.CSV`).
 
 Japan Post publishes the postal-code dataset used here at
 <https://www.post.japanpost.jp/zipcode/download.html>. The archive is
-distributed as a Shift-JIS CSV named `KEN_ALL.CSV`, thirteen comma-separated
+distributed as a Shift-JIS CSV named `KEN_ALL.CSV`, fifteen comma-separated
 columns per record, quoted text fields.
 
 Retrieval date: **2026-09-21**.
