@@ -62,4 +62,31 @@ describe("fetchRandomPostalCode", () => {
 
     await expect(fetchRandomPostalCode(client)).rejects.toThrow(/addresses/);
   });
+
+  // api-design.md section 4.1: "an intermediary must not turn repeated
+  // generation into a cached result" -- the server states this with its own
+  // Cache-Control: no-store response header, but a client that never asks
+  // for a fresh fetch is still exposed to a browser (or intervening cache)
+  // that serves a stale response for the identical GET /api/random URL
+  // heuristically, independent of what the response header says. Requesting
+  // `cache: "no-store"` from the client side closes that gap regardless of
+  // what any layer between it and the server does.
+  test("requests a fresh response every time, never a cached one", async () => {
+    const observed: { cacheMode?: RequestCache } = {};
+    worker.use(
+      http.get("http://localhost:8787/api/random", ({ request }) => {
+        observed.cacheMode = request.cache;
+        return HttpResponse.json({
+          postalCode: "1000001",
+          addresses: [
+            { prefecture: "東京都", city: "千代田区", town: "千代田" },
+          ],
+        });
+      }),
+    );
+
+    await fetchRandomPostalCode(client);
+
+    expect(observed.cacheMode).toBe("no-store");
+  });
 });
