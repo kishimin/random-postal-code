@@ -6,6 +6,10 @@
     "module": "esnext",
     "types": ["@cloudflare/workers-types"],
     "skipLibCheck": true,
+    // GeneratedDatasetRepository imports the bundled dataset artifact as
+    // JSON (api-design.md section 5: a build-time artifact in the module
+    // graph, not a runtime read), so its literal shape must type-check.
+    "resolveJsonModule": true,
 
     /* Bundler mode: wrangler and vitest compile this package from source. */
     "moduleResolution": "bundler",
