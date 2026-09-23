@@ -197,7 +197,11 @@ describe("the generator experience", () => {
     resolve(firstResult);
 
     await waitFor(() => expect(generateButton).toBeEnabled());
-    expect(generateButton).toHaveFocus();
+    // Restoring focus runs in an effect once the button re-enables, which
+    // this test does not otherwise wait on the way it waits on state
+    // reaching the DOM -- toBeEnabled() can already be true a tick before
+    // that effect runs.
+    await waitFor(() => expect(generateButton).toHaveFocus());
   });
 
   test("activating the generate action displays the returned postal code and every returned address", async () => {
