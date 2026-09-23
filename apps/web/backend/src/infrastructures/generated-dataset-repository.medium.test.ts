@@ -1,6 +1,9 @@
 import { postalCodeSchema } from "@zipnami/shared";
 import { describe, expect, test } from "vitest";
-import { generatedDatasetRepository } from "./generated-dataset-repository.ts";
+import {
+  generatedDatasetRepository,
+  parseGeneratedPostalCodes,
+} from "./generated-dataset-repository.ts";
 
 /*
  * api-design.md section 5: GeneratedDatasetRepository loads and validates
@@ -20,5 +23,20 @@ describe("generatedDatasetRepository", () => {
       postalCodes.filter((entry) => !postalCodeSchema.safeParse(entry).success),
       "an entry in the bundled artifact failed the shared PostalCode contract",
     ).toEqual([]);
+  });
+});
+
+/*
+ * api-design.md section 5: a repository translates its own infrastructure
+ * failures into an empty or invalid collection rather than throwing. This
+ * pins that fallback directly against the parsing function, which a build
+ * that ships a corrupt artifact cannot otherwise reach through the real
+ * bundled JSON -- it is always valid by construction of the build step.
+ */
+describe("parseGeneratedPostalCodes", () => {
+  test("falls back to an empty collection when the raw data is not an array of valid postal codes", () => {
+    const corrupt = [{ postalCode: "not-a-postal-code", addresses: [] }];
+
+    expect(parseGeneratedPostalCodes(corrupt)).toEqual([]);
   });
 });
