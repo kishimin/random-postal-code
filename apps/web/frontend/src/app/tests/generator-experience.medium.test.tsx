@@ -146,6 +146,23 @@ const stubClipboardWrites = () => {
   };
 };
 
+/**
+ * Makes the platform clipboard reject every write, the way a browser denies
+ * it without a user gesture or a permission grant. Restores the original
+ * after the test.
+ */
+const stubClipboardFailure = () => {
+  const original = navigator.clipboard.writeText.bind(navigator.clipboard);
+  navigator.clipboard.writeText = () =>
+    Promise.reject(new Error("clipboard write denied"));
+
+  return {
+    restore: () => {
+      navigator.clipboard.writeText = original;
+    },
+  };
+};
+
 describe("the generator experience", () => {
   test("the initial screen offers branding, an explanation, and the generate action with an empty result and no request", async () => {
     const { requests } = queueRandomResponses([
@@ -229,29 +246,20 @@ describe("the generator experience", () => {
     const { resolve } = holdRandomResponse();
     renderAt("/");
     const generateButton = await screen.findByRole("button", { name: /生成/ });
-    const main = screen.getByRole("main");
+    const resultRegion = screen.getByTestId("result-region");
 
-    expect(main.querySelector("[aria-busy]")).toHaveAttribute(
-      "aria-busy",
-      "false",
-    );
+    expect(resultRegion).toHaveAttribute("aria-busy", "false");
 
     await user.click(generateButton);
 
     await waitFor(() =>
-      expect(main.querySelector("[aria-busy]")).toHaveAttribute(
-        "aria-busy",
-        "true",
-      ),
+      expect(resultRegion).toHaveAttribute("aria-busy", "true"),
     );
 
     resolve(firstResult);
 
     await waitFor(() =>
-      expect(main.querySelector("[aria-busy]")).toHaveAttribute(
-        "aria-busy",
-        "false",
-      ),
+      expect(resultRegion).toHaveAttribute("aria-busy", "false"),
     );
   });
 
@@ -358,6 +366,37 @@ describe("the generator experience", () => {
       await user.click(screen.getByRole("button", { name: /コピー/ }));
 
       await waitFor(() => expect(writes).toContain("1000001"));
+    } finally {
+      restore();
+    }
+  });
+
+  // ui-design.md section 5.3: "Copy failure leaves the result usable and
+  // offers a concise error near the action." use-generator.ts's copy()
+  // swallowed the rejection instead, leaving a visitor who denied the
+  // clipboard permission with no idea the copy never happened.
+  test("a copy failure is announced through the live region", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    const { restore } = stubClipboardFailure();
+
+    try {
+      renderAt("/");
+      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await screen.findByText("100-0001");
+      const announcedBeforeCopy = screen.getByRole("status").textContent?.trim();
+
+      await user.click(screen.getByRole("button", { name: /コピー/ }));
+
+      await waitFor(() => {
+        const announced = screen.getByRole("status").textContent?.trim();
+        expect(announced).not.toBe("");
+        expect(announced).not.toBe(announcedBeforeCopy);
+      });
+
+      // The result stays usable -- ui-design.md section 5.3's other
+      // requirement for a copy failure.
+      expect(screen.getByText("100-0001")).toBeInTheDocument();
     } finally {
       restore();
     }
