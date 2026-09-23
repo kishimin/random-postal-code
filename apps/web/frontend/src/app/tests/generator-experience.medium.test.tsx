@@ -5,6 +5,7 @@ import type { Address, PostalCode } from "@zipnami/shared";
 import { HttpResponse, http } from "msw";
 import { describe, expect, test } from "vitest";
 import { worker } from "../../api/mocks/browser";
+import { postalGeneratorText } from "../../features/postal-generator/site-text";
 import { createAppRouter } from "../routes/app-router";
 
 /*
@@ -157,6 +158,40 @@ const stubClipboardFailure = () => {
     Promise.reject(new Error("clipboard write denied"));
 
   return {
+    restore: () => {
+      navigator.clipboard.writeText = original;
+    },
+  };
+};
+
+/**
+ * Makes the platform clipboard settle two overlapping writes out of order:
+ * the first call is held open until `settleFirst` is invoked, and every
+ * later call resolves immediately. This reproduces PR #36 review's stale-
+ * copy race -- a first copy attempt still in flight when a second one
+ * starts, whose eventual settlement must not overwrite the second attempt's
+ * already-announced outcome.
+ */
+const stubOutOfOrderClipboardWrites = () => {
+  const original = navigator.clipboard.writeText.bind(navigator.clipboard);
+  const controls = {
+    calls: 0,
+    settleFirst: undefined as unknown as () => void,
+  };
+
+  navigator.clipboard.writeText = () => {
+    controls.calls += 1;
+    if (controls.calls === 1) {
+      return new Promise<void>((_resolve, reject) => {
+        controls.settleFirst = () =>
+          reject(new Error("stale clipboard write denied"));
+      });
+    }
+    return Promise.resolve();
+  };
+
+  return {
+    settleFirst: () => controls.settleFirst(),
     restore: () => {
       navigator.clipboard.writeText = original;
     },
@@ -399,6 +434,74 @@ describe("the generator experience", () => {
       // The result stays usable -- ui-design.md section 5.3's other
       // requirement for a copy failure.
       expect(screen.getByText("100-0001")).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  // ui-design.md section 5.3: "Copy success is announced in a polite status
+  // region and does not move focus." use-generator.ts's copy() announced
+  // nothing on success, so the live region kept repeating whatever the
+  // request lifecycle had last said.
+  test("a copy success is announced through the live region", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    const { writes, restore } = stubClipboardWrites();
+
+    try {
+      renderAt("/");
+      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await screen.findByText("100-0001");
+      const announcedBeforeCopy = screen
+        .getByRole("status")
+        .textContent?.trim();
+
+      await user.click(screen.getByRole("button", { name: /コピー/ }));
+
+      await waitFor(() => {
+        const announced = screen.getByRole("status").textContent?.trim();
+        expect(announced).toBe(postalGeneratorText.copySuccessAnnouncement);
+        expect(announced).not.toBe(announcedBeforeCopy);
+      });
+      expect(writes).toContain("1000001");
+    } finally {
+      restore();
+    }
+  });
+
+  // PR #36 review found a race: an older copy attempt still in flight when a
+  // newer one starts must not have its later settlement overwrite the newer
+  // attempt's already-announced outcome.
+  test("a stale copy attempt's late settlement does not overwrite a newer copy attempt's announcement", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    const { settleFirst, restore } = stubOutOfOrderClipboardWrites();
+
+    try {
+      renderAt("/");
+      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await screen.findByText("100-0001");
+      const copyButton = screen.getByRole("button", { name: /コピー/ });
+
+      // First attempt: held open by the stub. Second attempt: resolves
+      // immediately, so its success should be what the live region reports.
+      await user.click(copyButton);
+      await user.click(copyButton);
+
+      await waitFor(() => {
+        expect(screen.getByRole("status").textContent?.trim()).toBe(
+          postalGeneratorText.copySuccessAnnouncement,
+        );
+      });
+
+      // The first attempt now rejects, arriving after the second attempt's
+      // success was already announced.
+      settleFirst();
+      await flushEffects();
+
+      expect(screen.getByRole("status").textContent?.trim()).toBe(
+        postalGeneratorText.copySuccessAnnouncement,
+      );
     } finally {
       restore();
     }
