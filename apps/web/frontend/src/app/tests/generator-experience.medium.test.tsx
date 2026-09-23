@@ -126,7 +126,7 @@ const stubClipboardWrites = () => {
     writes.push(text);
     return Promise.resolve();
   };
-  const original = navigator.clipboard.writeText;
+  const original = navigator.clipboard.writeText.bind(navigator.clipboard);
   navigator.clipboard.writeText = record;
 
   return {

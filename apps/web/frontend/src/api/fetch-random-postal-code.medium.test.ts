@@ -1,7 +1,11 @@
 import { HttpResponse, http } from "msw";
 import { describe, expect, test } from "vitest";
+import {
+  ApiRequestError,
+  createApiClient,
+  fetchRandomPostalCode,
+} from "./api-client";
 import { worker } from "./mocks/browser";
-import { ApiRequestError, createApiClient, fetchRandomPostalCode } from "./api-client";
 
 const client = createApiClient("http://localhost:8787");
 
@@ -56,6 +60,8 @@ describe("fetchRandomPostalCode", () => {
       ),
     );
 
-    await expect(fetchRandomPostalCode(client)).rejects.toThrow();
+    await expect(fetchRandomPostalCode(client)).rejects.toThrow(
+      /addresses/,
+    );
   });
 });
