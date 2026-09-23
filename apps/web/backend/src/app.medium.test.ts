@@ -16,7 +16,7 @@ const onlyPostalCode: PostalCode = {
 
 const appServing = (postalCodes: readonly PostalCode[]) =>
   createApp({
-    postalCodeRepository: { listPostalCodes: async () => postalCodes },
+    postalCodeRepository: { listPostalCodes: () => Promise.resolve(postalCodes) },
   });
 
 /** Parses a response body as the shared error envelope, not as `unknown`. */
@@ -103,9 +103,7 @@ describe("createApp", () => {
     const secret = "some-internal-detail-that-must-not-leak";
     const app = createApp({
       postalCodeRepository: {
-        listPostalCodes: async () => {
-          throw new Error(secret);
-        },
+        listPostalCodes: () => Promise.reject(new Error(secret)),
       },
     });
 

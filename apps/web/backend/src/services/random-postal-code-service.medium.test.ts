@@ -27,7 +27,7 @@ describe("selectRandomPostalCode", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.9);
 
     const result = await selectRandomPostalCode({
-      listPostalCodes: async () => [first, second],
+      listPostalCodes: () => Promise.resolve([first, second]),
     });
 
     expect(result).toEqual({ outcome: "ok", postalCode: second });
@@ -35,7 +35,7 @@ describe("selectRandomPostalCode", () => {
 
   test("reports dataUnavailable when the repository's collection is empty", async () => {
     const result = await selectRandomPostalCode({
-      listPostalCodes: async () => [],
+      listPostalCodes: () => Promise.resolve([]),
     });
 
     expect(result).toEqual({ outcome: "dataUnavailable" });
@@ -48,7 +48,7 @@ describe("selectRandomPostalCode", () => {
     ] as unknown as readonly PostalCode[];
 
     const result = await selectRandomPostalCode({
-      listPostalCodes: async () => corrupt,
+      listPostalCodes: () => Promise.resolve(corrupt),
     });
 
     expect(result).toEqual({ outcome: "dataUnavailable" });
@@ -56,9 +56,8 @@ describe("selectRandomPostalCode", () => {
 
   test("reports internalError, rather than throwing, when the repository rejects", async () => {
     const result = await selectRandomPostalCode({
-      listPostalCodes: async () => {
-        throw new Error("the data layer let this escape");
-      },
+      listPostalCodes: () =>
+        Promise.reject(new Error("the data layer let this escape")),
     });
 
     expect(result).toEqual({ outcome: "internalError" });

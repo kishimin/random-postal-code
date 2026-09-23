@@ -1,7 +1,7 @@
 import { postalCodeSchema, type PostalCode } from "@zipnami/shared";
 import { z } from "zod";
-import type { PostalCodeRepository } from "../repositories/postal-code-repository.ts";
 import rawPostalCodes from "../data/postal-codes.generated.json";
+import type { PostalCodeRepository } from "../repositories/postal-code-repository.ts";
 
 /*
  * The dataset TypeScript infers from the JSON literal is not `PostalCode[]`:

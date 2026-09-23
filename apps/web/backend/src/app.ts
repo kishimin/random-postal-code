@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { registerRandomPostalCodeRoute } from "./controllers/random-postal-code-controller.ts";
 import { respondWithApiError } from "./controllers/api-error-response.ts";
+import { registerRandomPostalCodeRoute } from "./controllers/random-postal-code-controller.ts";
 import {
   requestIdMiddleware,
   type RequestIdVariables,

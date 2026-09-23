@@ -31,16 +31,16 @@ const isUsableCollection = (
  * A repository rejection is caught here rather than left to propagate: it is
  * a failure no lower layer translated into an explicit collection state, so
  * it is reported as `internalError` (api-design.md section 4.2's "unexpected
- * application failure") instead of crashing the request.
+ * application failure") instead of crashing the request. `.catch()` rather
+ * than try/catch, so no reassignable local variable is needed to carry the
+ * result out of the block.
  */
 export const selectRandomPostalCode = async (
   repository: PostalCodeRepository,
 ): Promise<PostalCodeSelectionResult> => {
-  let postalCodes: readonly PostalCode[];
+  const postalCodes = await repository.listPostalCodes().catch(() => undefined);
 
-  try {
-    postalCodes = await repository.listPostalCodes();
-  } catch {
+  if (postalCodes === undefined) {
     return { outcome: "internalError" };
   }
 
