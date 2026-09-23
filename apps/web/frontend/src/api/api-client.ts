@@ -21,10 +21,10 @@ export class ApiRequestError extends Error {
   readonly requestId: string;
 
   /**
-   * @param message - The envelope's safe, non-sensitive message.
-   * @param status - The HTTP status the response carried.
-   * @param code - The envelope's error code.
-   * @param requestId - The envelope's request id, echoed in `X-Request-Id`.
+   * @param {string} message - The envelope's safe, non-sensitive message.
+   * @param {number} status - The HTTP status the response carried.
+   * @param {ApiErrorCode} code - The envelope's error code.
+   * @param {string} requestId - The envelope's request id, echoed in `X-Request-Id`.
    */
   constructor(
     message: string,
