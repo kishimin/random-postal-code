@@ -38,16 +38,16 @@ text into an array of `PostalCode` values (see `@zipnami/shared`):
 ## Regenerating the dataset
 
 ```sh
-bun run --filter @zipnami/postal-data build
+bun run --filter @zipnami/postal-data regenerate
 ```
 
-This runs the package's `build` script (`scripts/build-dataset.ts`), which
-reads a KEN_ALL.CSV-shaped file already decoded to UTF-8, builds the dataset
-through `buildPostalCodeDataset`, and writes the result as JSON. Pass the
-input path (and, optionally, an output path) after `--`:
+This runs the package's `regenerate` script (`scripts/build-dataset.ts`),
+which reads a KEN_ALL.CSV-shaped file already decoded to UTF-8, builds the
+dataset through `buildPostalCodeDataset`, and writes the result as JSON. Pass
+the input path (and, optionally, an output path) after `--`:
 
 ```sh
-bun run build -- <path-to-decoded-ken-all.csv> [output.json]
+bun run regenerate -- <path-to-decoded-ken-all.csv> [output.json]
 ```
 
 With no output path, the JSON is written to stdout. JSON is a deliberately

@@ -14,7 +14,7 @@
     "test:medium": "vitest run --coverage --passWithNoTests medium.test",
     "test:large": "vitest run --coverage --passWithNoTests large.test",
     "test:coverage:pr": "COVERAGE_THRESHOLD=80 vitest run --coverage --passWithNoTests small.test medium.test",
-    "build": "bun run scripts/build-dataset.ts"
+    "regenerate": "bun run scripts/build-dataset.ts"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "4.1.10",
