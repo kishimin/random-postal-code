@@ -42,7 +42,12 @@ export const createApp = (deps: CreateAppDependencies) => {
     ),
   );
   app.onError((_err, c) =>
-    respondWithApiError(c, 500, "INTERNAL_ERROR", "An unexpected error occurred."),
+    respondWithApiError(
+      c,
+      500,
+      "INTERNAL_ERROR",
+      "An unexpected error occurred.",
+    ),
   );
 
   return app;

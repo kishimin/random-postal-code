@@ -18,9 +18,7 @@ export type PostalCodeSelectionResult =
 // or unreadable artifact into an empty collection (section 5), so checking
 // emptiness and per-entry validity here covers all four states regardless of
 // which PostalCodeRepository implementation is plugged in.
-const isUsableCollection = (
-  postalCodes: readonly PostalCode[],
-): boolean =>
+const isUsableCollection = (postalCodes: readonly PostalCode[]): boolean =>
   postalCodes.length > 0 &&
   postalCodes.every((entry) => postalCodeSchema.safeParse(entry).success);
 

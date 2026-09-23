@@ -1,1 +1,36 @@
-[{"postalCode":"1000001","addresses":[{"prefecture":"東京都","city":"千代田区","town":"千代田"}]},{"postalCode":"1000005","addresses":[{"prefecture":"東京都","city":"千代田区","town":"丸の内"}]},{"postalCode":"5300001","addresses":[{"prefecture":"大阪府","city":"大阪市北区","town":"梅田"}]},{"postalCode":"6008216","addresses":[{"prefecture":"京都府","city":"京都市下京区","town":"東塩小路町"}]},{"postalCode":"0600000","addresses":[{"prefecture":"北海道","city":"札幌市中央区","town":"以下に掲載がない場合"}]}]
+[
+  {
+    "postalCode": "1000001",
+    "addresses": [
+      { "prefecture": "東京都", "city": "千代田区", "town": "千代田" }
+    ]
+  },
+  {
+    "postalCode": "1000005",
+    "addresses": [
+      { "prefecture": "東京都", "city": "千代田区", "town": "丸の内" }
+    ]
+  },
+  {
+    "postalCode": "5300001",
+    "addresses": [
+      { "prefecture": "大阪府", "city": "大阪市北区", "town": "梅田" }
+    ]
+  },
+  {
+    "postalCode": "6008216",
+    "addresses": [
+      { "prefecture": "京都府", "city": "京都市下京区", "town": "東塩小路町" }
+    ]
+  },
+  {
+    "postalCode": "0600000",
+    "addresses": [
+      {
+        "prefecture": "北海道",
+        "city": "札幌市中央区",
+        "town": "以下に掲載がない場合"
+      }
+    ]
+  }
+]

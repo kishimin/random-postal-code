@@ -16,7 +16,9 @@ const onlyPostalCode: PostalCode = {
 
 const appServing = (postalCodes: readonly PostalCode[]) =>
   createApp({
-    postalCodeRepository: { listPostalCodes: () => Promise.resolve(postalCodes) },
+    postalCodeRepository: {
+      listPostalCodes: () => Promise.resolve(postalCodes),
+    },
   });
 
 /** Parses a response body as the shared error envelope, not as `unknown`. */
