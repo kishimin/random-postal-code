@@ -1,6 +1,26 @@
 const e2eDirectoryPattern = /(?:^|\/)(?:e2e|acceptance)\//;
 const testFilePattern = /(?:\.test|\.spec)\.[cm]?[jt]sx?$/;
 
+// acceptance/ can also hold a non-Playwright acceptance test (Issue #3's
+// dataset build has no screen to drive, so it runs under Vitest). Its
+// `test(...)` calls never receive a Playwright Page Object fixture and are
+// not this rule's concern. A RuleTester fragment has no import at all, and
+// that case must keep reporting as before, so this only opts a file out when
+// it positively imports `test` from vitest rather than requiring proof that
+// it is Playwright.
+const importsVitestTest = (programNode) =>
+  programNode.body.some(
+    (statement) =>
+      statement.type === "ImportDeclaration" &&
+      statement.source.value === "vitest" &&
+      statement.specifiers.some(
+        (specifier) =>
+          specifier.type === "ImportSpecifier" &&
+          specifier.imported.type === "Identifier" &&
+          specifier.imported.name === "test",
+      ),
+  );
+
 const isTestCall = (node) =>
   node.callee.type === "Identifier" && node.callee.name === "test";
 
@@ -27,10 +47,21 @@ export default {
     const filePath = context.getFilename().replaceAll("\\", "/");
     const isE2eTest =
       e2eDirectoryPattern.test(filePath) && testFilePattern.test(filePath);
+    let isPlaywrightTest = true;
 
     return {
+      Program(node) {
+        if (isE2eTest) {
+          isPlaywrightTest = !importsVitestTest(node);
+        }
+      },
       CallExpression(node) {
-        if (!isE2eTest || !isTestCall(node) || isSkippedCall(node)) {
+        if (
+          !isE2eTest ||
+          !isPlaywrightTest ||
+          !isTestCall(node) ||
+          isSkippedCall(node)
+        ) {
           return;
         }
 
