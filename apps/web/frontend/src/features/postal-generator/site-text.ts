@@ -24,5 +24,6 @@ export const postalGeneratorText = {
     unexpected:
       "サーバーで問題が発生しました。しばらくしてからもう一度お試しください。",
   },
+  copySuccessAnnouncement: "郵便番号をコピーしました",
   copyFailureAnnouncement: "コピーできませんでした。もう一度お試しください。",
 } as const;

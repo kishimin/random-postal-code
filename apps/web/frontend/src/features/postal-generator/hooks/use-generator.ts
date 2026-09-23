@@ -35,18 +35,30 @@ export const useGenerator = (client: ApiClient): UseGeneratorResult => {
   const statusRef = useRef<GeneratorState["status"]>("idle");
   const currentResult = currentResultOf(state);
 
-  // Holds a copy failure's message outside GeneratorState: copying is
-  // orthogonal to the request lifecycle that state models, and a failed
-  // clipboard write should not be mistaken for a failed generation. Cleared
-  // at the start of the next generate or copy so it never outlives the
-  // attempt it describes.
-  const [copyError, setCopyError] = useState("");
+  // Holds the outcome of the most recent copy attempt outside GeneratorState:
+  // copying is orthogonal to the request lifecycle that state models, and a
+  // copy result should not be mistaken for a generation result. Cleared at
+  // the start of the next generate or copy so it never outlives the attempt
+  // it describes.
+  const [copyAnnouncement, setCopyAnnouncement] = useState("");
+
+  // Identifies the most recently started copy attempt. `copy` closes over
+  // the value it incremented to, and only applies its settled promise's
+  // result while that value is still current -- otherwise an older attempt,
+  // still in flight when a newer one started, would have its later
+  // resolution or rejection overwrite the newer attempt's already-announced
+  // outcome (PR #36 review found this race between two overlapping
+  // clipboard writes settling out of order).
+  const copyAttemptRef = useRef(0);
 
   const generate = useCallback(() => {
     if (statusRef.current === "loading") return;
 
     statusRef.current = "loading";
-    setCopyError("");
+    // A new generation supersedes any copy attempt still in flight: its
+    // result describes a postal code that is no longer the current result.
+    copyAttemptRef.current += 1;
+    setCopyAnnouncement("");
     dispatch({ type: "generate/started" });
 
     void fetchRandomPostalCode(client)
@@ -65,21 +77,30 @@ export const useGenerator = (client: ApiClient): UseGeneratorResult => {
 
   const copy = useCallback(() => {
     if (!currentResult) return;
-    setCopyError("");
+    const attempt = ++copyAttemptRef.current;
+    setCopyAnnouncement("");
 
-    // ui-design.md section 5.3: "Copy failure leaves the result usable and
-    // offers a concise error near the action." The failure is announced
-    // through the same live region the request lifecycle already uses
-    // (announcement, below) rather than a new UI surface.
-    void navigator.clipboard.writeText(currentResult.postalCode).catch(() => {
-      setCopyError(postalGeneratorText.copyFailureAnnouncement);
-    });
+    // ui-design.md section 5.3: "Copy success is announced in a polite
+    // status region and does not move focus. Copy failure leaves the result
+    // usable and offers a concise error near the action." Both outcomes are
+    // announced through the same live region the request lifecycle already
+    // uses (announcement, below) rather than a new UI surface.
+    void navigator.clipboard
+      .writeText(currentResult.postalCode)
+      .then(() => {
+        if (copyAttemptRef.current !== attempt) return;
+        setCopyAnnouncement(postalGeneratorText.copySuccessAnnouncement);
+      })
+      .catch(() => {
+        if (copyAttemptRef.current !== attempt) return;
+        setCopyAnnouncement(postalGeneratorText.copyFailureAnnouncement);
+      });
   }, [currentResult]);
 
   return {
     state,
     currentResult,
-    announcement: copyError || announcementTextOf(state),
+    announcement: copyAnnouncement || announcementTextOf(state),
     generate,
     copy,
   };
