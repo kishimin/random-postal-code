@@ -104,6 +104,16 @@ const renderAt = (path: string) => {
   return render(<RouterProvider router={router} />);
 };
 
+/**
+ * Waits past one full render-and-effect cycle so a passive effect that would
+ * have run already has -- there is no forward-looking condition to poll for
+ * when the assertion that follows is that nothing happened.
+ */
+const flushEffects = () =>
+  new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+
 const findAddressListItem = (address: Address) =>
   screen
     .getAllByRole("listitem")
@@ -199,6 +209,40 @@ describe("the generator experience", () => {
     // reaching the DOM -- toBeEnabled() can already be true a tick before
     // that effect runs.
     await waitFor(() => expect(generateButton).toHaveFocus());
+  });
+
+  // The generate action losing focus while disabled must only be restored
+  // when nothing else has since claimed it. Regenerating with an existing
+  // result on screen disables (and defocuses) the action the same way, but
+  // this time the visitor has moved on with the keyboard before the result
+  // arrives -- pulling focus back would silently cancel that navigation.
+  test("does not pull focus back to the generate action once loading ends if the user already tabbed elsewhere", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    renderAt("/");
+    const generateButton = await screen.findByRole("button", { name: /生成/ });
+
+    await user.click(generateButton);
+    expect(await screen.findByText("100-0001")).toBeInTheDocument();
+
+    const { resolve } = holdRandomResponse();
+    await user.click(generateButton);
+    await waitFor(() => expect(generateButton).toBeDisabled());
+
+    // Focus landed on document.body the instant the button disabled itself;
+    // tabbing from there reaches the header's home link first, then the
+    // copy action -- the generate action is skipped because it is disabled.
+    await user.tab();
+    await user.tab();
+    const copyButton = screen.getByRole("button", { name: /コピー/ });
+    expect(copyButton).toHaveFocus();
+
+    resolve(secondResult);
+
+    await waitFor(() => expect(generateButton).toBeEnabled());
+    await flushEffects();
+    expect(copyButton).toHaveFocus();
+    expect(generateButton).not.toHaveFocus();
   });
 
   test("activating the generate action displays the returned postal code and every returned address", async () => {
