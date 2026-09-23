@@ -188,6 +188,39 @@ describe("the generator experience", () => {
     );
   });
 
+  // ui-design.md section 8: "Set aria-busy on the result region during
+  // generation."
+  test("marks the result region busy while a generation is in flight, and not otherwise", async () => {
+    const user = userEvent.setup();
+    const { resolve } = holdRandomResponse();
+    renderAt("/");
+    const generateButton = await screen.findByRole("button", { name: /生成/ });
+    const main = screen.getByRole("main");
+
+    expect(main.querySelector("[aria-busy]")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+
+    await user.click(generateButton);
+
+    await waitFor(() =>
+      expect(main.querySelector("[aria-busy]")).toHaveAttribute(
+        "aria-busy",
+        "true",
+      ),
+    );
+
+    resolve(firstResult);
+
+    await waitFor(() =>
+      expect(main.querySelector("[aria-busy]")).toHaveAttribute(
+        "aria-busy",
+        "false",
+      ),
+    );
+  });
+
   // A result arriving must not take focus away from the action that asked
   // for it (acceptance/random-postal-code-experience.medium.test.ts's
   // keyboard scenario), even though the action was disabled -- and so lost

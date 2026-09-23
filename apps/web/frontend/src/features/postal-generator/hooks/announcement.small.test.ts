@@ -13,10 +13,13 @@ describe("announcementTextOf", () => {
     expect(announcementTextOf(initialGeneratorState)).toBe("");
   });
 
-  test("is empty for the loading state, which has nothing new to announce yet", () => {
+  // ui-design.md section 8: "Announce loading, ..." -- a visitor using a
+  // screen reader has no other way to learn a request is in flight, since
+  // the only visible change is the generate action becoming disabled.
+  test("is non-empty for the loading state", () => {
     expect(
       announcementTextOf({ status: "loading", previousResult: undefined }),
-    ).toBe("");
+    ).not.toBe("");
   });
 
   // ui-design.md section 8: "Announce ... successful results"; the displayed
