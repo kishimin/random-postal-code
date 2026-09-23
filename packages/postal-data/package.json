@@ -17,6 +17,7 @@
     "regenerate": "bun run scripts/build-dataset.ts"
   },
   "devDependencies": {
+    "@types/node": "^24.13.3",
     "@vitest/coverage-v8": "4.1.10",
     "@zipnami/shared": "workspace:*",
     "eslint": "9.39.5",
