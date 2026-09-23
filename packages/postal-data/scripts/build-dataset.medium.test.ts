@@ -35,6 +35,14 @@ const malformedSource = '"0000000"\n';
 const wellFormedSource =
   '00000,"100  ","1000001","TOKYO","CHIYODA","CHIYODA",東京都,千代田区,千代田,0,0,0,0,0,0\n';
 
+// A record whose postal-code column is present but empty, rather than
+// absent: postalCode comes out as "" (not undefined). "" ?? fallback keeps
+// "", since ?? only falls through on null/undefined, so before this fix the
+// displayed identifier was "" and the error message ended right after
+// "PostalCode contract: " with nothing useful after it.
+const emptyPostalCodeSource =
+  '00000,"100  ","","AAA","BBB","CCC",東京都,千代田区,千代田,0,0,0,0,0,0\n';
+
 describe("build-dataset CLI", () => {
   test("exits non-zero, writes no output file, and reports the failing entry when a record fails the shared PostalCode contract", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "postal-data-guard-"));
@@ -89,6 +97,31 @@ describe("build-dataset CLI", () => {
       expect(() =>
         JSON.parse(readFileSync(outputPath, "utf8")),
       ).not.toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("reports a meaningful identifier when an entry's postal code is an empty string rather than undefined", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "postal-data-guard-"));
+    const inputPath = path.join(dir, "input.csv");
+    const outputPath = path.join(dir, "output.json");
+    writeFileSync(inputPath, emptyPostalCodeSource);
+
+    try {
+      const result = spawnSync(
+        "bun",
+        ["run", scriptPath, inputPath, outputPath],
+        { encoding: "utf8", timeout: SPAWN_TIMEOUT_MS },
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.signal).toBeNull();
+      expect(result.status).toBe(1);
+      // Something non-blank must follow "PostalCode contract: "; before the
+      // fix this matched nothing, since the empty-string postal code was
+      // used verbatim as the identifier.
+      expect(result.stderr).toMatch(/PostalCode contract: \S/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

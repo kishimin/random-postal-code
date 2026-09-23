@@ -34,9 +34,18 @@ const invalidEntries = dataset.filter(
 );
 
 if (invalidEntries.length > 0) {
-  const identifiers = invalidEntries
-    .map((entry) => entry.postalCode ?? JSON.stringify(entry))
-    .join(", ");
+  // A reachable case, not just entry.postalCode being undefined: the CSV's
+  // postal-code column can be present but empty, giving postalCode: "".
+  // ?? only falls through on null/undefined, so an empty string passed
+  // through as the displayed "identifier," producing a message that ended
+  // in nothing useful. || falls through on "" too.
+  const MAX_LISTED_IDENTIFIERS = 10;
+  const listed = invalidEntries.slice(0, MAX_LISTED_IDENTIFIERS);
+  const remaining = invalidEntries.length - listed.length;
+  const identifiers =
+    listed
+      .map((entry) => entry.postalCode || JSON.stringify(entry))
+      .join(", ") + (remaining > 0 ? `, and ${remaining} more` : "");
 
   console.error(
     `Refusing to write a corrupt dataset: ${invalidEntries.length} ` +
