@@ -5,6 +5,7 @@ import {
   requestIdMiddleware,
   type RequestIdVariables,
 } from "./controllers/request-id-middleware.ts";
+import { securityHeadersMiddleware } from "./controllers/security-headers-middleware.ts";
 import type { PostalCodeRepository } from "./repositories/postal-code-repository.ts";
 
 export type CreateAppDependencies = {
@@ -27,6 +28,7 @@ export const createApp = (deps: CreateAppDependencies) => {
   const app = new Hono<{ Variables: RequestIdVariables }>();
 
   app.use("*", requestIdMiddleware);
+  app.use("*", securityHeadersMiddleware);
 
   registerRandomPostalCodeRoute(app, deps);
 
