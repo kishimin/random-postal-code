@@ -14,7 +14,9 @@ type AddressListProps = {
 export const AddressList = ({ addresses }: AddressListProps) => (
   <ul>
     {addresses.map((address, index) => (
-      <li key={`${index}-${address.prefecture}-${address.city}-${address.town}`}>
+      <li
+        key={`${index}-${address.prefecture}-${address.city}-${address.town}`}
+      >
         {`${address.prefecture}${address.city}${address.town}`}
       </li>
     ))}

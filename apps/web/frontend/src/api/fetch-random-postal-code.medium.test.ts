@@ -60,8 +60,6 @@ describe("fetchRandomPostalCode", () => {
       ),
     );
 
-    await expect(fetchRandomPostalCode(client)).rejects.toThrow(
-      /addresses/,
-    );
+    await expect(fetchRandomPostalCode(client)).rejects.toThrow(/addresses/);
   });
 });

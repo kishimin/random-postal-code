@@ -9,6 +9,6 @@ type GeneratorAnnouncerProps = {
  * Always mounted, so assistive technology is already listening by the time
  * the text changes from empty to something.
  */
-export const GeneratorAnnouncer = ({ announcement }: GeneratorAnnouncerProps) => (
-  <div role={"status"}>{announcement}</div>
-);
+export const GeneratorAnnouncer = ({
+  announcement,
+}: GeneratorAnnouncerProps) => <div role={"status"}>{announcement}</div>;

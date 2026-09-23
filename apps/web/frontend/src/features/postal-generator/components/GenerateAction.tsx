@@ -38,8 +38,7 @@ export const GenerateAction = ({
   }, [isGenerating]);
 
   const handleClick = () => {
-    hadFocusWhenDisabled.current =
-      document.activeElement === buttonRef.current;
+    hadFocusWhenDisabled.current = document.activeElement === buttonRef.current;
     onGenerate();
   };
 

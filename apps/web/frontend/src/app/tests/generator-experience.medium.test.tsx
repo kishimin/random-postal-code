@@ -43,8 +43,7 @@ const dataUnavailableBody = {
 };
 
 type StubbedResponse =
-  | { outcome: "success"; result: PostalCode }
-  | { outcome: "unavailable" };
+  { outcome: "success"; result: PostalCode } | { outcome: "unavailable" };
 
 /**
  * Queues answers for `GET /api/random`, repeating the last one once the
@@ -153,9 +152,7 @@ describe("the generator experience", () => {
         .getAllByRole("paragraph")
         .some((paragraph) => /郵便番号/.test(paragraph.textContent ?? "")),
     ).toBe(true);
-    expect(
-      screen.getByRole("button", { name: /生成/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /生成/ })).toBeInTheDocument();
     expect(screen.queryByText(/\d{3}-\d{4}/)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /コピー/ }),

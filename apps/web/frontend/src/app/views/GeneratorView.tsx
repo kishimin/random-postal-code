@@ -32,9 +32,7 @@ export const GeneratorView = () => {
         onGenerate={generate}
         isGenerating={state.status === "loading"}
       />
-      {currentResult && (
-        <CurrentResult result={currentResult} onCopy={copy} />
-      )}
+      {currentResult && <CurrentResult result={currentResult} onCopy={copy} />}
       <GeneratorAnnouncer announcement={announcement} />
     </>
   );

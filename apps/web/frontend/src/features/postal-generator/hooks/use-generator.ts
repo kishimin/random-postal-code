@@ -1,9 +1,6 @@
 import type { PostalCode } from "@zipnami/shared";
 import { useCallback, useReducer, useRef } from "react";
-import {
-  fetchRandomPostalCode,
-  type ApiClient,
-} from "../../../api/api-client";
+import { fetchRandomPostalCode, type ApiClient } from "../../../api/api-client";
 import { announcementTextOf } from "./announcement";
 import { classifyGeneratorError } from "./classify-error";
 import {
@@ -33,10 +30,7 @@ export type UseGeneratorResult = {
  * "Loading disables only duplicate generation.").
  */
 export const useGenerator = (client: ApiClient): UseGeneratorResult => {
-  const [state, dispatch] = useReducer(
-    generatorReducer,
-    initialGeneratorState,
-  );
+  const [state, dispatch] = useReducer(generatorReducer, initialGeneratorState);
   const statusRef = useRef(state.status);
 
   const generate = useCallback(() => {

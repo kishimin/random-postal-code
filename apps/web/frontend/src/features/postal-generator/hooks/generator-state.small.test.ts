@@ -22,9 +22,9 @@ describe("currentResultOf", () => {
   });
 
   test("returns the result carried by the success state", () => {
-    expect(
-      currentResultOf({ status: "success", result: firstResult }),
-    ).toBe(firstResult);
+    expect(currentResultOf({ status: "success", result: firstResult })).toBe(
+      firstResult,
+    );
   });
 
   test("returns the previous result carried by the loading state", () => {

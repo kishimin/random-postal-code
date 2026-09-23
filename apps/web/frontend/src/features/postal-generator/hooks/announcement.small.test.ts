@@ -22,9 +22,9 @@ describe("announcementTextOf", () => {
   // ui-design.md section 8: "Announce ... successful results"; the displayed
   // NNN-NNNN form is what a visitor sees, so the announcement names that.
   test("names the displayed postal code for the success state", () => {
-    expect(
-      announcementTextOf({ status: "success", result }),
-    ).toContain("100-0001");
+    expect(announcementTextOf({ status: "success", result })).toContain(
+      "100-0001",
+    );
   });
 
   // ui-design.md section 8: "Announce ... request errors". The exact wording
