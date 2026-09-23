@@ -32,7 +32,13 @@ export const GeneratorView = () => {
         onGenerate={generate}
         isGenerating={state.status === "loading"}
       />
-      {currentResult && <CurrentResult result={currentResult} onCopy={copy} />}
+      {/* ui-design.md section 8: "Set aria-busy on the result region during
+          generation." Wrapped rather than set on CurrentResult itself so the
+          attribute is present even on a first generation, before any result
+          exists to render. */}
+      <div aria-busy={state.status === "loading"}>
+        {currentResult && <CurrentResult result={currentResult} onCopy={copy} />}
+      </div>
       <GeneratorAnnouncer announcement={announcement} />
     </>
   );
