@@ -116,8 +116,10 @@ jobs:
       - name: Build frontend
         run: bun run build
 
-      # Acceptance tests live at the repository root and are picked up by the
-      # same Playwright project; a Large acceptance test runs here.
+      # Acceptance tests live at the repository root, but playwright.config.ts
+      # names each one explicitly in testMatch rather than discovering them by
+      # directory glob. A Large acceptance test must be added there by name
+      # (alongside the two existing Medium ones) for nightly CI to run it here.
       - name: Run Large browser tests
         run: bun run e2e:large
 

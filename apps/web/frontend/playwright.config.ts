@@ -11,8 +11,10 @@ export default defineConfig({
   // (it imports "vitest", which is not on this package's dependency graph).
   // The two browser acceptance tests are named explicitly instead of matched
   // by a directory glob so a future non-browser AT does not have to be
-  // excluded here again; renaming or removing either name would fail the
-  // acceptance-test-integrity check in CI, so this list only grows.
+  // excluded here again. No CI check currently catches a renamed or removed
+  // entry here — the "Check that no acceptance test was modified" step only
+  // diffs files inside acceptance/ against the merge base, and this file
+  // lives outside it — so edit this list carefully.
   testDir: "../../..",
   testMatch: [
     "acceptance/frontend-foundation.medium.test.ts",
