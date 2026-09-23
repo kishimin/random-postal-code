@@ -72,6 +72,50 @@ describe("createApp", () => {
     expect(response.headers.get("x-request-id")).toBe(body.error.requestId);
   });
 
+  // A GET/HEAD `Request` cannot be constructed with a `body` init option --
+  // the Fetch spec (and this project's workerd test runtime) throws
+  // "Request with a GET or HEAD method cannot have a body." on the attempt.
+  // A real non-empty body is still signaled to the server through
+  // `content-length` or `transfer-encoding`, which a `Request` can carry
+  // without a `body` option, so that is what a misbehaving client's GET
+  // with a body looks like once it reaches this handler.
+  test("answers GET /api/random carrying a non-empty content-length with 400 INVALID_REQUEST", async () => {
+    const app = appServing([onlyPostalCode]);
+
+    const response = await app.request("/api/random", {
+      method: "GET",
+      headers: { "content-length": "13" },
+    });
+    const body = await errorBodyOf(response);
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe("INVALID_REQUEST");
+  });
+
+  test("answers GET /api/random carrying a chunked transfer-encoding with 400 INVALID_REQUEST", async () => {
+    const app = appServing([onlyPostalCode]);
+
+    const response = await app.request("/api/random", {
+      method: "GET",
+      headers: { "transfer-encoding": "chunked" },
+    });
+    const body = await errorBodyOf(response);
+
+    expect(response.status).toBe(400);
+    expect(body.error.code).toBe("INVALID_REQUEST");
+  });
+
+  test("answers GET /api/random with content-length: 0 as a normal bodyless request", async () => {
+    const app = appServing([onlyPostalCode]);
+
+    const response = await app.request("/api/random", {
+      method: "GET",
+      headers: { "content-length": "0" },
+    });
+
+    expect(response.status).toBe(200);
+  });
+
   test("answers POST /api/random with 405 METHOD_NOT_ALLOWED", async () => {
     const app = appServing([onlyPostalCode]);
 
@@ -315,6 +359,81 @@ describe("createApp", () => {
       const response = await app.request("/api/random");
 
       expect(response.status).toBe(200);
+    });
+
+    // A rejected or unmatched request is still a request api-design.md
+    // section 7 asks every one of to be logged -- these three used to fall
+    // through the early `return`s before `respondAndLog` existed, or (for
+    // 404) never reached the controller at all, so nothing logged them.
+    test("logs a structured entry for 405 METHOD_NOT_ALLOWED", async () => {
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const app = appServing([onlyPostalCode]);
+
+      await app.request("/api/random", { method: "POST" });
+
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const entry = parseLoggedEntry(logSpy.mock.calls[0]);
+
+      expect(entry).toMatchObject({
+        route: "/api/random",
+        method: "POST",
+        status: 405,
+        code: "METHOD_NOT_ALLOWED",
+      });
+    });
+
+    test("logs a structured entry for 400 INVALID_REQUEST on an unsupported query parameter", async () => {
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const app = appServing([onlyPostalCode]);
+
+      await app.request("/api/random?postalCode=1000001");
+
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const entry = parseLoggedEntry(logSpy.mock.calls[0]);
+
+      expect(entry).toMatchObject({
+        route: "/api/random",
+        method: "GET",
+        status: 400,
+        code: "INVALID_REQUEST",
+      });
+    });
+
+    test("logs a structured entry for 400 INVALID_REQUEST on a GET carrying a non-empty body", async () => {
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const app = appServing([onlyPostalCode]);
+
+      await app.request("/api/random", {
+        method: "GET",
+        headers: { "content-length": "13" },
+      });
+
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const entry = parseLoggedEntry(logSpy.mock.calls[0]);
+
+      expect(entry).toMatchObject({
+        route: "/api/random",
+        method: "GET",
+        status: 400,
+        code: "INVALID_REQUEST",
+      });
+    });
+
+    test("logs a structured entry for 404 NOT_FOUND on an unmatched route", async () => {
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const app = appServing([onlyPostalCode]);
+
+      await app.request("/api/unknown");
+
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const entry = parseLoggedEntry(logSpy.mock.calls[0]);
+
+      expect(entry).toMatchObject({
+        route: "/api/unknown",
+        method: "GET",
+        status: 404,
+        code: "NOT_FOUND",
+      });
     });
   });
 });
