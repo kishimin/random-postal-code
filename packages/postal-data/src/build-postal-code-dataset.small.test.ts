@@ -214,6 +214,12 @@ describe("buildPostalCodeDataset", () => {
     expect(
       dataset.find((entry) => entry.postalCode === "1000001")?.addresses,
     ).toHaveLength(2);
+    // A grouping bug that leaked the interleaved record's address into the
+    // wrong group would still pass the two assertions above; pin 5300001's
+    // full address list too so it cannot pass by accident.
+    expect(
+      dataset.find((entry) => entry.postalCode === "5300001")?.addresses,
+    ).toEqual([{ prefecture: "Osaka", city: "Osaka City", town: "Umeda" }]);
   });
 
   test("returns exactly one entry per unique postal code across the whole dataset", async () => {
@@ -241,6 +247,12 @@ describe("buildPostalCodeDataset", () => {
     const dataset = await buildPostalCodeDataset(source);
     const postalCodes = dataset.map((entry) => entry.postalCode);
 
+    // An implementation that drops every record produces [], and
+    // [].length === new Set([]).size (0 === 0) is vacuously true. Pin the
+    // actual expected postal codes so an empty (or otherwise wrong) result
+    // cannot pass by accident; keep the Set comparison as a secondary,
+    // documentation-only check of the "unique" part of the claim.
+    expect(postalCodes).toEqual(["1000001", "5300001"]);
     expect(postalCodes).toHaveLength(new Set(postalCodes).size);
   });
 
@@ -263,6 +275,13 @@ describe("buildPostalCodeDataset", () => {
     const first = await buildPostalCodeDataset(source);
     const second = await buildPostalCodeDataset(source);
 
+    // JSON.stringify(second) === JSON.stringify(first) is vacuously true
+    // for [] === [] too, so it alone cannot tell "deterministic" apart from
+    // "always empty". Pin the real serialized content once, in addition to
+    // the run-to-run comparison.
+    expect(JSON.stringify(first)).toBe(
+      '[{"postalCode":"1000001","addresses":[{"prefecture":"Tokyo","city":"Chiyoda City","town":"Chiyoda"}]},{"postalCode":"5300001","addresses":[{"prefecture":"Osaka","city":"Osaka City","town":"Umeda"}]}]',
+    );
     expect(JSON.stringify(second)).toBe(JSON.stringify(first));
   });
 
