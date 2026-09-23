@@ -18,9 +18,35 @@ export type PostalCodeSelectionResult =
 // or unreadable artifact into an empty collection (section 5), so checking
 // emptiness and per-entry validity here covers all four states regardless of
 // which PostalCodeRepository implementation is plugged in.
-const isUsableCollection = (postalCodes: readonly PostalCode[]): boolean =>
-  postalCodes.length > 0 &&
-  postalCodes.every((entry) => postalCodeSchema.safeParse(entry).success);
+//
+// Re-running this per entry on every request would duplicate the validation
+// GeneratedDatasetRepository already did once at module evaluation, and
+// costs tens of milliseconds of CPU per request at Issue #34's dataset size
+// -- enough to exceed Cloudflare's free-plan CPU limit. Dropping entry-level
+// validation here instead would let a repository stub that returns a
+// partially-corrupt array (the acceptance test's DATA_UNAVAILABLE-on-corrupt
+// case) serve an invalid entry, so the check is memoized by collection
+// identity rather than removed: the real repository returns the same
+// module-level array reference on every call (api-design.md section 5:
+// "loaded once ... and treated as immutable"), so this validates once per
+// isolate in practice and every subsequent call is a WeakMap lookup.
+const usableCollectionCache = new WeakMap<readonly PostalCode[], boolean>();
+
+const isUsableCollection = (postalCodes: readonly PostalCode[]): boolean => {
+  const cached = usableCollectionCache.get(postalCodes);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const usable =
+    postalCodes.length > 0 &&
+    postalCodes.every((entry) => postalCodeSchema.safeParse(entry).success);
+
+  usableCollectionCache.set(postalCodes, usable);
+
+  return usable;
+};
 
 /**
  * Selects one postal code uniformly at random from what the repository
@@ -47,6 +73,17 @@ export const selectRandomPostalCode = async (
   }
 
   const index = pickRandomIndex(postalCodes.length);
+  const postalCode = postalCodes[index];
 
-  return { outcome: "ok", postalCode: postalCodes[index] };
+  // `noUncheckedIndexedAccess` is not enabled, so the compiler does not
+  // connect this access back to `isUsableCollection`'s `length > 0` guard
+  // above. A sparse collection (a hole, which `Array.prototype.every`
+  // silently skips) reaches this line with a valid index but an absent
+  // entry; guarding explicitly turns that into a classified failure instead
+  // of a 200 with `postalCode: undefined`.
+  if (postalCode === undefined) {
+    return { outcome: "internalError" };
+  }
+
+  return { outcome: "ok", postalCode };
 };
