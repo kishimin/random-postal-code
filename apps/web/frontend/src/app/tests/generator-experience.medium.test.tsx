@@ -340,15 +340,22 @@ describe("the generator experience", () => {
 
     await user.click(await screen.findByRole("button", { name: /生成/ }));
     expect(await screen.findByText("100-0001")).toBeInTheDocument();
+    // Recorded before the retry: the live region already carries the first
+    // success's announcement, so waiting only for "non-empty" would be
+    // satisfied by that leftover text the instant the click handler returns
+    // -- before the failure this test is about ever reaches the DOM.
+    const announcedBeforeRetry = screen.getByRole("status").textContent?.trim();
 
     await user.click(screen.getByRole("button", { name: /生成/ }));
 
     // ui-design.md section 8 requires a request error to be announced; the
     // exact wording is this Issue's to choose (section 12), so this only
-    // asserts that the live region says something.
-    await waitFor(() =>
-      expect(screen.getByRole("status").textContent?.trim()).not.toBe(""),
-    );
+    // asserts that the live region says something new.
+    await waitFor(() => {
+      const announced = screen.getByRole("status").textContent?.trim();
+      expect(announced).not.toBe("");
+      expect(announced).not.toBe(announcedBeforeRetry);
+    });
 
     // design.md section 4: a failure keeps the previous result on screen.
     expect(screen.getByText("100-0001")).toBeInTheDocument();
