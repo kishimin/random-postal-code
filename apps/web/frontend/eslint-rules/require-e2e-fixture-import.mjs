@@ -38,22 +38,23 @@ export default {
           return;
         }
 
-        // acceptance/ can also hold a non-Playwright acceptance test (Issue
-        // #3's dataset build has no screen to drive, so it runs under
-        // Vitest). Its `test` import is unrelated to the Playwright fixture
-        // this rule protects, so only a source that is actually trying to be
-        // Playwright — either the fixture path or a direct @playwright/test
-        // import — is in scope.
-        const isFixtureImport = fixtureImportPattern.test(node.source.value);
-        const isDirectPlaywrightImport =
-          node.source.value === "@playwright/test";
-        if (!isDirectPlaywrightImport && !isFixtureImport) {
+        if (fixtureImportPattern.test(node.source.value)) {
           return;
         }
 
-        if (isDirectPlaywrightImport) {
-          context.report({ node, messageId: "directImport" });
+        // acceptance/ can also hold a non-Playwright acceptance test (Issue
+        // #3's dataset build has no screen to drive, so it runs under
+        // Vitest). Its `test` import is unrelated to the Playwright fixture
+        // this rule protects, so the exemption requires positive proof the
+        // source is "vitest" rather than merely not being
+        // "@playwright/test" — otherwise a typo'd fixture path or an
+        // accidental node:test import inside a real Playwright test would
+        // silently stop being caught.
+        if (node.source.value === "vitest") {
+          return;
         }
+
+        context.report({ node, messageId: "directImport" });
       },
     };
   },

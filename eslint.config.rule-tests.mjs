@@ -208,6 +208,15 @@ run("require-e2e-fixture-import", requireE2eFixtureImport, {
       code: 'import { test } from "@playwright/test";',
       errors: [{ messageId: "directImport" }],
     },
+    {
+      // The vitest exemption must be positive proof of "vitest", not
+      // "anything that isn't @playwright/test" — otherwise a typo'd fixture
+      // path or an accidental node:test import inside a real Playwright test
+      // would silently stop being caught.
+      filename: "e2e/tests/generate-postal-code.medium.test.ts",
+      code: 'import { test } from "node:test";',
+      errors: [{ messageId: "directImport" }],
+    },
   ],
 });
 
