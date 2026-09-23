@@ -410,6 +410,12 @@ describe("the generator experience", () => {
   // offers a concise error near the action." use-generator.ts's copy()
   // swallowed the rejection instead, leaving a visitor who denied the
   // clipboard permission with no idea the copy never happened.
+  // PR #36 review found this feedback rendered only in GeneratorAnnouncer,
+  // below the whole current-result section -- past every returned address on
+  // a result with many of them. It now lives in CurrentResult's own status
+  // region, right after the copy action, so it is queried by that testid
+  // instead of the generic "status" role (CurrentResult.small.test.tsx
+  // covers the DOM position itself).
   test("a copy failure is announced through the live region", async () => {
     const user = userEvent.setup();
     queueRandomResponses([{ outcome: "success", result: firstResult }]);
@@ -419,16 +425,14 @@ describe("the generator experience", () => {
       renderAt("/");
       await user.click(await screen.findByRole("button", { name: /生成/ }));
       await screen.findByText("100-0001");
-      const announcedBeforeCopy = screen
-        .getByRole("status")
-        .textContent?.trim();
+      expect(screen.getByTestId("copy-feedback")).toHaveTextContent("");
 
       await user.click(screen.getByRole("button", { name: /コピー/ }));
 
       await waitFor(() => {
-        const announced = screen.getByRole("status").textContent?.trim();
-        expect(announced).not.toBe("");
-        expect(announced).not.toBe(announcedBeforeCopy);
+        expect(screen.getByTestId("copy-feedback")).toHaveTextContent(
+          postalGeneratorText.copyFailureAnnouncement,
+        );
       });
 
       // The result stays usable -- ui-design.md section 5.3's other
@@ -443,6 +447,8 @@ describe("the generator experience", () => {
   // region and does not move focus." use-generator.ts's copy() announced
   // nothing on success, so the live region kept repeating whatever the
   // request lifecycle had last said.
+  // Same relocation as the copy-failure case above: copy feedback now lives
+  // in CurrentResult's own status region rather than GeneratorAnnouncer's.
   test("a copy success is announced through the live region", async () => {
     const user = userEvent.setup();
     queueRandomResponses([{ outcome: "success", result: firstResult }]);
@@ -452,16 +458,14 @@ describe("the generator experience", () => {
       renderAt("/");
       await user.click(await screen.findByRole("button", { name: /生成/ }));
       await screen.findByText("100-0001");
-      const announcedBeforeCopy = screen
-        .getByRole("status")
-        .textContent?.trim();
+      expect(screen.getByTestId("copy-feedback")).toHaveTextContent("");
 
       await user.click(screen.getByRole("button", { name: /コピー/ }));
 
       await waitFor(() => {
-        const announced = screen.getByRole("status").textContent?.trim();
-        expect(announced).toBe(postalGeneratorText.copySuccessAnnouncement);
-        expect(announced).not.toBe(announcedBeforeCopy);
+        expect(screen.getByTestId("copy-feedback")).toHaveTextContent(
+          postalGeneratorText.copySuccessAnnouncement,
+        );
       });
       expect(writes).toContain("1000001");
     } finally {
@@ -484,12 +488,14 @@ describe("the generator experience", () => {
       const copyButton = screen.getByRole("button", { name: /コピー/ });
 
       // First attempt: held open by the stub. Second attempt: resolves
-      // immediately, so its success should be what the live region reports.
+      // immediately, so its success should be what the copy-feedback region
+      // reports (relocated out of the generic "status" role -- see the copy
+      // failure/success tests above).
       await user.click(copyButton);
       await user.click(copyButton);
 
       await waitFor(() => {
-        expect(screen.getByRole("status").textContent?.trim()).toBe(
+        expect(screen.getByTestId("copy-feedback")).toHaveTextContent(
           postalGeneratorText.copySuccessAnnouncement,
         );
       });
@@ -499,7 +505,7 @@ describe("the generator experience", () => {
       settleFirst();
       await flushEffects();
 
-      expect(screen.getByRole("status").textContent?.trim()).toBe(
+      expect(screen.getByTestId("copy-feedback")).toHaveTextContent(
         postalGeneratorText.copySuccessAnnouncement,
       );
     } finally {
@@ -521,8 +527,12 @@ describe("the generator experience", () => {
     // Recorded before the retry: the live region already carries the first
     // success's announcement, so waiting only for "non-empty" would be
     // satisfied by that leftover text the instant the click handler returns
-    // -- before the failure this test is about ever reaches the DOM.
-    const announcedBeforeRetry = screen.getByRole("status").textContent?.trim();
+    // -- before the failure this test is about ever reaches the DOM. Queried
+    // by testid rather than the generic "status" role now that CurrentResult
+    // renders its own, separate status region for copy feedback.
+    const announcedBeforeRetry = screen
+      .getByTestId("generation-announcer")
+      .textContent?.trim();
 
     await user.click(screen.getByRole("button", { name: /生成/ }));
 
@@ -530,7 +540,9 @@ describe("the generator experience", () => {
     // exact wording is this Issue's to choose (section 12), so this only
     // asserts that the live region says something new.
     await waitFor(() => {
-      const announced = screen.getByRole("status").textContent?.trim();
+      const announced = screen
+        .getByTestId("generation-announcer")
+        .textContent?.trim();
       expect(announced).not.toBe("");
       expect(announced).not.toBe(announcedBeforeRetry);
     });
@@ -541,5 +553,52 @@ describe("the generator experience", () => {
     await user.click(screen.getByRole("button", { name: /生成/ }));
 
     expect(await screen.findByText("530-0001")).toBeInTheDocument();
+  });
+
+  // PR #36 review found a second race: a copy attempt that resolves while a
+  // regeneration is still in flight left `copyAnnouncement` set with no
+  // occasion left to clear it, so the merged announcement stayed on the
+  // copy's success text forever -- the regeneration's own outcome (success or
+  // failure) was never announced at all. The fix separates copy feedback from
+  // the generation announcement entirely, so this asserts the generation
+  // announcer reports the new result once the regeneration settles, even
+  // though a copy succeeded first while it was still loading.
+  test("a copy that resolves while a regeneration is loading does not hide the regeneration's own announcement", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    const { restore } = stubClipboardWrites();
+
+    try {
+      renderAt("/");
+      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      expect(await screen.findByText("100-0001")).toBeInTheDocument();
+
+      const { resolve } = holdRandomResponse();
+      const generateButton = screen.getByRole("button", { name: /生成/ });
+      await user.click(generateButton);
+      await waitFor(() => expect(generateButton).toBeDisabled());
+
+      // The previous result and its copy action stay usable while loading
+      // (ui-design.md section 4). This copy settles before the regeneration's
+      // own fetch does -- stubClipboardWrites resolves immediately, and the
+      // fetch above is held open.
+      await user.click(screen.getByRole("button", { name: /コピー/ }));
+      await waitFor(() => {
+        expect(screen.getByTestId("copy-feedback")).toHaveTextContent(
+          postalGeneratorText.copySuccessAnnouncement,
+        );
+      });
+
+      resolve(secondResult);
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("generation-announcer").textContent?.trim(),
+        ).toBe(postalGeneratorText.resultAnnouncement("530-0001"));
+      });
+      expect(await screen.findByText("530-0001")).toBeInTheDocument();
+    } finally {
+      restore();
+    }
   });
 });
