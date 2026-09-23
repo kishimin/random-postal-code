@@ -1,6 +1,44 @@
+import {
+  apiErrorResponseSchema,
+  postalCodeSchema,
+  type ApiErrorCode,
+  type PostalCode,
+} from "@zipnami/shared";
+
 export type ApiClient = {
   resolveUrl: (path: string) => string;
 };
+
+const RANDOM_POSTAL_CODE_PATH = "api/random";
+
+/**
+ * The JSON error envelope api-design.md section 4.2 defines, thrown by
+ * `fetchRandomPostalCode` for any non-2xx response.
+ */
+export class ApiRequestError extends Error {
+  readonly status: number;
+  readonly code: ApiErrorCode;
+  readonly requestId: string;
+
+  /**
+   * @param {string} message - The envelope's safe, non-sensitive message.
+   * @param {number} status - The HTTP status the response carried.
+   * @param {ApiErrorCode} code - The envelope's error code.
+   * @param {string} requestId - The envelope's request id, echoed in `X-Request-Id`.
+   */
+  constructor(
+    message: string,
+    status: number,
+    code: ApiErrorCode,
+    requestId: string,
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+    this.code = code;
+    this.requestId = requestId;
+  }
+}
 
 /**
  * Configures how the client addresses the Zipnami API.
@@ -9,8 +47,6 @@ export type ApiClient = {
  * this module sits in the shared layer and validating the build's environment
  * belongs to the application layer. Keeping the dependency in that direction is
  * what lets a test configure a client without a build.
- *
- * Endpoints are not defined here. `GET /api/random` arrives with Issue #6.
  *
  * `baseUrl` is an absolute origin that may carry a path prefix.
  */
@@ -34,4 +70,44 @@ export const createApiClient = (baseUrl: string): ApiClient => {
     new URL(path.replace(/^\/+/, ""), base).toString();
 
   return { resolveUrl };
+};
+
+/**
+ * Calls `GET /api/random` and returns the postal code it carries.
+ *
+ * Throws `ApiRequestError` for the JSON error envelope api-design.md section
+ * 4.2 defines. A network failure or a success body that fails
+ * `postalCodeSchema` propagates as whatever `fetch` or zod raised instead of
+ * being wrapped, so the caller can tell the two apart (ui-design.md section
+ * 4's `UiError` distinguishes "offline" from "invalid-response").
+ */
+export const fetchRandomPostalCode = async (
+  client: ApiClient,
+): Promise<PostalCode> => {
+  const response = await fetch(client.resolveUrl(RANDOM_POSTAL_CODE_PATH), {
+    headers: { Accept: "application/json" },
+    // api-design.md section 4.1: "an intermediary must not turn repeated
+    // generation into a cached result." The server states this with its own
+    // Cache-Control: no-store response header, but that only governs caches
+    // that read it -- a browser can still serve a stale response for this
+    // identical GET URL from its own heuristic cache without ever revisiting
+    // the header. Requesting `no-store` here means this client never reuses
+    // a prior response regardless of what any layer between it and the
+    // server does.
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const body: unknown = await response.json();
+    const { error } = apiErrorResponseSchema.parse(body);
+    throw new ApiRequestError(
+      error.message,
+      response.status,
+      error.code,
+      error.requestId,
+    );
+  }
+
+  const body: unknown = await response.json();
+  return postalCodeSchema.parse(body);
 };

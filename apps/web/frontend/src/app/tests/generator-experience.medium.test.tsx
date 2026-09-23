@@ -1,0 +1,604 @@
+import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
+import type { Address, PostalCode } from "@zipnami/shared";
+import { HttpResponse, http } from "msw";
+import { describe, expect, test } from "vitest";
+import { worker } from "../../api/mocks/browser";
+import { postalGeneratorText } from "../../features/postal-generator/site-text";
+import { createAppRouter } from "../routes/app-router";
+
+/*
+ * Covers Issue #6's acceptance criterion "Component/integration tests assert
+ * observable initial, loading, success, regeneration, copy, and failure
+ * behavior" -- the one criterion acceptance/random-postal-code-experience
+ * does not hold, because a browser cannot observe which test file a
+ * repository's suite lives in (see that file's own header comment).
+ *
+ * Rendered through the production route configuration, as
+ * routing.medium.test.tsx does, so this exercises the same composition a
+ * visitor reaches rather than GeneratorView mounted on its own.
+ */
+
+const RANDOM_ENDPOINT = "http://localhost:8787/api/random";
+
+const firstResult: PostalCode = {
+  postalCode: "1000001",
+  addresses: [{ prefecture: "東京都", city: "千代田区", town: "千代田" }],
+};
+
+const secondResult: PostalCode = {
+  postalCode: "5300001",
+  addresses: [
+    { prefecture: "大阪府", city: "大阪市北区", town: "梅田" },
+    { prefecture: "大阪府", city: "大阪市北区", town: "中之島" },
+  ],
+};
+
+const dataUnavailableBody = {
+  error: {
+    code: "DATA_UNAVAILABLE",
+    message: "Postal code data is temporarily unavailable.",
+    requestId: "01JEXAMPLE0000000000000000",
+  },
+};
+
+type StubbedResponse =
+  { outcome: "success"; result: PostalCode } | { outcome: "unavailable" };
+
+/**
+ * Queues answers for `GET /api/random`, repeating the last one once the
+ * queue is down to it -- mirrors the acceptance test's Page Object stub so
+ * a caller only queues as many responses as it cares about.
+ */
+const queueRandomResponses = (responses: StubbedResponse[]) => {
+  const queue = [...responses];
+  const requests: string[] = [];
+
+  worker.use(
+    http.get(RANDOM_ENDPOINT, ({ request }) => {
+      requests.push(request.url);
+      const next = queue.length > 1 ? queue.shift() : queue.at(0);
+
+      return next?.outcome === "success"
+        ? HttpResponse.json(next.result)
+        : HttpResponse.json(dataUnavailableBody, { status: 503 });
+    }),
+  );
+
+  return { requests };
+};
+
+/**
+ * Holds the response to `GET /api/random` until `resolve` is called, which
+ * is how the loading state is reached without guessing a timer's length.
+ */
+const holdRandomResponse = () => {
+  const requests: string[] = [];
+  const controls = {
+    resolve: undefined as unknown as (result: PostalCode) => void,
+  };
+  const held = new Promise<PostalCode>((resolve) => {
+    controls.resolve = resolve;
+  });
+
+  worker.use(
+    http.get(RANDOM_ENDPOINT, async ({ request }) => {
+      requests.push(request.url);
+      return HttpResponse.json(await held);
+    }),
+  );
+
+  return {
+    requests,
+    resolve: (result: PostalCode) => {
+      controls.resolve(result);
+    },
+  };
+};
+
+const renderAt = (path: string) => {
+  const router = createAppRouter(
+    createMemoryHistory({ initialEntries: [path] }),
+  );
+
+  return render(<RouterProvider router={router} />);
+};
+
+/**
+ * Waits past one full render-and-effect cycle so a passive effect that would
+ * have run already has -- there is no forward-looking condition to poll for
+ * when the assertion that follows is that nothing happened.
+ */
+const flushEffects = () =>
+  new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+
+const findAddressListItem = (address: Address) =>
+  screen
+    .getAllByRole("listitem")
+    .find((item) =>
+      [address.prefecture, address.city, address.town].every((part) =>
+        item.textContent?.includes(part),
+      ),
+    );
+
+/*
+ * Records what the page hands to the platform clipboard instead of the real
+ * clipboard, which needs a permission grant this suite does not hold.
+ * Restores the original after the test, mirroring the acceptance test's own
+ * Page Object stub at acceptance/pages/postal-code-generator-page.ts.
+ */
+const stubClipboardWrites = () => {
+  const writes: string[] = [];
+  const record = (text: string) => {
+    writes.push(text);
+    return Promise.resolve();
+  };
+  const original = navigator.clipboard.writeText.bind(navigator.clipboard);
+  navigator.clipboard.writeText = record;
+
+  return {
+    writes,
+    restore: () => {
+      navigator.clipboard.writeText = original;
+    },
+  };
+};
+
+/**
+ * Makes the platform clipboard reject every write, the way a browser denies
+ * it without a user gesture or a permission grant. Restores the original
+ * after the test.
+ */
+const stubClipboardFailure = () => {
+  const original = navigator.clipboard.writeText.bind(navigator.clipboard);
+  navigator.clipboard.writeText = () =>
+    Promise.reject(new Error("clipboard write denied"));
+
+  return {
+    restore: () => {
+      navigator.clipboard.writeText = original;
+    },
+  };
+};
+
+/**
+ * Makes the platform clipboard settle two overlapping writes out of order:
+ * the first call is held open until `settleFirst` is invoked, and every
+ * later call resolves immediately. This reproduces PR #36 review's stale-
+ * copy race -- a first copy attempt still in flight when a second one
+ * starts, whose eventual settlement must not overwrite the second attempt's
+ * already-announced outcome.
+ */
+const stubOutOfOrderClipboardWrites = () => {
+  const original = navigator.clipboard.writeText.bind(navigator.clipboard);
+  const controls = {
+    calls: 0,
+    settleFirst: undefined as unknown as () => void,
+  };
+
+  navigator.clipboard.writeText = () => {
+    controls.calls += 1;
+    if (controls.calls === 1) {
+      return new Promise<void>((_resolve, reject) => {
+        controls.settleFirst = () =>
+          reject(new Error("stale clipboard write denied"));
+      });
+    }
+    return Promise.resolve();
+  };
+
+  return {
+    settleFirst: () => controls.settleFirst(),
+    restore: () => {
+      navigator.clipboard.writeText = original;
+    },
+  };
+};
+
+describe("the generator experience", () => {
+  test("the initial screen offers branding, an explanation, and the generate action with an empty result and no request", async () => {
+    const { requests } = queueRandomResponses([
+      { outcome: "success", result: firstResult },
+    ]);
+
+    renderAt("/");
+
+    expect(
+      await screen.findByRole("heading", { name: /Zipnami/, level: 1 }),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("main"))
+        .getAllByRole("paragraph")
+        .some((paragraph) => /郵便番号/.test(paragraph.textContent ?? "")),
+    ).toBe(true);
+    expect(screen.getByRole("button", { name: /生成/ })).toBeInTheDocument();
+    expect(screen.queryByText(/\d{3}-\d{4}/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /コピー/ }),
+    ).not.toBeInTheDocument();
+    expect(requests).toHaveLength(0);
+  });
+
+  test("the generate action is disabled while its request is in flight", async () => {
+    const user = userEvent.setup();
+    const { resolve } = holdRandomResponse();
+    renderAt("/");
+
+    await user.click(await screen.findByRole("button", { name: /生成/ }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /生成/ })).toBeDisabled(),
+    );
+
+    resolve(firstResult);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /生成/ })).toBeEnabled(),
+    );
+  });
+
+  // use-generator.ts's own docstring: a ref refuses a second activation
+  // synchronously, at the moment it is requested, because state alone would
+  // not reflect "loading" again until the next render -- by which point a
+  // second call may already have started its own fetch. The button's own
+  // `disabled` attribute cannot be relied on to prove this guard exists: it
+  // only takes effect once React commits the re-render the first click
+  // triggers, and a real browser refuses to deliver a click to an already-
+  // disabled button regardless of how it is dispatched. Dispatching both
+  // clicks inside one `act` call keeps that commit from happening in
+  // between, so the second click still reaches the handler while the DOM
+  // still shows the button enabled -- the exact race the ref exists for.
+  test("a second activation while a generation is in flight starts no second request", async () => {
+    const { resolve, requests } = holdRandomResponse();
+    renderAt("/");
+    const generateButton = await screen.findByRole("button", { name: /生成/ });
+
+    act(() => {
+      generateButton.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true }),
+      );
+      generateButton.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true }),
+      );
+    });
+
+    // The stub's handler receives the request asynchronously (through MSW's
+    // own request pipeline), so the count only settles after a tick even
+    // though both clicks were dispatched synchronously.
+    await waitFor(() => expect(requests).toHaveLength(1));
+
+    resolve(firstResult);
+    await waitFor(() => expect(generateButton).toBeEnabled());
+  });
+
+  // ui-design.md section 8: "Set aria-busy on the result region during
+  // generation."
+  test("marks the result region busy while a generation is in flight, and not otherwise", async () => {
+    const user = userEvent.setup();
+    const { resolve } = holdRandomResponse();
+    renderAt("/");
+    const generateButton = await screen.findByRole("button", { name: /生成/ });
+    const resultRegion = screen.getByTestId("result-region");
+
+    expect(resultRegion).toHaveAttribute("aria-busy", "false");
+
+    await user.click(generateButton);
+
+    await waitFor(() =>
+      expect(resultRegion).toHaveAttribute("aria-busy", "true"),
+    );
+
+    resolve(firstResult);
+
+    await waitFor(() =>
+      expect(resultRegion).toHaveAttribute("aria-busy", "false"),
+    );
+  });
+
+  // A result arriving must not take focus away from the action that asked
+  // for it (acceptance/random-postal-code-experience.medium.test.ts's
+  // keyboard scenario), even though the action was disabled -- and so lost
+  // focus -- while the request it started was in flight.
+  test("keeps focus on the generate action once a result arrives, even though the action was disabled meanwhile", async () => {
+    const user = userEvent.setup();
+    const { resolve } = holdRandomResponse();
+    renderAt("/");
+    const generateButton = await screen.findByRole("button", { name: /生成/ });
+
+    await user.click(generateButton);
+    await waitFor(() => expect(generateButton).toBeDisabled());
+
+    resolve(firstResult);
+
+    await waitFor(() => expect(generateButton).toBeEnabled());
+    // Restoring focus runs in an effect once the button re-enables, which
+    // this test does not otherwise wait on the way it waits on state
+    // reaching the DOM -- toBeEnabled() can already be true a tick before
+    // that effect runs.
+    await waitFor(() => expect(generateButton).toHaveFocus());
+  });
+
+  // The generate action losing focus while disabled must only be restored
+  // when nothing else has since claimed it. Regenerating with an existing
+  // result on screen disables (and defocuses) the action the same way, but
+  // this time the visitor has moved on with the keyboard before the result
+  // arrives -- pulling focus back would silently cancel that navigation.
+  test("does not pull focus back to the generate action once loading ends if the user already tabbed elsewhere", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    renderAt("/");
+    const generateButton = await screen.findByRole("button", { name: /生成/ });
+
+    await user.click(generateButton);
+    expect(await screen.findByText("100-0001")).toBeInTheDocument();
+
+    const { resolve } = holdRandomResponse();
+    await user.click(generateButton);
+    await waitFor(() => expect(generateButton).toBeDisabled());
+
+    // Focus landed on document.body the instant the button disabled itself;
+    // tabbing from there reaches the header's home link first, then the
+    // copy action -- the generate action is skipped because it is disabled.
+    await user.tab();
+    await user.tab();
+    const copyButton = screen.getByRole("button", { name: /コピー/ });
+    expect(copyButton).toHaveFocus();
+
+    resolve(secondResult);
+
+    await waitFor(() => expect(generateButton).toBeEnabled());
+    await flushEffects();
+    expect(copyButton).toHaveFocus();
+    expect(generateButton).not.toHaveFocus();
+  });
+
+  test("activating the generate action displays the returned postal code and every returned address", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    renderAt("/");
+
+    await user.click(await screen.findByRole("button", { name: /生成/ }));
+
+    expect(await screen.findByText("100-0001")).toBeInTheDocument();
+    for (const address of firstResult.addresses) {
+      expect(findAddressListItem(address)).toBeDefined();
+    }
+  });
+
+  test("regenerating replaces the current result with the newly returned one", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([
+      { outcome: "success", result: firstResult },
+      { outcome: "success", result: secondResult },
+    ]);
+    renderAt("/");
+
+    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    expect(await screen.findByText("100-0001")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /生成/ }));
+
+    expect(await screen.findByText("530-0001")).toBeInTheDocument();
+    expect(screen.queryByText("100-0001")).not.toBeInTheDocument();
+    for (const address of secondResult.addresses) {
+      expect(findAddressListItem(address)).toBeDefined();
+    }
+  });
+
+  test("the displayed postal code is copied to the clipboard as its canonical seven digits", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    const { writes, restore } = stubClipboardWrites();
+
+    try {
+      renderAt("/");
+      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await screen.findByText("100-0001");
+
+      await user.click(screen.getByRole("button", { name: /コピー/ }));
+
+      await waitFor(() => expect(writes).toContain("1000001"));
+    } finally {
+      restore();
+    }
+  });
+
+  // ui-design.md section 5.3: "Copy failure leaves the result usable and
+  // offers a concise error near the action." use-generator.ts's copy()
+  // swallowed the rejection instead, leaving a visitor who denied the
+  // clipboard permission with no idea the copy never happened.
+  // PR #36 review found this feedback rendered only in GeneratorAnnouncer,
+  // below the whole current-result section -- past every returned address on
+  // a result with many of them. It now lives in CurrentResult's own status
+  // region, right after the copy action, so it is queried by that testid
+  // instead of the generic "status" role (CurrentResult.small.test.tsx
+  // covers the DOM position itself).
+  test("a copy failure is announced through the live region", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    const { restore } = stubClipboardFailure();
+
+    try {
+      renderAt("/");
+      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await screen.findByText("100-0001");
+      expect(screen.getByTestId("copy-feedback")).toHaveTextContent("");
+
+      await user.click(screen.getByRole("button", { name: /コピー/ }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("copy-feedback")).toHaveTextContent(
+          postalGeneratorText.copyFailureAnnouncement,
+        );
+      });
+
+      // The result stays usable -- ui-design.md section 5.3's other
+      // requirement for a copy failure.
+      expect(screen.getByText("100-0001")).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+
+  // ui-design.md section 5.3: "Copy success is announced in a polite status
+  // region and does not move focus." use-generator.ts's copy() announced
+  // nothing on success, so the live region kept repeating whatever the
+  // request lifecycle had last said.
+  // Same relocation as the copy-failure case above: copy feedback now lives
+  // in CurrentResult's own status region rather than GeneratorAnnouncer's.
+  test("a copy success is announced through the live region", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    const { writes, restore } = stubClipboardWrites();
+
+    try {
+      renderAt("/");
+      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await screen.findByText("100-0001");
+      expect(screen.getByTestId("copy-feedback")).toHaveTextContent("");
+
+      await user.click(screen.getByRole("button", { name: /コピー/ }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("copy-feedback")).toHaveTextContent(
+          postalGeneratorText.copySuccessAnnouncement,
+        );
+      });
+      expect(writes).toContain("1000001");
+    } finally {
+      restore();
+    }
+  });
+
+  // PR #36 review found a race: an older copy attempt still in flight when a
+  // newer one starts must not have its later settlement overwrite the newer
+  // attempt's already-announced outcome.
+  test("a stale copy attempt's late settlement does not overwrite a newer copy attempt's announcement", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    const { settleFirst, restore } = stubOutOfOrderClipboardWrites();
+
+    try {
+      renderAt("/");
+      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await screen.findByText("100-0001");
+      const copyButton = screen.getByRole("button", { name: /コピー/ });
+
+      // First attempt: held open by the stub. Second attempt: resolves
+      // immediately, so its success should be what the copy-feedback region
+      // reports (relocated out of the generic "status" role -- see the copy
+      // failure/success tests above).
+      await user.click(copyButton);
+      await user.click(copyButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("copy-feedback")).toHaveTextContent(
+          postalGeneratorText.copySuccessAnnouncement,
+        );
+      });
+
+      // The first attempt now rejects, arriving after the second attempt's
+      // success was already announced.
+      settleFirst();
+      await flushEffects();
+
+      expect(screen.getByTestId("copy-feedback")).toHaveTextContent(
+        postalGeneratorText.copySuccessAnnouncement,
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  test("a failed generation is announced, keeps the previous result, and allows another attempt", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([
+      { outcome: "success", result: firstResult },
+      { outcome: "unavailable" },
+      { outcome: "success", result: secondResult },
+    ]);
+    renderAt("/");
+
+    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    expect(await screen.findByText("100-0001")).toBeInTheDocument();
+    // Recorded before the retry: the live region already carries the first
+    // success's announcement, so waiting only for "non-empty" would be
+    // satisfied by that leftover text the instant the click handler returns
+    // -- before the failure this test is about ever reaches the DOM. Queried
+    // by testid rather than the generic "status" role now that CurrentResult
+    // renders its own, separate status region for copy feedback.
+    const announcedBeforeRetry = screen
+      .getByTestId("generation-announcer")
+      .textContent?.trim();
+
+    await user.click(screen.getByRole("button", { name: /生成/ }));
+
+    // ui-design.md section 8 requires a request error to be announced; the
+    // exact wording is this Issue's to choose (section 12), so this only
+    // asserts that the live region says something new.
+    await waitFor(() => {
+      const announced = screen
+        .getByTestId("generation-announcer")
+        .textContent?.trim();
+      expect(announced).not.toBe("");
+      expect(announced).not.toBe(announcedBeforeRetry);
+    });
+
+    // ui-design.md section 4: a failure keeps the previous result on screen.
+    expect(screen.getByText("100-0001")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /生成/ }));
+
+    expect(await screen.findByText("530-0001")).toBeInTheDocument();
+  });
+
+  // PR #36 review found a second race: a copy attempt that resolves while a
+  // regeneration is still in flight left `copyAnnouncement` set with no
+  // occasion left to clear it, so the merged announcement stayed on the
+  // copy's success text forever -- the regeneration's own outcome (success or
+  // failure) was never announced at all. The fix separates copy feedback from
+  // the generation announcement entirely, so this asserts the generation
+  // announcer reports the new result once the regeneration settles, even
+  // though a copy succeeded first while it was still loading.
+  test("a copy that resolves while a regeneration is loading does not hide the regeneration's own announcement", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    const { restore } = stubClipboardWrites();
+
+    try {
+      renderAt("/");
+      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      expect(await screen.findByText("100-0001")).toBeInTheDocument();
+
+      const { resolve } = holdRandomResponse();
+      const generateButton = screen.getByRole("button", { name: /生成/ });
+      await user.click(generateButton);
+      await waitFor(() => expect(generateButton).toBeDisabled());
+
+      // The previous result and its copy action stay usable while loading
+      // (ui-design.md section 4). This copy settles before the regeneration's
+      // own fetch does -- stubClipboardWrites resolves immediately, and the
+      // fetch above is held open.
+      await user.click(screen.getByRole("button", { name: /コピー/ }));
+      await waitFor(() => {
+        expect(screen.getByTestId("copy-feedback")).toHaveTextContent(
+          postalGeneratorText.copySuccessAnnouncement,
+        );
+      });
+
+      resolve(secondResult);
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("generation-announcer").textContent?.trim(),
+        ).toBe(postalGeneratorText.resultAnnouncement("530-0001"));
+      });
+      expect(await screen.findByText("530-0001")).toBeInTheDocument();
+    } finally {
+      restore();
+    }
+  });
+});
