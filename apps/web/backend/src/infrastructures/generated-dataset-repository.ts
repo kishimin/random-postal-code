@@ -24,17 +24,24 @@ import rawPostalCodes from "../data/postal-codes.generated.json";
  * small KEN_ALL.CSV-shaped input, not hand-typed JSON. Replacing it with the
  * full dataset once Issue #34 lands changes only this file.
  */
-const parsedDataset = z.array(postalCodeSchema).safeParse(rawPostalCodes);
+/**
+ * Validates raw data against the shared `PostalCode` contract, falling back
+ * to an empty collection instead of throwing. An artifact that fails to
+ * parse is translated this way so every `PostalCodeRepository` failure mode
+ * -- missing, unreadable, empty, or invalid -- reaches the application layer
+ * as the same explicit "nothing usable" collection state (api-design.md
+ * section 5), which `RandomPostalCodeService` already maps to
+ * `DATA_UNAVAILABLE`, rather than crashing Worker startup.
+ */
+export const parseGeneratedPostalCodes = (
+  raw: unknown,
+): readonly PostalCode[] => {
+  const parsed = z.array(postalCodeSchema).safeParse(raw);
 
-// An artifact that fails to parse is translated into an empty collection
-// rather than thrown here, so every PostalCodeRepository failure mode --
-// missing, unreadable, empty, or invalid -- reaches the application layer as
-// the same explicit "nothing usable" collection state (api-design.md
-// section 5), which RandomPostalCodeService already maps to
-// DATA_UNAVAILABLE.
-const postalCodes: readonly PostalCode[] = parsedDataset.success
-  ? parsedDataset.data
-  : [];
+  return parsed.success ? parsed.data : [];
+};
+
+const postalCodes = parseGeneratedPostalCodes(rawPostalCodes);
 
 /**
  * Reads the postal-code dataset bundled into the Worker's own module graph
