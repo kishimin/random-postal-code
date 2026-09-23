@@ -22,6 +22,12 @@ type GenerateActionProps = {
  * with that recorded, browser-owned focus outcome once loading ends,
  * restoring it so an activation that started here does not silently lose its
  * place once the result arrives.
+ *
+ * Restoration only happens while focus is still sitting where the platform
+ * left it (`document.body`). A visitor who tabbed elsewhere during the
+ * request -- to the copy action on the previous result, or to the footer's
+ * privacy link -- has moved on deliberately; pulling focus back to this
+ * button would silently cancel that navigation.
  */
 export const GenerateAction = ({
   onGenerate,
@@ -33,8 +39,10 @@ export const GenerateAction = ({
   useEffect(() => {
     if (isGenerating || !hadFocusWhenDisabled.current) return;
 
-    buttonRef.current?.focus();
     hadFocusWhenDisabled.current = false;
+    if (document.activeElement === document.body) {
+      buttonRef.current?.focus();
+    }
   }, [isGenerating]);
 
   const handleClick = () => {
