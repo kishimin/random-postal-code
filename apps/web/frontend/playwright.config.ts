@@ -9,7 +9,7 @@ export default defineConfig({
   // #3's runs under Vitest (ADR-0062 identifies an AT by its location, not by
   // which runner executes it), and Playwright cannot even load that file
   // (it imports "vitest", which is not on this package's dependency graph).
-  // The two browser acceptance tests are named explicitly instead of matched
+  // The browser acceptance tests are named explicitly instead of matched
   // by a directory glob so a future non-browser AT does not have to be
   // excluded here again. No CI check currently catches a renamed or removed
   // entry here — the "Check that no acceptance test was modified" step only
@@ -19,6 +19,7 @@ export default defineConfig({
   testMatch: [
     "acceptance/frontend-foundation.medium.test.ts",
     "acceptance/error-destinations.medium.test.ts",
+    "acceptance/random-postal-code-experience.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,
