@@ -30,13 +30,25 @@ export const privacyText = {
    * loaded for consent is still unselected (section 12 routes the AdSense
    * and consent configuration to human review before release), so consent is
    * named as a subject the disclosure covers, not as a specific vendor.
+   *
+   * `googleAdSense` and `consent` are worded to match what this codebase
+   * actually does today rather than the finished product: no code here gates
+   * an ad request on consent (`AdSlot.tsx` pushes to `adsbygoogle`
+   * unconditionally), so `consent` states that a mechanism is not yet
+   * implemented instead of claiming one already runs — Issue #10's own Out of
+   * scope forbids a claim the SDK configuration does not support. AdSense may
+   * still set its own identifiers client-side even without a consent gate,
+   * which is why `googleAdSense` says so explicitly rather than leaving a
+   * reader to infer no advertising identifier exists anywhere from the
+   * server-scoped denial in `firstParty.noStoredAdvertisingIdentifier`.
    */
   thirdParty: {
     heading: "第三者サービスが処理する情報",
     googleMaps: "選択した住所の地図表示にはGoogle Mapsを利用しています。",
-    googleAdSense: "広告の配信にはGoogle AdSenseを利用しています。",
+    googleAdSense:
+      "広告の配信にはGoogle AdSenseを利用しています。AdSense側の設定により、お使いのブラウザに広告用の識別子やCookieが保存される場合があります。",
     consent:
-      "広告表示にあたり同意の取得が必要な地域では、所定の同意管理の仕組みを使用します。",
+      "広告表示にあたり同意の取得が必要な地域向けの同意管理の仕組みは、本サービスでは現時点で未導入です。一般公開までに導入します。",
   },
 
   /*
