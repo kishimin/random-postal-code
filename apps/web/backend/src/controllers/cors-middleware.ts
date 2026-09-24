@@ -51,28 +51,29 @@ export const corsMiddleware: MiddlewareHandler<{
   const allowedOrigins = parseAllowedOrigins(c.env?.ALLOWED_ORIGINS);
   const isAuthorized = origin !== undefined && allowedOrigins.includes(origin);
 
+  // Every response this middleware answers was decided by the request's
+  // Origin header, whether or not that header was present -- api-design.md
+  // section 6 requires Vary: Origin on all of them so a cache sitting in
+  // front of the Worker never serves one origin's response to another.
+  const markVaryAndAuthorization = (): void => {
+    c.header("vary", "Origin", { append: true });
+    if (isAuthorized) {
+      c.header("access-control-allow-origin", origin);
+    }
+  };
+
   if (c.req.method === "OPTIONS") {
     // api-design.md section 6 also forbids trusting client-supplied
     // forwarding headers; this handler never reads Access-Control-Request-
     // Headers, so nothing a caller asks for is ever opened or reflected.
+    markVaryAndAuthorization();
     if (isAuthorized) {
-      c.header("access-control-allow-origin", origin);
       c.header("access-control-allow-methods", ALLOWED_METHODS);
     }
-    c.header("vary", "Origin", { append: true });
 
     return c.body(null, 204);
   }
 
   await next();
-
-  // Every response through this middleware was decided by the request's
-  // Origin header, whether or not that header was present -- api-design.md
-  // section 6 requires Vary: Origin on all of them so a cache sitting in
-  // front of the Worker never serves one origin's response to another.
-  c.header("vary", "Origin", { append: true });
-
-  if (isAuthorized) {
-    c.header("access-control-allow-origin", origin);
-  }
+  markVaryAndAuthorization();
 };
