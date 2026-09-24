@@ -2,7 +2,14 @@ import { z } from "zod";
 
 export type AppEnv = {
   apiBaseUrl: string;
+  googleAdsenseClientId: string;
+  useTestAds: boolean;
 };
+
+// Not a real, restricted publisher ID (same placeholder role as .env's own
+// VITE_GOOGLE_MAPS_API_KEY comment). AdSense is an optional dependency
+// (design.md section 7), so a build without a real one still renders.
+const DEV_ADSENSE_CLIENT_ID_PLACEHOLDER = "ca-pub-0000000000000000";
 
 // The URL constructor rather than a pattern: it rejects a bare host:port and a
 // relative path the same way a browser would, and it exposes the protocol so a
@@ -18,6 +25,11 @@ const isAbsoluteHttpUrl = (value: string) => {
 
 const envSchema = z.object({
   VITE_API_BASE_URL: z.string().refine(isAbsoluteHttpUrl),
+  // Both optional and left as plain strings rather than z.enum: unlike
+  // VITE_API_BASE_URL, an advertising variable failing here must not throw
+  // and take an otherwise valid build down with it (design.md section 7).
+  VITE_GOOGLE_ADSENSE_CLIENT_ID: z.string().optional(),
+  VITE_ADSENSE_TEST_MODE: z.string().optional(),
 });
 
 /**
@@ -39,5 +51,13 @@ export const parseAppEnv = (env: Record<string, unknown>): AppEnv => {
     );
   }
 
-  return { apiBaseUrl: result.data.VITE_API_BASE_URL };
+  return {
+    apiBaseUrl: result.data.VITE_API_BASE_URL,
+    googleAdsenseClientId:
+      result.data.VITE_GOOGLE_ADSENSE_CLIENT_ID ??
+      DEV_ADSENSE_CLIENT_ID_PLACEHOLDER,
+    // Fails safe: anything other than the exact opt-out keeps test ads,
+    // rather than requiring an exact opt-in that a future default could miss.
+    useTestAds: result.data.VITE_ADSENSE_TEST_MODE !== "false",
+  };
 };
