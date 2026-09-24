@@ -9,6 +9,7 @@ describe("AdvertisingRegion", () => {
     render(
       <AdvertisingRegion
         clientId={"ca-pub-1234567890123456"}
+        slotId={"0000000000"}
         testMode={true}
       />,
     );
@@ -22,6 +23,7 @@ describe("AdvertisingRegion", () => {
     render(
       <AdvertisingRegion
         clientId={"ca-pub-1234567890123456"}
+        slotId={"0000000000"}
         testMode={true}
       />,
     );
@@ -38,6 +40,7 @@ describe("AdvertisingRegion", () => {
     render(
       <AdvertisingRegion
         clientId={"ca-pub-1234567890123456"}
+        slotId={"0000000000"}
         testMode={true}
       />,
     );
@@ -51,12 +54,14 @@ describe("AdvertisingRegion", () => {
     render(
       <AdvertisingRegion
         clientId={"ca-pub-9999999999999999"}
+        slotId={"1111111111"}
         testMode={false}
       />,
     );
 
     const slot = screen.getByTestId("advertising-ad-slot");
     expect(slot).toHaveAttribute("data-ad-client", "ca-pub-9999999999999999");
+    expect(slot).toHaveAttribute("data-ad-slot", "1111111111");
     expect(slot).not.toHaveAttribute("data-adtest");
   });
 });

@@ -1,10 +1,11 @@
-import { AD_SLOT_ID, adsenseScriptUrl } from "../config";
+import { adsenseScriptUrl } from "../config";
 import { useAdsenseScript } from "../hooks/use-adsense-script";
 import { advertisingText } from "../site-text";
 import { AdSlot } from "./AdSlot";
 
 type AdvertisingRegionProps = {
   clientId: string;
+  slotId: string;
   testMode: boolean;
 };
 
@@ -24,6 +25,7 @@ const ADVERTISING_LABEL_ID = "advertising-region-label";
  */
 export const AdvertisingRegion = ({
   clientId,
+  slotId,
   testMode,
 }: AdvertisingRegionProps) => {
   useAdsenseScript(adsenseScriptUrl(clientId));
@@ -31,7 +33,7 @@ export const AdvertisingRegion = ({
   return (
     <section aria-labelledby={ADVERTISING_LABEL_ID}>
       <p id={ADVERTISING_LABEL_ID}>{advertisingText.regionLabel}</p>
-      <AdSlot clientId={clientId} slotId={AD_SLOT_ID} testMode={testMode} />
+      <AdSlot clientId={clientId} slotId={slotId} testMode={testMode} />
     </section>
   );
 };

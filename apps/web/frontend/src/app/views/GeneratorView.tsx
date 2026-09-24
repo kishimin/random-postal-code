@@ -51,6 +51,7 @@ export const GeneratorView = () => {
           competes with the primary action for a visitor's attention. */}
       <AdvertisingRegion
         clientId={env.googleAdsenseClientId}
+        slotId={env.googleAdsenseSlotId}
         testMode={env.useTestAds}
       />
     </>

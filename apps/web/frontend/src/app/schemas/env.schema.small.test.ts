@@ -43,6 +43,7 @@ describe("parseAppEnv", () => {
 
     expect(env.useTestAds).toBe(true);
     expect(env.googleAdsenseClientId).toBeTruthy();
+    expect(env.googleAdsenseSlotId).toBeTruthy();
   });
 
   test("uses the configured AdSense client id when VITE_GOOGLE_ADSENSE_CLIENT_ID is set", () => {
@@ -52,6 +53,15 @@ describe("parseAppEnv", () => {
     });
 
     expect(env.googleAdsenseClientId).toBe("ca-pub-1234567890123456");
+  });
+
+  test("uses the configured AdSense slot id when VITE_GOOGLE_ADSENSE_SLOT_ID is set", () => {
+    const env = parseAppEnv({
+      VITE_API_BASE_URL: "https://api.example.com",
+      VITE_GOOGLE_ADSENSE_SLOT_ID: "1234567890",
+    });
+
+    expect(env.googleAdsenseSlotId).toBe("1234567890");
   });
 
   test('serves live ads only when VITE_ADSENSE_TEST_MODE is exactly "false"', () => {

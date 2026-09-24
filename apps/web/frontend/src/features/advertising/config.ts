@@ -8,9 +8,6 @@
 const ADSENSE_LOADER_URL =
   "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
 
-/** The single reserved advertisement region's AdSense ad slot ID. */
-export const AD_SLOT_ID = "0000000000";
-
 /**
  * Builds the AdSense loader script URL for a given publisher client ID.
  * @param {string} clientId - The `ca-pub-...` value env.schema.ts resolves.
