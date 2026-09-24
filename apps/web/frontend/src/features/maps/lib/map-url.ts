@@ -4,9 +4,10 @@ import type { Address } from "@zipnami/shared";
  * The full address text a map query should name (ui-design.md section 5.3:
  * "an encoded full-address query"). Concatenated rather than joined with a
  * separator, matching how AddressList already displays the same three
- * fields.
+ * fields. Exported so the map failure fallback can show the same text a
+ * query would have named.
  */
-const fullAddressText = (address: Address): string =>
+export const fullAddressText = (address: Address): string =>
   `${address.prefecture}${address.city}${address.town}`;
 
 /**
