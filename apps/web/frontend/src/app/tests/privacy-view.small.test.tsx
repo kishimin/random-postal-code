@@ -32,4 +32,16 @@ describe("PrivacyView", () => {
     expect(firstPartySection).toBeVisible();
     expect(thirdPartySection).toBeVisible();
   });
+
+  test("the third-party section documents Google Maps, Google AdSense, and consent", () => {
+    render(<PrivacyView />);
+
+    const thirdPartySection = screen.getByRole("region", {
+      name: /第三者|サードパーティ|外部サービス/,
+    });
+
+    expect(thirdPartySection).toHaveTextContent(/Google\s*(?:Maps|マップ)/i);
+    expect(thirdPartySection).toHaveTextContent(/AdSense|アドセンス/i);
+    expect(thirdPartySection).toHaveTextContent(/同意|コンセント|Consent/i);
+  });
 });
