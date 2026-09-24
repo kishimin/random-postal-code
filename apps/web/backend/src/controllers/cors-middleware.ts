@@ -39,6 +39,12 @@ export const corsMiddleware: MiddlewareHandler<{
 
   await next();
 
+  // Every response through this middleware was decided by the request's
+  // Origin header, whether or not that header was present -- api-design.md
+  // section 6 requires Vary: Origin on all of them so a cache sitting in
+  // front of the Worker never serves one origin's response to another.
+  c.header("vary", "Origin", { append: true });
+
   if (origin !== undefined && allowedOrigins.includes(origin)) {
     c.header("access-control-allow-origin", origin);
   }
