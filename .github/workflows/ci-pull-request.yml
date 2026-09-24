@@ -16,6 +16,12 @@ env:
   # A placeholder origin keeps the production build representative without
   # exposing a real endpoint. Nothing in CI calls it.
   VITE_API_BASE_URL: http://127.0.0.1:8787
+  # A placeholder key, not a real one -- the comment above forbids handing
+  # this job a real Maps credential. Issue #8's acceptance test stubs every
+  # request to Google at the network boundary, so the key's value is never
+  # read; what matters is that it is non-empty, so the build takes the same
+  # code path a real deployment would instead of the no-key fallback.
+  VITE_GOOGLE_MAPS_API_KEY: ci-placeholder-maps-key
 
 jobs:
   static-checks:
