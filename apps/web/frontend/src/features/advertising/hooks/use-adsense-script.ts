@@ -60,7 +60,22 @@ export const useAdsenseScript = (scriptUrl: string): void => {
       document.head.appendChild(script);
     };
 
-    attemptLoad(1);
+    // A remount (e.g. navigating away and back) runs this effect again with
+    // the same scriptUrl. Per the cleanup below, a script it finds already
+    // sitting in document.head can only be one that already succeeded -- an
+    // in-flight or failed one is always removed by the previous mount's own
+    // cleanup -- so it is reused as-is instead of starting a fresh attempt(1)
+    // that would redownload AdSense and reset the bounded retry budget.
+    const existingScript = document.head.querySelector<HTMLScriptElement>(
+      `script[src="${scriptUrl}"]`,
+    );
+
+    if (existingScript) {
+      load.currentScript = existingScript;
+      load.succeeded = true;
+    } else {
+      attemptLoad(1);
+    }
 
     return () => {
       load.cancelled = true;
