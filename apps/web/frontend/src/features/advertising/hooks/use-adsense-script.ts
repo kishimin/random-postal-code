@@ -22,13 +22,27 @@ export const useAdsenseScript = (scriptUrl: string): void => {
       cancelled: boolean;
       retryTimeoutId: ReturnType<typeof setTimeout> | undefined;
       currentScript: HTMLScriptElement | undefined;
-    } = { cancelled: false, retryTimeoutId: undefined, currentScript: undefined };
+      succeeded: boolean;
+    } = {
+      cancelled: false,
+      retryTimeoutId: undefined,
+      currentScript: undefined,
+      succeeded: false,
+    };
 
     const attemptLoad = (attemptNumber: number) => {
       const script = document.createElement("script");
       script.src = scriptUrl;
       script.async = true;
       script.crossOrigin = "anonymous";
+
+      // Cleanup below only knows whether to remove `currentScript` by reading
+      // this flag; without it, a remount (e.g. navigating away and back) has
+      // no way to tell a script that already loaded from one still in
+      // flight, and removes both alike.
+      script.addEventListener("load", () => {
+        load.succeeded = true;
+      });
 
       script.addEventListener("error", () => {
         script.remove();
@@ -51,7 +65,15 @@ export const useAdsenseScript = (scriptUrl: string): void => {
     return () => {
       load.cancelled = true;
       clearTimeout(load.retryTimeoutId);
-      load.currentScript?.remove();
+
+      // A script that already loaded is left in the document: removing it
+      // here would force AdSense to be redownloaded on every remount (e.g.
+      // navigating to /privacy and back to /), resetting the bounded retry
+      // budget above along with it. A script still in flight has no such
+      // reason to survive an unmounted component, so it is still removed.
+      if (!load.succeeded) {
+        load.currentScript?.remove();
+      }
     };
   }, [scriptUrl]);
 };
