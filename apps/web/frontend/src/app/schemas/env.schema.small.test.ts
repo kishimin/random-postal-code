@@ -54,7 +54,7 @@ describe("parseAppEnv", () => {
     expect(env.googleAdsenseClientId).toBe("ca-pub-1234567890123456");
   });
 
-  test("serves live ads only when VITE_ADSENSE_TEST_MODE is exactly \"false\"", () => {
+  test('serves live ads only when VITE_ADSENSE_TEST_MODE is exactly "false"', () => {
     const env = parseAppEnv({
       VITE_API_BASE_URL: "https://api.example.com",
       VITE_ADSENSE_TEST_MODE: "false",

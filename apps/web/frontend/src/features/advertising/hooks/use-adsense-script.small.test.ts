@@ -42,23 +42,21 @@ describe("useAdsenseScript", () => {
   test("stops after exactly MAX_AD_SCRIPT_LOAD_ATTEMPTS failures", () => {
     renderHook(() => useAdsenseScript(SCRIPT_URL));
 
-    Array.from({ length: MAX_AD_SCRIPT_LOAD_ATTEMPTS }).forEach(
-      (_, index) => {
-        const attemptNumber = index + 1;
-        const [script] = loaderScripts();
-        expect(loaderScripts()).toHaveLength(1);
+    Array.from({ length: MAX_AD_SCRIPT_LOAD_ATTEMPTS }).forEach((_, index) => {
+      const attemptNumber = index + 1;
+      const [script] = loaderScripts();
+      expect(loaderScripts()).toHaveLength(1);
 
+      act(() => {
+        script.dispatchEvent(new Event("error"));
+      });
+
+      if (attemptNumber < MAX_AD_SCRIPT_LOAD_ATTEMPTS) {
         act(() => {
-          script.dispatchEvent(new Event("error"));
+          vi.advanceTimersByTime(adScriptRetryDelayMs(attemptNumber));
         });
-
-        if (attemptNumber < MAX_AD_SCRIPT_LOAD_ATTEMPTS) {
-          act(() => {
-            vi.advanceTimersByTime(adScriptRetryDelayMs(attemptNumber));
-          });
-        }
-      },
-    );
+      }
+    });
 
     // The budget is spent: no further attempt is scheduled, so even a long
     // wait creates no new script.
