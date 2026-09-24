@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { createApiClient } from "../../api/api-client";
+import { MapAddressActions } from "../../features/maps/components/MapAddressActions";
+import { MapSection } from "../../features/maps/components/MapSection";
+import { useMapSelection } from "../../features/maps/hooks/use-map-selection";
 import { CurrentResult } from "../../features/postal-generator/components/CurrentResult";
 import { GenerateAction } from "../../features/postal-generator/components/GenerateAction";
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
@@ -8,21 +11,29 @@ import { postalGeneratorText } from "../../features/postal-generator/site-text";
 import { parseAppEnv } from "../schemas/env.schema";
 
 /**
- * Generator screen (Issue #6): the generate action, its current result, and
- * the live region that announces a new result or a failure.
+ * Generator screen (Issue #6, extended by Issue #8's maps region): the
+ * generate action, its current result, the embedded map for whichever
+ * address is currently selected, and the live region that announces a new
+ * result or a failure.
  *
- * The API client is built here, in the application layer, rather than inside
- * the feature hook: api-client.ts stays free of environment access so it can
- * be configured without a build (see that module's own docstring), and
- * env.schema.ts is an app/-owned module the features/ boundary is not
- * allowed to import.
+ * The API client and the environment are built here, in the application
+ * layer, rather than inside a feature hook: api-client.ts and the maps
+ * feature stay free of environment access so they can be configured without
+ * a build, and env.schema.ts is an app/-owned module the features/ boundary
+ * is not allowed to import.
+ *
+ * "Which address is selected" is lifted to this level because AddressList's
+ * per-address action and the map region are siblings in the tree below --
+ * CurrentResult and MapSection -- with no other shared ancestor to hold it.
  */
 export const GeneratorView = () => {
-  const [client] = useState(() =>
-    createApiClient(parseAppEnv(import.meta.env).apiBaseUrl),
+  const [{ apiBaseUrl, mapsApiKey }] = useState(() =>
+    parseAppEnv(import.meta.env),
   );
+  const [client] = useState(() => createApiClient(apiBaseUrl));
   const { state, currentResult, announcement, copyFeedback, generate, copy } =
     useGenerator(client);
+  const { selectedAddress, selectAddress } = useMapSelection(currentResult);
 
   return (
     <>
@@ -42,9 +53,21 @@ export const GeneratorView = () => {
             result={currentResult}
             onCopy={copy}
             copyFeedback={copyFeedback}
+            renderAddressExtra={(address) => (
+              <MapAddressActions
+                address={address}
+                isSelected={address === selectedAddress}
+                onSelect={() => selectAddress(address)}
+              />
+            )}
           />
         )}
       </div>
+      <MapSection
+        result={currentResult}
+        selectedAddress={selectedAddress}
+        apiKey={mapsApiKey}
+      />
       <GeneratorAnnouncer announcement={announcement} />
     </>
   );
