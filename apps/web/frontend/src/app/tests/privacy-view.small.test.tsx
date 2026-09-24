@@ -31,6 +31,30 @@ describe("PrivacyView", () => {
 
     expect(firstPartySection).toBeVisible();
     expect(thirdPartySection).toBeVisible();
+
+    // "Contains its own content" alone would also be satisfied by a page that
+    // duplicated every sentence into both sections, which would still pass
+    // every "contains" assertion in this file while failing what AC-2 asks
+    // for: distinguishing the two. These negative assertions are what close
+    // that gap (TR-001).
+    expect(firstPartySection).not.toHaveTextContent(
+      /Google\s*(?:Maps|マップ)/i,
+    );
+    expect(firstPartySection).not.toHaveTextContent(/AdSense|アドセンス/i);
+    expect(firstPartySection).not.toHaveTextContent(/同意|コンセント|Consent/i);
+
+    expect(thirdPartySection).not.toHaveTextContent(
+      /履歴[^。]*(?:ブラウザ|端末)|(?:ブラウザ|端末)[^。]*履歴/,
+    );
+    expect(thirdPartySection).not.toHaveTextContent(
+      /位置情報[^。]*(?:しません|していません|ありません|ない)/,
+    );
+    expect(thirdPartySection).not.toHaveTextContent(
+      /(?:独自|自前|Zipnami)[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
+    );
+    expect(thirdPartySection).not.toHaveTextContent(
+      /広告[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
+    );
   });
 
   test("the third-party section documents Google Maps, Google AdSense, and consent", () => {
