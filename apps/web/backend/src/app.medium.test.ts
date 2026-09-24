@@ -551,5 +551,41 @@ describe("createApp", () => {
         emptyConfig.headers.get("access-control-allow-origin"),
       ).toBeNull();
     });
+
+    // api-design.md section 6: "origin comparison does not use prefix or
+    // substring matching". Each case below matches a naive `startsWith`,
+    // `endsWith`, or case-insensitive comparison against ALLOWED_ORIGIN even
+    // though it is a different origin under the Fetch/URL spec.
+    test.each([
+      ["a downgraded scheme", "http://zipnami.pages.dev"],
+      ["a different port", "https://zipnami.pages.dev:8443"],
+      ["ALLOWED_ORIGIN as a prefix of an attacker's origin", "https://zipnami.pages.dev.attacker.test"],
+      ["ALLOWED_ORIGIN's host as a suffix of a different host", "https://xzipnami.pages.dev"],
+      ["a subdomain of the allowed host", "https://preview.zipnami.pages.dev"],
+      ["a trailing slash", "https://zipnami.pages.dev/"],
+    ])("sets no Access-Control-Allow-Origin for %s", async (_case, origin) => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await requestFrom(app, origin, ALLOWED_ORIGIN);
+
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    // api-design.md section 6: "Include Vary: Origin whenever the response
+    // varies by Origin." Without it, a cache sitting in front of the Worker
+    // can serve a response authorized for one origin to a different one.
+    test("marks both an authorized and an unauthorized response Vary: Origin", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const allowed = await requestFrom(app, ALLOWED_ORIGIN, ALLOWED_ORIGIN);
+      const denied = await requestFrom(
+        app,
+        "https://someone-elses-site.example",
+        ALLOWED_ORIGIN,
+      );
+
+      expect(allowed.headers.get("vary")).toContain("Origin");
+      expect(denied.headers.get("vary")).toContain("Origin");
+    });
   });
 });
