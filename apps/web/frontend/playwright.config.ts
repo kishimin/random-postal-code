@@ -20,6 +20,7 @@ export default defineConfig({
     "acceptance/frontend-foundation.medium.test.ts",
     "acceptance/error-destinations.medium.test.ts",
     "acceptance/random-postal-code-experience.medium.test.ts",
+    "acceptance/web-address-maps.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,
