@@ -625,5 +625,98 @@ describe("createApp", () => {
 
       expect(response.headers.get("access-control-allow-origin")).toBeNull();
     });
+
+    // api-design.md section 6: "Permit GET and the minimum headers needed by
+    // the browser client" and "Handle OPTIONS only when required by the CORS
+    // middleware." A preflight that errors blocks the very GET the browser
+    // was asking about, so the endpoint would be unreachable from every
+    // allowed page.
+    describe("preflight (OPTIONS)", () => {
+      const preflightFrom = (
+        app: ReturnType<typeof appServing>,
+        origin: string,
+        requestMethod: string,
+        allowedOrigins: string,
+        requestHeaders?: string,
+      ) =>
+        app.request(
+          "/api/random",
+          {
+            method: "OPTIONS",
+            headers: {
+              origin,
+              "access-control-request-method": requestMethod,
+              ...(requestHeaders === undefined
+                ? {}
+                : { "access-control-request-headers": requestHeaders }),
+            },
+          },
+          { ALLOWED_ORIGINS: allowedOrigins },
+        );
+
+      test("answers an allowed origin's preflight without an error, authorizing GET but no write method", async () => {
+        const app = appServing([onlyPostalCode]);
+
+        const asked = await preflightFrom(app, ALLOWED_ORIGIN, "GET", ALLOWED_ORIGIN);
+
+        expect(asked.status).toBeLessThan(400);
+        expect(asked.headers.get("access-control-allow-origin")).toBe(
+          ALLOWED_ORIGIN,
+        );
+
+        const offered = (asked.headers.get("access-control-allow-methods") ?? "")
+          .split(",")
+          .map((method) => method.trim().toLowerCase())
+          .filter((method) => method !== "");
+
+        expect(offered).toContain("get");
+        expect(
+          offered.filter((method) =>
+            ["post", "put", "patch", "delete"].includes(method),
+          ),
+        ).toEqual([]);
+        expect(offered).not.toContain("*");
+      });
+
+      test("does not reflect requested headers into Access-Control-Allow-Headers, and never opens *", async () => {
+        const app = appServing([onlyPostalCode]);
+
+        const asked = await preflightFrom(
+          app,
+          ALLOWED_ORIGIN,
+          "GET",
+          ALLOWED_ORIGIN,
+          "authorization, x-api-key, x-zipnami",
+        );
+
+        const opened = (asked.headers.get("access-control-allow-headers") ?? "")
+          .split(",")
+          .map((header) => header.trim().toLowerCase())
+          .filter((header) => header !== "");
+
+        expect(opened).not.toContain("*");
+        expect(opened).not.toContain("authorization");
+        expect(opened).not.toContain("x-api-key");
+        expect(opened).not.toContain("x-zipnami");
+      });
+
+      // The endpoint has no cookie and no credential (api-design.md section
+      // 6): advertising credentialed CORS beside an echoed origin is how a
+      // boundary that looks narrow becomes one that sends a visitor's
+      // cookies somewhere.
+      test("never sets Access-Control-Allow-Credentials, on a GET or a preflight, for an allowed origin", async () => {
+        const app = appServing([onlyPostalCode]);
+
+        const succeeded = await requestFrom(app, ALLOWED_ORIGIN, ALLOWED_ORIGIN);
+        const asked = await preflightFrom(app, ALLOWED_ORIGIN, "GET", ALLOWED_ORIGIN);
+
+        expect(
+          succeeded.headers.get("access-control-allow-credentials"),
+        ).toBeNull();
+        expect(
+          asked.headers.get("access-control-allow-credentials"),
+        ).toBeNull();
+      });
+    });
   });
 });
