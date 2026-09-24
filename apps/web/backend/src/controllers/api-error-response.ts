@@ -1,6 +1,7 @@
 import type { ApiErrorCode } from "@zipnami/shared";
 import type { Context } from "hono";
 import { buildApiErrorEnvelope } from "../shared/api-error-envelope.ts";
+import type { CorsBindings } from "./cors-middleware.ts";
 import type { RequestIdVariables } from "./request-id-middleware.ts";
 
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
@@ -20,7 +21,7 @@ type ApiErrorStatus = 400 | 404 | 405 | 500 | 503;
  * for.
  */
 export const respondWithApiError = (
-  c: Context<{ Variables: RequestIdVariables }>,
+  c: Context<{ Bindings: CorsBindings; Variables: RequestIdVariables }>,
   status: ApiErrorStatus,
   code: ApiErrorCode,
   message: string,

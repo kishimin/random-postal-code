@@ -1,5 +1,6 @@
 import type { ApiErrorCode } from "@zipnami/shared";
 import type { Context } from "hono";
+import type { CorsBindings } from "./cors-middleware.ts";
 import type { RequestIdVariables } from "./request-id-middleware.ts";
 
 /** The HTTP statuses a request-handling attempt on this API can end in. */
@@ -44,7 +45,7 @@ export type RequestLogEntry = {
  * each caller re-implementing the waitUntil/console.log fallback.
  */
 export const writeRequestLog = (
-  c: Context<{ Variables: RequestIdVariables }>,
+  c: Context<{ Bindings: CorsBindings; Variables: RequestIdVariables }>,
   entry: RequestLogEntry,
 ): void => {
   const write = () => console.log(JSON.stringify(entry));

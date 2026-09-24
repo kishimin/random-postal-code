@@ -1,4 +1,5 @@
 import { createApp } from "./app.ts";
+import type { CorsBindings } from "./controllers/cors-middleware.ts";
 import { generatedDatasetRepository } from "./infrastructures/generated-dataset-repository.ts";
 
 // api-design.md section 2 names this file as the Worker entry point. The app
@@ -7,6 +8,9 @@ import { generatedDatasetRepository } from "./infrastructures/generated-dataset-
 const app = createApp({ postalCodeRepository: generatedDatasetRepository });
 
 export default {
-  fetch: (request: Request, env: unknown, context: ExecutionContext) =>
+  // `env` is typed as CorsBindings -- not left `unknown` -- because Issue #11
+  // gives this Worker its first binding the app actually reads per request
+  // (ALLOWED_ORIGINS); corsMiddleware.ts owns that shape.
+  fetch: (request: Request, env: CorsBindings, context: ExecutionContext) =>
     app.fetch(request, env, context),
-} satisfies ExportedHandler;
+} satisfies ExportedHandler<CorsBindings>;
