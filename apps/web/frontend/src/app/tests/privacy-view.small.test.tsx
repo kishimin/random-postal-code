@@ -44,4 +44,22 @@ describe("PrivacyView", () => {
     expect(thirdPartySection).toHaveTextContent(/AdSense|アドセンス/i);
     expect(thirdPartySection).toHaveTextContent(/同意|コンセント|Consent/i);
   });
+
+  test("the Zipnami section documents the browser-local history and that no location is collected", () => {
+    render(<PrivacyView />);
+
+    const firstPartySection = screen.getByRole("region", {
+      name: /Zipnami.*(?:保存|記録)/,
+    });
+
+    // Both halves of the history statement are required within one sentence:
+    // "履歴" alone would be satisfied by a page that never says where the
+    // history lives.
+    expect(firstPartySection).toHaveTextContent(
+      /履歴[^。]*(?:ブラウザ|端末)|(?:ブラウザ|端末)[^。]*履歴/,
+    );
+    expect(firstPartySection).toHaveTextContent(
+      /位置情報[^。]*(?:しません|していません|ありません|ない)/,
+    );
+  });
 });
