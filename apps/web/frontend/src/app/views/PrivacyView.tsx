@@ -1,4 +1,5 @@
 import { siteText } from "../site-text";
+import { tapTargetClass } from "../styles";
 import { privacyText } from "./privacy-text";
 
 const FIRST_PARTY_HEADING_ID = "privacy-first-party-heading";
@@ -33,6 +34,15 @@ export const PrivacyView = () => {
         <p>{privacyText.thirdParty.googleAdSense}</p>
         <p>{privacyText.thirdParty.consent}</p>
       </section>
+
+      <p>
+        <a
+          className={tapTargetClass}
+          href={privacyText.contactHref}
+        >
+          {privacyText.contactLabel}
+        </a>
+      </p>
     </>
   );
 };

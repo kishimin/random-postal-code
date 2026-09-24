@@ -38,4 +38,13 @@ export const privacyText = {
     consent:
       "広告表示にあたり同意の取得が必要な地域では、所定の同意管理の仕組みを使用します。",
   },
+
+  /*
+   * The contact affordance. ui-design.md section 12 leaves the destination
+   * itself open; the GitHub Issues address is used because it is a real,
+   * already-published destination for this project (design.md section 1),
+   * not one invented for this screen.
+   */
+  contactLabel: "お問い合わせ",
+  contactHref: "https://github.com/kishimin/random-postal-code/issues",
 } as const;
