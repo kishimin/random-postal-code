@@ -179,4 +179,35 @@ describe("useAdsenseScript", () => {
     expect(loaderScripts()).toHaveLength(1);
     expect(loaderScripts()[0]).toBe(firstScript);
   });
+
+  // The previous test proves cleanup leaves a succeeded script behind; this
+  // one proves the *next* mount actually reuses it instead of appending a
+  // second one. Without this, e.g. navigating "/" -> "/privacy" -> "/" after
+  // a successful load would inject a second loader script, re-download and
+  // re-execute AdSense, and reset the bounded retry budget above -- the
+  // regression Codex's P2 review flagged on this hook.
+  test("does not re-download or reset the retry budget when remounted after a successful load", () => {
+    const { unmount } = renderHook(() => useAdsenseScript(SCRIPT_URL));
+    const [firstScript] = loaderScripts();
+
+    act(() => {
+      firstScript.dispatchEvent(new Event("load"));
+    });
+
+    unmount();
+    expect(loaderScripts()).toHaveLength(1);
+
+    const appendChildSpy = vi.spyOn(document.head, "appendChild");
+
+    renderHook(() => useAdsenseScript(SCRIPT_URL));
+
+    // No new <script src="..."> was appended to document.head: the existing,
+    // already-succeeded element was reused rather than a fresh attempt(1)
+    // being started.
+    expect(appendChildSpy).not.toHaveBeenCalled();
+    expect(loaderScripts()).toHaveLength(1);
+    expect(loaderScripts()[0]).toBe(firstScript);
+
+    appendChildSpy.mockRestore();
+  });
 });
