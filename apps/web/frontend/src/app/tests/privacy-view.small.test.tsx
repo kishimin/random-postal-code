@@ -62,4 +62,19 @@ describe("PrivacyView", () => {
       /位置情報[^。]*(?:しません|していません|ありません|ない)/,
     );
   });
+
+  test("the Zipnami section states that no identifier of its own is issued and no advertising identifier is stored", () => {
+    render(<PrivacyView />);
+
+    const firstPartySection = screen.getByRole("region", {
+      name: /Zipnami.*(?:保存|記録)/,
+    });
+
+    expect(firstPartySection).toHaveTextContent(
+      /(?:独自|自前|Zipnami)[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
+    );
+    expect(firstPartySection).toHaveTextContent(
+      /広告[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
+    );
+  });
 });
