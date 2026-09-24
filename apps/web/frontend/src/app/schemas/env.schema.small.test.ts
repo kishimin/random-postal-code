@@ -33,4 +33,24 @@ describe("parseAppEnv", () => {
       /VITE_API_BASE_URL/,
     );
   });
+
+  // design.md section 7: Google Maps is an optional dependency of the Web
+  // experience, so a build that never configured a key must still succeed --
+  // unlike VITE_API_BASE_URL, this is not fatal.
+  test("returns an empty Maps API key when it is not configured", () => {
+    const env = parseAppEnv({
+      VITE_API_BASE_URL: "https://api.example.com",
+    });
+
+    expect(env.mapsApiKey).toBe("");
+  });
+
+  test("returns the configured Maps API key", () => {
+    const env = parseAppEnv({
+      VITE_API_BASE_URL: "https://api.example.com",
+      VITE_GOOGLE_MAPS_API_KEY: "test-maps-key",
+    });
+
+    expect(env.mapsApiKey).toBe("test-maps-key");
+  });
 });
