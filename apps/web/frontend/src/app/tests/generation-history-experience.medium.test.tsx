@@ -1,5 +1,5 @@
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import type { PostalCode } from "@zipnami/shared";
 import { HttpResponse, http } from "msw";
@@ -60,6 +60,13 @@ const historyPostalCodes = () =>
     .map((item) => item.textContent?.match(/\d{3}-\d{4}/)?.at(0))
     .filter((code): code is string => code !== undefined);
 
+// Scoped to the current-result region rather than the whole page: once
+// history renders, the same postal code legitimately appears a second time
+// as a history entry (HistoryItem always shows its own postal code), and an
+// unscoped query would then match both.
+const currentResultText = (postalCode: string) =>
+  within(screen.getByTestId("result-region")).findByText(postalCode);
+
 describe("the generation history experience", () => {
   beforeEach(() => localStorage.clear());
 
@@ -70,11 +77,11 @@ describe("the generation history experience", () => {
     renderAt("/");
 
     await user.click(await screen.findByRole("button", { name: /生成/ }));
-    expect(await screen.findByText("100-0001")).toBeInTheDocument();
+    expect(await currentResultText("100-0001")).toBeInTheDocument();
     expect(historyPostalCodes()).toEqual(["100-0001"]);
 
     await user.click(screen.getByRole("button", { name: /生成/ }));
-    await screen.findByText("530-0001");
+    await currentResultText("530-0001");
 
     expect(historyPostalCodes()).toEqual(["530-0001", "100-0001"]);
   });
@@ -86,7 +93,7 @@ describe("the generation history experience", () => {
     renderAt("/");
 
     await user.click(await screen.findByRole("button", { name: /生成/ }));
-    await screen.findByText("100-0001");
+    await currentResultText("100-0001");
     await user.click(screen.getByRole("button", { name: /生成/ }));
 
     // Both entries render with the same text, so waiting for the count to
@@ -107,9 +114,9 @@ describe("the generation history experience", () => {
     const { unmount } = renderAt("/");
 
     await user.click(await screen.findByRole("button", { name: /生成/ }));
-    await screen.findByText("100-0001");
+    await currentResultText("100-0001");
     await user.click(screen.getByRole("button", { name: /生成/ }));
-    await screen.findByText("530-0001");
+    await currentResultText("530-0001");
     unmount();
 
     renderAt("/");

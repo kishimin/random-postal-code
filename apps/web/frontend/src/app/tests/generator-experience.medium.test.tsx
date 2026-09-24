@@ -124,6 +124,19 @@ const findAddressListItem = (address: Address) =>
       ),
     );
 
+// Scoped to the current-result region rather than the whole page: once
+// Issue #7's history renders, the same postal code legitimately appears a
+// second time as a history entry (HistoryItem always shows its own postal
+// code), and an unscoped query would then match both.
+const currentResultText = (postalCode: string) =>
+  within(screen.getByTestId("result-region")).findByText(postalCode);
+
+const getCurrentResultText = (postalCode: string) =>
+  within(screen.getByTestId("result-region")).getByText(postalCode);
+
+const queryCurrentResultText = (postalCode: string) =>
+  within(screen.getByTestId("result-region")).queryByText(postalCode);
+
 /*
  * Records what the page hands to the platform clipboard instead of the real
  * clipboard, which needs a permission grant this suite does not hold.
@@ -333,7 +346,7 @@ describe("the generator experience", () => {
     const generateButton = await screen.findByRole("button", { name: /生成/ });
 
     await user.click(generateButton);
-    expect(await screen.findByText("100-0001")).toBeInTheDocument();
+    expect(await currentResultText("100-0001")).toBeInTheDocument();
 
     const { resolve } = holdRandomResponse();
     await user.click(generateButton);
@@ -362,7 +375,7 @@ describe("the generator experience", () => {
 
     await user.click(await screen.findByRole("button", { name: /生成/ }));
 
-    expect(await screen.findByText("100-0001")).toBeInTheDocument();
+    expect(await currentResultText("100-0001")).toBeInTheDocument();
     for (const address of firstResult.addresses) {
       expect(findAddressListItem(address)).toBeDefined();
     }
@@ -377,12 +390,12 @@ describe("the generator experience", () => {
     renderAt("/");
 
     await user.click(await screen.findByRole("button", { name: /生成/ }));
-    expect(await screen.findByText("100-0001")).toBeInTheDocument();
+    expect(await currentResultText("100-0001")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /生成/ }));
 
-    expect(await screen.findByText("530-0001")).toBeInTheDocument();
-    expect(screen.queryByText("100-0001")).not.toBeInTheDocument();
+    expect(await currentResultText("530-0001")).toBeInTheDocument();
+    expect(queryCurrentResultText("100-0001")).not.toBeInTheDocument();
     for (const address of secondResult.addresses) {
       expect(findAddressListItem(address)).toBeDefined();
     }
@@ -396,7 +409,7 @@ describe("the generator experience", () => {
     try {
       renderAt("/");
       await user.click(await screen.findByRole("button", { name: /生成/ }));
-      await screen.findByText("100-0001");
+      await currentResultText("100-0001");
 
       await user.click(screen.getByRole("button", { name: /コピー/ }));
 
@@ -424,7 +437,7 @@ describe("the generator experience", () => {
     try {
       renderAt("/");
       await user.click(await screen.findByRole("button", { name: /生成/ }));
-      await screen.findByText("100-0001");
+      await currentResultText("100-0001");
       expect(screen.getByTestId("copy-feedback")).toHaveTextContent("");
 
       await user.click(screen.getByRole("button", { name: /コピー/ }));
@@ -437,7 +450,7 @@ describe("the generator experience", () => {
 
       // The result stays usable -- ui-design.md section 5.3's other
       // requirement for a copy failure.
-      expect(screen.getByText("100-0001")).toBeInTheDocument();
+      expect(getCurrentResultText("100-0001")).toBeInTheDocument();
     } finally {
       restore();
     }
@@ -457,7 +470,7 @@ describe("the generator experience", () => {
     try {
       renderAt("/");
       await user.click(await screen.findByRole("button", { name: /生成/ }));
-      await screen.findByText("100-0001");
+      await currentResultText("100-0001");
       expect(screen.getByTestId("copy-feedback")).toHaveTextContent("");
 
       await user.click(screen.getByRole("button", { name: /コピー/ }));
@@ -484,7 +497,7 @@ describe("the generator experience", () => {
     try {
       renderAt("/");
       await user.click(await screen.findByRole("button", { name: /生成/ }));
-      await screen.findByText("100-0001");
+      await currentResultText("100-0001");
       const copyButton = screen.getByRole("button", { name: /コピー/ });
 
       // First attempt: held open by the stub. Second attempt: resolves
@@ -523,7 +536,7 @@ describe("the generator experience", () => {
     renderAt("/");
 
     await user.click(await screen.findByRole("button", { name: /生成/ }));
-    expect(await screen.findByText("100-0001")).toBeInTheDocument();
+    expect(await currentResultText("100-0001")).toBeInTheDocument();
     // Recorded before the retry: the live region already carries the first
     // success's announcement, so waiting only for "non-empty" would be
     // satisfied by that leftover text the instant the click handler returns
@@ -548,11 +561,11 @@ describe("the generator experience", () => {
     });
 
     // ui-design.md section 4: a failure keeps the previous result on screen.
-    expect(screen.getByText("100-0001")).toBeInTheDocument();
+    expect(getCurrentResultText("100-0001")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /生成/ }));
 
-    expect(await screen.findByText("530-0001")).toBeInTheDocument();
+    expect(await currentResultText("530-0001")).toBeInTheDocument();
   });
 
   // PR #36 review found a second race: a copy attempt that resolves while a
@@ -571,7 +584,7 @@ describe("the generator experience", () => {
     try {
       renderAt("/");
       await user.click(await screen.findByRole("button", { name: /生成/ }));
-      expect(await screen.findByText("100-0001")).toBeInTheDocument();
+      expect(await currentResultText("100-0001")).toBeInTheDocument();
 
       const { resolve } = holdRandomResponse();
       const generateButton = screen.getByRole("button", { name: /生成/ });
@@ -596,7 +609,7 @@ describe("the generator experience", () => {
           screen.getByTestId("generation-announcer").textContent?.trim(),
         ).toBe(postalGeneratorText.resultAnnouncement("530-0001"));
       });
-      expect(await screen.findByText("530-0001")).toBeInTheDocument();
+      expect(await currentResultText("530-0001")).toBeInTheDocument();
     } finally {
       restore();
     }

@@ -1,6 +1,15 @@
 import type { PostalCode } from "@zipnami/shared";
 import { historyStorageSchema } from "./history-storage.schema";
 
+/** `undefined` when `raw` is not valid JSON, so the caller never has to catch. */
+const tryParseJson = (raw: string): unknown => {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+};
+
 /**
  * Parses a raw persisted-history value into history entries.
  *
@@ -14,13 +23,6 @@ export const parseStoredHistory = (
 ): readonly PostalCode[] => {
   if (raw === null) return [];
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return [];
-  }
-
-  const result = historyStorageSchema.safeParse(parsed);
+  const result = historyStorageSchema.safeParse(tryParseJson(raw));
   return result.success ? result.data.entries : [];
 };
