@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { createApiClient } from "../../api/api-client";
+import { HistoryList } from "../../features/history/components/HistoryList";
+import { useHistory } from "../../features/history/hooks/use-history";
 import { CurrentResult } from "../../features/postal-generator/components/CurrentResult";
 import { GenerateAction } from "../../features/postal-generator/components/GenerateAction";
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
@@ -21,8 +23,9 @@ export const GeneratorView = () => {
   const [client] = useState(() =>
     createApiClient(parseAppEnv(import.meta.env).apiBaseUrl),
   );
+  const { entries, addEntry } = useHistory();
   const { state, currentResult, announcement, copyFeedback, generate, copy } =
-    useGenerator(client);
+    useGenerator(client, { onGenerated: addEntry });
 
   return (
     <>
@@ -46,6 +49,7 @@ export const GeneratorView = () => {
         )}
       </div>
       <GeneratorAnnouncer announcement={announcement} />
+      <HistoryList entries={entries} />
     </>
   );
 };
