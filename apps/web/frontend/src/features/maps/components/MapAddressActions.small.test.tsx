@@ -30,8 +30,8 @@ describe("MapAddressActions", () => {
     );
 
     const button = screen.getByRole("button", { name: /地図/ });
-    expect(button.accessibleName).toContain(address.town);
-    expect(button.accessibleName).not.toContain(otherAddress.town);
+    expect(button.textContent).toContain(address.town);
+    expect(button.textContent).not.toContain(otherAddress.town);
   });
 
   test("activating the map-selection button reports this address as selected", async () => {
