@@ -19,6 +19,9 @@ export const privacyText = {
     browserLocalHistory:
       "生成した郵便番号の履歴は、お使いのブラウザにのみ保存され、サーバーには送信されません。",
     noLocationCollection: "Zipnamiは位置情報を取得しません。",
+    noOwnUserIdentifier: "Zipnamiは独自の利用者識別子を発行しません。",
+    noStoredAdvertisingIdentifier:
+      "広告配信のための識別子をサーバーに保存することはありません。",
   },
 
   /**

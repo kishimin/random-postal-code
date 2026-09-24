@@ -23,6 +23,8 @@ export const PrivacyView = () => {
         <h2 id={FIRST_PARTY_HEADING_ID}>{privacyText.firstParty.heading}</h2>
         <p>{privacyText.firstParty.browserLocalHistory}</p>
         <p>{privacyText.firstParty.noLocationCollection}</p>
+        <p>{privacyText.firstParty.noOwnUserIdentifier}</p>
+        <p>{privacyText.firstParty.noStoredAdvertisingIdentifier}</p>
       </section>
 
       <section aria-labelledby={THIRD_PARTY_HEADING_ID}>
