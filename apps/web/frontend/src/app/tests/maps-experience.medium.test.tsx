@@ -91,8 +91,12 @@ describe("the maps experience", () => {
     expect(within(mapRegion).queryByText("東京都千代田区千代田")).not.toBeInTheDocument();
 
     // The result itself -- outside the map region -- still lists both
-    // addresses, unaffected by which one the map is showing.
-    expect(screen.getByText("東京都千代田区千代田")).toBeInTheDocument();
-    expect(screen.getByText("東京都千代田区丸の内")).toBeInTheDocument();
+    // addresses, unaffected by which one the map is showing. Scoped to the
+    // address list itself: the map region's own fallback repeats the
+    // selected address's text, which would otherwise make either query match
+    // two elements.
+    const addressList = screen.getByRole("list");
+    expect(within(addressList).getByText("東京都千代田区千代田")).toBeInTheDocument();
+    expect(within(addressList).getByText("東京都千代田区丸の内")).toBeInTheDocument();
   });
 });
