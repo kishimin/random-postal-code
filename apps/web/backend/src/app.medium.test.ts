@@ -478,4 +478,78 @@ describe("createApp", () => {
       });
     });
   });
+
+  // Issue #11, api-design.md section 6: "Allow only exact configured Web
+  // origins... Return the requesting origin only after an exact allowlist
+  // match; never return `*`." The allowlist itself is deployment
+  // configuration, not something createApp hard-codes, so each test below
+  // supplies it as the `env` createApp reads per request rather than as a
+  // constructor argument -- mirroring how the deployed Worker receives it.
+  describe("CORS allowlist (Issue #11)", () => {
+    const ALLOWED_ORIGIN = "https://zipnami.pages.dev";
+
+    const requestFrom = (
+      app: ReturnType<typeof appServing>,
+      origin: string,
+      allowedOrigins: string | undefined,
+    ) =>
+      app.request(
+        "/api/random",
+        { headers: { origin } },
+        allowedOrigins === undefined
+          ? undefined
+          : { ALLOWED_ORIGINS: allowedOrigins },
+      );
+
+    test("echoes back an origin that exactly matches the configured allowlist", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await requestFrom(app, ALLOWED_ORIGIN, ALLOWED_ORIGIN);
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("access-control-allow-origin")).toBe(
+        ALLOWED_ORIGIN,
+      );
+    });
+
+    test("sets no Access-Control-Allow-Origin for an origin the allowlist does not name", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await requestFrom(
+        app,
+        "https://someone-elses-site.example",
+        ALLOWED_ORIGIN,
+      );
+
+      expect(
+        response.headers.get("access-control-allow-origin"),
+      ).toBeNull();
+    });
+
+    test("never authorizes with a wildcard, even when the allowlist itself holds one", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await requestFrom(
+        app,
+        "https://anyone-at-all.example",
+        "*",
+      );
+
+      expect(
+        response.headers.get("access-control-allow-origin"),
+      ).toBeNull();
+    });
+
+    test("authorizes nothing when ALLOWED_ORIGINS is absent or empty", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const noConfig = await requestFrom(app, ALLOWED_ORIGIN, undefined);
+      const emptyConfig = await requestFrom(app, ALLOWED_ORIGIN, "");
+
+      expect(noConfig.headers.get("access-control-allow-origin")).toBeNull();
+      expect(
+        emptyConfig.headers.get("access-control-allow-origin"),
+      ).toBeNull();
+    });
+  });
 });
