@@ -35,7 +35,7 @@ describe("MapAddressActions", () => {
   });
 
   test("activating the map-selection button reports this address as selected", async () => {
-    const onSelect = vi.fn();
+    const onSelect = vi.fn<() => void>();
     const user = userEvent.setup();
     render(
       <MapAddressActions

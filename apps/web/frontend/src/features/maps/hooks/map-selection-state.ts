@@ -13,7 +13,7 @@ export type MapSelectionAction =
  * ui-design.md section 5.3: "The first address is the initial map
  * selection." Applies to the very first result and, through
  * `mapSelectionReducer`'s "result-changed" case, to every result after it.
- * @param result - The current generator result, or undefined before one exists.
+ * @param {PostalCode | undefined} result - The current generator result, or undefined before one exists.
  */
 export const initialMapSelectionState = (
   result: PostalCode | undefined,

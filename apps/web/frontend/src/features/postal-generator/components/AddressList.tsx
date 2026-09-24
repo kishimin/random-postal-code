@@ -3,10 +3,12 @@ import type { ReactNode } from "react";
 
 type AddressListProps = {
   addresses: readonly Address[];
-  /** Extra content rendered inside each address's own entry, after its text
+  /**
+   * Extra content rendered inside each address's own entry, after its text
    * -- Issue #8's per-address map action, for example. AddressList accepts
    * it rather than importing anything about maps, so features/postal-generator
-   * stays free of a features/maps dependency (the app composes the two). */
+   * stays free of a features/maps dependency (the app composes the two).
+   */
   renderAddressExtra?: (address: Address) => ReactNode;
 };
 

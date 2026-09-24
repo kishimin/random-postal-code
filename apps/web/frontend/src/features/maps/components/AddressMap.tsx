@@ -6,8 +6,10 @@ import { MapFallback } from "./MapFallback";
 
 type AddressMapProps = {
   address: Address;
-  /** The Web Maps API key (design.md section 7). An empty key is treated the
-   * same as any other map failure, rather than attempted. */
+  /**
+   * The Web Maps API key (design.md section 7). An empty key is treated the
+   * same as any other map failure, rather than attempted.
+   */
   apiKey: string;
 };
 
@@ -42,6 +44,18 @@ export const AddressMap = ({ address, apiKey }: AddressMapProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [hasFailed, setHasFailed] = useState(false);
 
+  // A newly selected address deserves a fresh load attempt rather than
+  // inheriting the previous address's failure. Adjusted during render
+  // (React's own pattern for resetting state when a prop changes) instead of
+  // an effect, so the timeout effect below only ever sets `hasFailed` to
+  // true -- the one state change that really is synchronizing with an
+  // external system, the browser's own timer.
+  const [trackedAddress, setTrackedAddress] = useState(address);
+  if (trackedAddress !== address) {
+    setTrackedAddress(address);
+    setHasFailed(false);
+  }
+
   useEffect(() => {
     const node = containerRef.current;
     if (!node || isVisible) return;
@@ -60,7 +74,6 @@ export const AddressMap = ({ address, apiKey }: AddressMapProps) => {
     if (!isVisible) return;
 
     hasLoadedRef.current = false;
-    setHasFailed(false);
 
     const timer = setTimeout(() => {
       if (!hasLoadedRef.current) setHasFailed(true);

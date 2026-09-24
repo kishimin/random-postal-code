@@ -2,8 +2,10 @@ import { z } from "zod";
 
 export type AppEnv = {
   apiBaseUrl: string;
-  /** design.md section 7: Google Maps is an optional dependency, so an
-   * unconfigured key resolves to "" rather than failing the build. */
+  /**
+   * design.md section 7: Google Maps is an optional dependency, so an
+   * unconfigured key resolves to "" rather than failing the build.
+   */
   mapsApiKey: string;
 };
 

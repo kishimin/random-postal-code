@@ -69,8 +69,9 @@ describe("the maps experience", () => {
   test("shows the map region for the first address once a result exists", async () => {
     await generate();
 
-    const mapRegion = screen.getByRole("heading", { name: "地図" })
-      .closest("section")!;
+    // The labeled <section> computes to the "region" role because it has an
+    // accessible name (its own heading via aria-labelledby).
+    const mapRegion = screen.getByRole("region", { name: "地図" });
     expect(
       within(mapRegion).getByText("東京都千代田区千代田"),
     ).toBeInTheDocument();
@@ -85,8 +86,7 @@ describe("the maps experience", () => {
       screen.getByRole("button", { name: /丸の内.*地図/ }),
     );
 
-    const mapRegion = screen.getByRole("heading", { name: "地図" })
-      .closest("section")!;
+    const mapRegion = screen.getByRole("region", { name: "地図" });
     expect(within(mapRegion).getByText("東京都千代田区丸の内")).toBeInTheDocument();
     expect(within(mapRegion).queryByText("東京都千代田区千代田")).not.toBeInTheDocument();
 

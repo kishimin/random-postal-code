@@ -31,9 +31,9 @@ type ObserverEntry = { isIntersecting: boolean };
 class FakeIntersectionObserver {
   static instances: FakeIntersectionObserver[] = [];
   private readonly callback: (entries: ObserverEntry[]) => void;
-  observe = vi.fn();
-  disconnect = vi.fn();
-  unobserve = vi.fn();
+  observe = vi.fn<() => void>();
+  disconnect = vi.fn<() => void>();
+  unobserve = vi.fn<() => void>();
 
   constructor(callback: (entries: ObserverEntry[]) => void) {
     this.callback = callback;
@@ -128,8 +128,8 @@ describe("AddressMap", () => {
     render(<AddressMap address={address} apiKey={"test-key"} />);
     revealLatestObserver();
 
+    fireEvent.load(screen.getByTitle(mapsText.embedTitle(address)));
     act(() => {
-      fireEvent.load(screen.getByTitle(mapsText.embedTitle(address)));
       vi.advanceTimersByTime(MAP_LOAD_TIMEOUT_MS);
     });
 

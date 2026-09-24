@@ -16,9 +16,9 @@ export const fullAddressText = (address: Address): string =>
  * `place` mode takes a free-text `q` query rather than resolved coordinates,
  * which is what design.md section 4 gives this Issue: prefecture, city, and
  * town text, not a geocoded point.
- * @param address - The address the embedded map should show.
- * @param apiKey - The Web Maps API key (design.md section 7). May be empty;
- * the caller decides whether an empty key is a usable request.
+ * @param {Address} address - The address the embedded map should show.
+ * @param {string} apiKey - The Web Maps API key (design.md section 7). May
+ * be empty; the caller decides whether an empty key is a usable request.
  */
 export const buildEmbedSrc = (address: Address, apiKey: string): string => {
   const url = new URL("https://www.google.com/maps/embed/v1/place");
@@ -32,7 +32,7 @@ export const buildEmbedSrc = (address: Address, apiKey: string): string => {
  * "a clearly named external Google Maps link with an encoded full-address
  * query"). `URLSearchParams` percent-encodes the query, so the address text
  * never appears literally in the returned string.
- * @param address - The address the link should open.
+ * @param {Address} address - The address the link should open.
  */
 export const buildExternalMapHref = (address: Address): string => {
   const url = new URL("https://www.google.com/maps/search/");
