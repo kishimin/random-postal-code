@@ -34,8 +34,19 @@ export const AdSlot = ({ clientId, slotId, testMode }: AdSlotProps) => {
     if (requested.current) return;
     requested.current = true;
 
-    const queue = ((window as AdsenseWindow).adsbygoogle ??= []);
-    queue.push({});
+    try {
+      // Once the real SDK has taken over this queue, push() runs its
+      // synchronous fill logic immediately and can throw -- for example when
+      // a route revisited remounts this component onto an `<ins>` the SDK
+      // already filled, or when the slot has no available width to size
+      // against. An effect that lets that escape crashes the whole component
+      // tree at the nearest error boundary, so it is caught here the same way
+      // every other failure in this feature is: silently, never propagated.
+      const queue = ((window as AdsenseWindow).adsbygoogle ??= []);
+      queue.push({});
+    } catch {
+      // Intentionally empty: see the comment above.
+    }
   }, []);
 
   return (
