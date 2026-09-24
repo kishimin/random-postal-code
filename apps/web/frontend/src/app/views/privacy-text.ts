@@ -16,6 +16,9 @@ export const privacyText = {
    */
   firstParty: {
     heading: "Zipnamiが保存する情報",
+    browserLocalHistory:
+      "生成した郵便番号の履歴は、お使いのブラウザにのみ保存され、サーバーには送信されません。",
+    noLocationCollection: "Zipnamiは位置情報を取得しません。",
   },
 
   /**
