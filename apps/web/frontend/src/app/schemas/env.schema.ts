@@ -6,9 +6,10 @@ export type AppEnv = {
   useTestAds: boolean;
 };
 
-// Not a real, restricted publisher ID (same placeholder role as .env's own
-// VITE_GOOGLE_MAPS_API_KEY comment). AdSense is an optional dependency
-// (design.md section 7), so a build without a real one still renders.
+// Not a real, restricted publisher ID. AdSense is an optional dependency
+// (design.md section 7): a build with no VITE_GOOGLE_ADSENSE_CLIENT_ID set
+// still renders, requesting ads under this placeholder instead of failing
+// the build the way a missing VITE_API_BASE_URL does above.
 const DEV_ADSENSE_CLIENT_ID_PLACEHOLDER = "ca-pub-0000000000000000";
 
 // The URL constructor rather than a pattern: it rejects a bare host:port and a
