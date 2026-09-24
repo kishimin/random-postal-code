@@ -587,5 +587,43 @@ describe("createApp", () => {
       expect(allowed.headers.get("vary")).toContain("Origin");
       expect(denied.headers.get("vary")).toContain("Origin");
     });
+
+    // api-design.md section 6: not every caller is a browser (a health
+    // check, curl); such a caller sends no Origin and is subject to no
+    // same-origin policy, so the endpoint must keep answering it without
+    // handing back a blanket authorization that would also reach a browser.
+    test("answers a request without an Origin header normally, authorizing nothing", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await app.request("/api/random", undefined, {
+        ALLOWED_ORIGINS: ALLOWED_ORIGIN,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    // api-design.md section 6: "Do not trust client-supplied forwarding
+    // headers... for security decisions." Every header below is one a caller
+    // sets freely, so the authorization decision must depend on nothing but
+    // the actual Origin header.
+    test("ignores X-Forwarded-*/Referer headers when deciding authorization", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await app.request(
+        "/api/random",
+        {
+          headers: {
+            origin: "https://someone-elses-site.example",
+            "x-forwarded-host": "zipnami.pages.dev",
+            "x-forwarded-proto": "https",
+            referer: `${ALLOWED_ORIGIN}/`,
+          },
+        },
+        { ALLOWED_ORIGINS: ALLOWED_ORIGIN },
+      );
+
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    });
   });
 });
