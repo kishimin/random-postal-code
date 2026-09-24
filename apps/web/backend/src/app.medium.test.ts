@@ -521,9 +521,7 @@ describe("createApp", () => {
         ALLOWED_ORIGIN,
       );
 
-      expect(
-        response.headers.get("access-control-allow-origin"),
-      ).toBeNull();
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
     });
 
     test("never authorizes with a wildcard, even when the allowlist itself holds one", async () => {
@@ -535,9 +533,7 @@ describe("createApp", () => {
         "*",
       );
 
-      expect(
-        response.headers.get("access-control-allow-origin"),
-      ).toBeNull();
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
     });
 
     test("authorizes nothing when ALLOWED_ORIGINS is absent or empty", async () => {
@@ -547,9 +543,7 @@ describe("createApp", () => {
       const emptyConfig = await requestFrom(app, ALLOWED_ORIGIN, "");
 
       expect(noConfig.headers.get("access-control-allow-origin")).toBeNull();
-      expect(
-        emptyConfig.headers.get("access-control-allow-origin"),
-      ).toBeNull();
+      expect(emptyConfig.headers.get("access-control-allow-origin")).toBeNull();
     });
 
     // api-design.md section 6: "origin comparison does not use prefix or
@@ -559,8 +553,14 @@ describe("createApp", () => {
     test.each([
       ["a downgraded scheme", "http://zipnami.pages.dev"],
       ["a different port", "https://zipnami.pages.dev:8443"],
-      ["ALLOWED_ORIGIN as a prefix of an attacker's origin", "https://zipnami.pages.dev.attacker.test"],
-      ["ALLOWED_ORIGIN's host as a suffix of a different host", "https://xzipnami.pages.dev"],
+      [
+        "ALLOWED_ORIGIN as a prefix of an attacker's origin",
+        "https://zipnami.pages.dev.attacker.test",
+      ],
+      [
+        "ALLOWED_ORIGIN's host as a suffix of a different host",
+        "https://xzipnami.pages.dev",
+      ],
       ["a subdomain of the allowed host", "https://preview.zipnami.pages.dev"],
       ["a trailing slash", "https://zipnami.pages.dev/"],
     ])("sets no Access-Control-Allow-Origin for %s", async (_case, origin) => {
@@ -632,6 +632,13 @@ describe("createApp", () => {
     // was asking about, so the endpoint would be unreachable from every
     // allowed page.
     describe("preflight (OPTIONS)", () => {
+      /** Splits a comma-separated response header into comparable entries. */
+      const entriesOf = (value: string | null): string[] =>
+        (value ?? "")
+          .split(",")
+          .map((entry) => entry.trim().toLowerCase())
+          .filter((entry) => entry !== "");
+
       const preflightFrom = (
         app: ReturnType<typeof appServing>,
         origin: string,
@@ -657,17 +664,21 @@ describe("createApp", () => {
       test("answers an allowed origin's preflight without an error, authorizing GET but no write method", async () => {
         const app = appServing([onlyPostalCode]);
 
-        const asked = await preflightFrom(app, ALLOWED_ORIGIN, "GET", ALLOWED_ORIGIN);
+        const asked = await preflightFrom(
+          app,
+          ALLOWED_ORIGIN,
+          "GET",
+          ALLOWED_ORIGIN,
+        );
 
         expect(asked.status).toBeLessThan(400);
         expect(asked.headers.get("access-control-allow-origin")).toBe(
           ALLOWED_ORIGIN,
         );
 
-        const offered = (asked.headers.get("access-control-allow-methods") ?? "")
-          .split(",")
-          .map((method) => method.trim().toLowerCase())
-          .filter((method) => method !== "");
+        const offered = entriesOf(
+          asked.headers.get("access-control-allow-methods"),
+        );
 
         expect(offered).toContain("get");
         expect(
@@ -689,10 +700,9 @@ describe("createApp", () => {
           "authorization, x-api-key, x-zipnami",
         );
 
-        const opened = (asked.headers.get("access-control-allow-headers") ?? "")
-          .split(",")
-          .map((header) => header.trim().toLowerCase())
-          .filter((header) => header !== "");
+        const opened = entriesOf(
+          asked.headers.get("access-control-allow-headers"),
+        );
 
         expect(opened).not.toContain("*");
         expect(opened).not.toContain("authorization");
@@ -707,8 +717,17 @@ describe("createApp", () => {
       test("never sets Access-Control-Allow-Credentials, on a GET or a preflight, for an allowed origin", async () => {
         const app = appServing([onlyPostalCode]);
 
-        const succeeded = await requestFrom(app, ALLOWED_ORIGIN, ALLOWED_ORIGIN);
-        const asked = await preflightFrom(app, ALLOWED_ORIGIN, "GET", ALLOWED_ORIGIN);
+        const succeeded = await requestFrom(
+          app,
+          ALLOWED_ORIGIN,
+          ALLOWED_ORIGIN,
+        );
+        const asked = await preflightFrom(
+          app,
+          ALLOWED_ORIGIN,
+          "GET",
+          ALLOWED_ORIGIN,
+        );
 
         expect(
           succeeded.headers.get("access-control-allow-credentials"),

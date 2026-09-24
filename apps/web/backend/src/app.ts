@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import { respondWithApiError } from "./controllers/api-error-response.ts";
-import { corsMiddleware, type CorsBindings } from "./controllers/cors-middleware.ts";
+import {
+  corsMiddleware,
+  type CorsBindings,
+} from "./controllers/cors-middleware.ts";
 import { registerRandomPostalCodeRoute } from "./controllers/random-postal-code-controller.ts";
 import {
   requestIdMiddleware,
