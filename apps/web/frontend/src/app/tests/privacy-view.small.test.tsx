@@ -77,4 +77,24 @@ describe("PrivacyView", () => {
       /広告[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
     );
   });
+
+  test("offers a contact method a keyboard user can reach and operate", () => {
+    render(<PrivacyView />);
+
+    const contactLink = screen.getByRole("link", {
+      name: /(?:お)?問(?:い)?合(?:わ)?せ|連絡先|Contact/i,
+    });
+
+    // A destination rather than a placeholder: without this, `href="#"`
+    // would satisfy "provides a contact method".
+    expect(contactLink).toHaveAttribute(
+      "href",
+      expect.stringMatching(/^(?:mailto:|https:\/\/)\S/),
+    );
+
+    // Not removed from the tab order (a positive tabIndex is also disallowed
+    // by this repository's accessibility contract; a native link's default
+    // tabIndex of 0 already keeps it keyboard-reachable).
+    expect(contactLink.tabIndex).toBeGreaterThan(-1);
+  });
 });
