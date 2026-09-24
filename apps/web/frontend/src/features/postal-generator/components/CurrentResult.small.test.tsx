@@ -64,4 +64,22 @@ describe("CurrentResult", () => {
       ),
     ).toBe(true);
   });
+
+  // Issue #8 places a per-address map action inside AddressList's own
+  // entries; CurrentResult sits between GeneratorView and AddressList, so it
+  // has to pass the slot through rather than swallow it.
+  test("forwards renderAddressExtra through to each address's own entry", () => {
+    render(
+      <CurrentResult
+        result={result}
+        onCopy={() => undefined}
+        copyFeedback={""}
+        renderAddressExtra={(address) => (
+          <span>{`extra:${address.town}`}</span>
+        )}
+      />,
+    );
+
+    expect(screen.getByText("extra:千代田")).toBeInTheDocument();
+  });
 });
