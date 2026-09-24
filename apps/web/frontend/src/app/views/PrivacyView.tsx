@@ -25,6 +25,9 @@ export const PrivacyView = () => {
 
       <section aria-labelledby={THIRD_PARTY_HEADING_ID}>
         <h2 id={THIRD_PARTY_HEADING_ID}>{privacyText.thirdParty.heading}</h2>
+        <p>{privacyText.thirdParty.googleMaps}</p>
+        <p>{privacyText.thirdParty.googleAdSense}</p>
+        <p>{privacyText.thirdParty.consent}</p>
       </section>
     </>
   );

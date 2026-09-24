@@ -20,9 +20,16 @@ export const privacyText = {
 
   /**
    * The third-party section: design.md section 2 lists an embedded Google
-   * Map, Google AdSense, and consent handling as MVP scope.
+   * Map, Google AdSense, and consent handling as MVP scope. Which script is
+   * loaded for consent is still unselected (section 12 routes the AdSense
+   * and consent configuration to human review before release), so consent is
+   * named as a subject the disclosure covers, not as a specific vendor.
    */
   thirdParty: {
     heading: "第三者サービスが処理する情報",
+    googleMaps: "選択した住所の地図表示にはGoogle Mapsを利用しています。",
+    googleAdSense: "広告の配信にはGoogle AdSenseを利用しています。",
+    consent:
+      "広告表示にあたり同意の取得が必要な地域では、所定の同意管理の仕組みを使用します。",
   },
 } as const;
