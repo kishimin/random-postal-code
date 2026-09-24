@@ -36,10 +36,7 @@ export const PrivacyView = () => {
       </section>
 
       <p>
-        <a
-          className={tapTargetClass}
-          href={privacyText.contactHref}
-        >
+        <a className={tapTargetClass} href={privacyText.contactHref}>
           {privacyText.contactLabel}
         </a>
       </p>
