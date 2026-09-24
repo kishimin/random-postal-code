@@ -2,6 +2,9 @@ import { z } from "zod";
 
 export type AppEnv = {
   apiBaseUrl: string;
+  /** design.md section 7: Google Maps is an optional dependency, so an
+   * unconfigured key resolves to "" rather than failing the build. */
+  mapsApiKey: string;
 };
 
 // The URL constructor rather than a pattern: it rejects a bare host:port and a
@@ -18,6 +21,7 @@ const isAbsoluteHttpUrl = (value: string) => {
 
 const envSchema = z.object({
   VITE_API_BASE_URL: z.string().refine(isAbsoluteHttpUrl),
+  VITE_GOOGLE_MAPS_API_KEY: z.string().optional(),
 });
 
 /**
@@ -39,5 +43,8 @@ export const parseAppEnv = (env: Record<string, unknown>): AppEnv => {
     );
   }
 
-  return { apiBaseUrl: result.data.VITE_API_BASE_URL };
+  return {
+    apiBaseUrl: result.data.VITE_API_BASE_URL,
+    mapsApiKey: result.data.VITE_GOOGLE_MAPS_API_KEY ?? "",
+  };
 };
