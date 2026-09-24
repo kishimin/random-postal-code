@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { Address } from "@zipnami/shared";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { mapsText } from "../site-text";
-import { AddressMap } from "./AddressMap";
+import { AddressMap, MAP_LOAD_TIMEOUT_MS } from "./AddressMap";
 
 const address: Address = {
   prefecture: "東京都",
@@ -52,6 +52,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 const revealLatestObserver = () => {
@@ -85,8 +86,10 @@ describe("AddressMap", () => {
   test("shows the fallback instead of ever loading a frame when no API key is configured", () => {
     render(<AddressMap address={address} apiKey={""} />);
 
-    revealLatestObserver();
-
+    // No IntersectionObserver is even created: design.md section 7 treats a
+    // missing key as an immediate failure, not something worth watching for
+    // visibility first.
+    expect(FakeIntersectionObserver.instances).toHaveLength(0);
     expect(
       screen.queryByTitle(mapsText.embedTitle(address)),
     ).not.toBeInTheDocument();
@@ -96,21 +99,42 @@ describe("AddressMap", () => {
   });
 
   // ui-design.md section 7: a map failure shows the fallback -- the Issue's
-  // "leaves the result usable" criterion depends on this for the failures a
-  // browser can actually observe (a network-level failure fires the iframe's
-  // own error event; a same-origin-looking HTTP error response does not, per
-  // acceptance/pages/address-map-page.ts's own comment on the difference).
-  test("shows the fallback once the loaded frame reports an error", () => {
+  // "leaves the result usable" criterion depends on this for network
+  // failures. A real browser does not reliably fire the iframe's own error
+  // event for a navigation that never completes (the Page Object's own
+  // comment on why "rejected" -- an HTTP error response that still finishes
+  // loading a document -- is unobservable makes the same point from the
+  // other side), so a load that never completes is what this component can
+  // actually detect, via a timeout instead.
+  test("shows the fallback once the frame has not finished loading after the timeout", () => {
+    vi.useFakeTimers();
     render(<AddressMap address={address} apiKey={"test-key"} />);
     revealLatestObserver();
 
-    fireEvent.error(screen.getByTitle(mapsText.embedTitle(address)));
+    act(() => {
+      vi.advanceTimersByTime(MAP_LOAD_TIMEOUT_MS);
+    });
 
     expect(
       screen.queryByTitle(mapsText.embedTitle(address)),
     ).not.toBeInTheDocument();
     expect(
       screen.getByText(`${address.prefecture}${address.city}${address.town}`),
+    ).toBeInTheDocument();
+  });
+
+  test("keeps the frame once it loads before the timeout elapses", () => {
+    vi.useFakeTimers();
+    render(<AddressMap address={address} apiKey={"test-key"} />);
+    revealLatestObserver();
+
+    act(() => {
+      fireEvent.load(screen.getByTitle(mapsText.embedTitle(address)));
+      vi.advanceTimersByTime(MAP_LOAD_TIMEOUT_MS);
+    });
+
+    expect(
+      screen.getByTitle(mapsText.embedTitle(address)),
     ).toBeInTheDocument();
   });
 });
