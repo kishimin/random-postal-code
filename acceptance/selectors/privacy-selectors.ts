@@ -50,7 +50,8 @@ export const privacySelectors = {
    * by a page that never says where the history lives, which is the single
    * fact this criterion exists to publish.
    */
-  browserLocalHistory: /履歴[^。]*(?:ブラウザ|端末)|(?:ブラウザ|端末)[^。]*履歴/,
+  browserLocalHistory:
+    /履歴[^。]*(?:ブラウザ|端末)|(?:ブラウザ|端末)[^。]*履歴/,
 
   /*
    * The three denials.
