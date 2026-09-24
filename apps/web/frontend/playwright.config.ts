@@ -21,6 +21,7 @@ export default defineConfig({
     "acceptance/error-destinations.medium.test.ts",
     "acceptance/random-postal-code-experience.medium.test.ts",
     "acceptance/web-advertising-boundary.medium.test.ts",
+    "acceptance/privacy-and-attribution.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,
