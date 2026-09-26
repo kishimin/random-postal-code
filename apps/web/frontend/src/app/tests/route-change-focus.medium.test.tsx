@@ -79,7 +79,8 @@ describe("route-change focus", () => {
    * own, more specific focus choice.
    */
   const failingDestinationApp = () => {
-    const thrownDetail = "a route component threw after a client-side navigation";
+    const thrownDetail =
+      "a route component threw after a client-side navigation";
     const { defaultErrorComponent } = createAppRouter().options;
     const rootRoute = createRootRoute({ component: RootLayout });
 

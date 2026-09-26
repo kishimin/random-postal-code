@@ -72,8 +72,6 @@ describe("document title per screen", () => {
     const notFoundTitle = document.title;
     notFoundScreen.unmount();
 
-    expect(new Set([generatorTitle, privacyTitle, notFoundTitle]).size).toBe(
-      3,
-    );
+    expect(new Set([generatorTitle, privacyTitle, notFoundTitle]).size).toBe(3);
   });
 });
