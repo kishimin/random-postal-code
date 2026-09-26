@@ -24,12 +24,18 @@ export type CorsBindings = {
  * comma-followed-by-space list is the natural way a human writes this value,
  * but the browser's real `Origin` header never carries leading whitespace,
  * so an untrimmed entry could never match and would be silently denied.
+ *
+ * `"null"` is filtered the same way `*` is (Codex review on this PR): a
+ * browser serializes many unrelated opaque contexts -- a sandboxed iframe, a
+ * `data:` document, a redirected request -- to the literal `Origin: null`,
+ * so authorizing that string authorizes all of them at once, the same
+ * boundary failure a wildcard is rejected for.
  */
 const parseAllowedOrigins = (value: string | undefined): string[] =>
   (value ?? "")
     .split(",")
     .map((origin) => origin.trim())
-    .filter((origin) => origin !== "" && origin !== "*");
+    .filter((origin) => origin !== "" && origin !== "*" && origin !== "null");
 
 /**
  * The only methods GET /api/random needs (api-design.md section 6: "Permit
@@ -46,10 +52,17 @@ const ALLOWED_METHODS = "GET, HEAD";
  * including one with no `Origin` header at all -- is answered without a
  * CORS authorization header, never with `*`.
  *
- * Handles `OPTIONS` itself rather than letting it reach the route (which has
- * none registered for it): a preflight that fell through to the app's own
- * 404/405 handling would answer with an error status, and an erroring
- * preflight blocks the very GET the browser was asking about.
+ * Handles a CORS preflight itself rather than letting it reach the route
+ * (which has none registered for OPTIONS): a preflight that fell through to
+ * the app's own 404/405 handling would answer with an error status, and an
+ * erroring preflight blocks the very GET the browser was asking about.
+ *
+ * A plain `OPTIONS` request that is not a CORS preflight -- no
+ * `Access-Control-Request-Method` header, which only a browser's own
+ * preflight step ever sends -- is not short-circuited (Codex review on this
+ * PR): it falls through to the route like any other method, so it still
+ * receives the documented `405 METHOD_NOT_ALLOWED` rather than an
+ * unconditional 204 that would misreport it as an authorized preflight.
  */
 export const corsMiddleware: MiddlewareHandler<{
   Bindings: CorsBindings;
@@ -76,7 +89,11 @@ export const corsMiddleware: MiddlewareHandler<{
     }
   };
 
-  if (c.req.method === "OPTIONS") {
+  const isPreflight =
+    c.req.method === "OPTIONS" &&
+    c.req.header("access-control-request-method") !== undefined;
+
+  if (isPreflight) {
     const startedAt = Date.now();
 
     // api-design.md section 6 also forbids trusting client-supplied
