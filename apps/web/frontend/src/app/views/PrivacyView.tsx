@@ -1,4 +1,5 @@
-import { siteText } from "../site-text";
+import { useDocumentTitle } from "../../hooks/use-document-title";
+import { pageTitle, siteText } from "../site-text";
 import { tapTargetClass } from "../styles";
 import { privacyText } from "./privacy-text";
 
@@ -16,9 +17,14 @@ const THIRD_PARTY_HEADING_ID = "privacy-third-party-heading";
  * uses for its labelled region.
  */
 export const PrivacyView = () => {
+  useDocumentTitle(pageTitle(siteText.privacyLabel));
+
   return (
     <>
-      <h1>{siteText.privacyLabel}</h1>
+      {/* tabIndex: RootLayout focuses a screen's own h1 after a client-side
+          route change (Issue #16 AC-5), and a plain heading is not in the
+          focusable area without one. */}
+      <h1 tabIndex={-1}>{siteText.privacyLabel}</h1>
 
       <section aria-labelledby={FIRST_PARTY_HEADING_ID}>
         <h2 id={FIRST_PARTY_HEADING_ID}>{privacyText.firstParty.heading}</h2>
