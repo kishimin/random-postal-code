@@ -76,15 +76,16 @@ describe("route-change focus", () => {
   });
 
   test("a client-side route change to an unknown path moves focus to the not-found heading", async () => {
-    // No screen links to a path no route claims, so the navigation itself is
-    // driven through the router directly rather than through a rendered
-    // <Link> (CR-CODE-002, code review: the not-found destination was
-    // untested here even though the client-side-navigation case for
-    // /privacy already was). Still a genuine client-side transition, not a
-    // fresh load -- router.navigate() is the same call a <Link> click makes.
-    const router = createAppRouter(
-      createMemoryHistory({ initialEntries: ["/"] }),
-    );
+    // No screen links to a path no route claims, and the production
+    // router's typed navigate() rejects an unregistered literal at compile
+    // time -- the same protection <Link to> gets (CR-CODE-002, code review:
+    // the not-found destination was untested here even though the
+    // client-side-navigation case for /privacy already was). Pushing onto
+    // the underlying history directly is the same primitive the router's
+    // own navigate() calls internally, so this is still a genuine
+    // client-side transition, not a fresh load.
+    const history = createMemoryHistory({ initialEntries: ["/"] });
+    const router = createAppRouter(history);
 
     render(
       <AppProviders>
@@ -94,7 +95,7 @@ describe("route-change focus", () => {
 
     await screen.findByRole("heading", { name: /Zipnami/, level: 1 });
 
-    await router.navigate({ to: "/no-such-route" });
+    history.push("/no-such-route");
 
     const heading = await screen.findByRole("heading", {
       name: notFoundHeading,
