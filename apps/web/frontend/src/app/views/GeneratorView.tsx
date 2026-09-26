@@ -6,7 +6,9 @@ import { GenerateAction } from "../../features/postal-generator/components/Gener
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
 import { useGenerator } from "../../features/postal-generator/hooks/use-generator";
 import { postalGeneratorText } from "../../features/postal-generator/site-text";
+import { useDocumentTitle } from "../../hooks/use-document-title";
 import { parseAppEnv } from "../schemas/env.schema";
+import { pageTitle, siteText } from "../site-text";
 
 /**
  * Generator screen (Issue #6): the generate action, its current result, and
@@ -24,9 +26,14 @@ export const GeneratorView = () => {
   const { state, currentResult, announcement, copyFeedback, generate, copy } =
     useGenerator(client);
 
+  useDocumentTitle(pageTitle());
+
   return (
     <>
-      <h1>{"Zipnami"}</h1>
+      {/* tabIndex: RootLayout focuses a screen's own h1 after a client-side
+          route change (Issue #16 AC-5), and a plain heading is not in the
+          focusable area without one. */}
+      <h1 tabIndex={-1}>{siteText.name}</h1>
       <p>{postalGeneratorText.explanation}</p>
       <GenerateAction
         onGenerate={generate}

@@ -197,6 +197,21 @@ Verify at minimum:
 
 Tests assert content availability and state behavior, not exact pixel appearance. Use visual regression baselines for stable representative states after visual tokens are fixed.
 
+**Automated coverage.** `acceptance/web-responsive-accessibility.medium.test.ts` (Issue #16) runs an axe-core WCAG A/AA scan and asserts layout, keyboard operability, focus, naming, and announcement behavior across the widths above, on every configured Playwright project, for the generator (idle, loading, success, error), the privacy screen, and the not-found destination.
+
+**Manual checks.** The items below are not observable through Playwright's DOM and accessibility-tree APIs, or fall outside the automated test's stable-state scope, and must be verified by hand before a release that touches the Web UI:
+
+- Screen-reader announcements of the loading, result, error, copy-success, and route-change states, using NVDA with Chrome or Edge on Windows, VoiceOver with Safari on macOS and iOS, and TalkBack with Chrome on Android. Confirm the text section 8's live regions carry is actually spoken, not only present in the DOM.
+- Unchanged content is not re-announced: repeating the same failure, or copying the same result twice, must not repeat the same utterance a second time.
+- 200% browser zoom and OS-level text enlargement, checked against the same viewport widths as the automated scan.
+- Portrait and landscape orientation on an actual or emulated mobile device.
+- `prefers-reduced-motion`: any decorative motion stops or is substantially reduced.
+- Focus indicator visibility and contrast (the automated test holds only that an indicator exists, not that it is legible).
+- The advertising region's visual boundary (CR-004 of Issue #9's review): a border, background, or equivalent that separates it from application content by more than the label text alone.
+- Link affordance is not carried by color alone (CR-005 of Issue #10's review): every in-content link is recognizable as a link — e.g. underlined — without relying on its color.
+- The global error screen's (`AppErrorContent`/`AppErrorView`) focus move and document title: a browser cannot be driven to the render failure that reaches this screen, so unit and medium tests hold this instead of the acceptance test.
+- Maps (Issue #7) and history (Issue #8) are not yet built and this list covers none of their behavior; whichever Issue delivers them must add its own automated and manual checks rather than assume this checklist already applies to them.
+
 ## 11. Test Contract
 
 - Small tests cover pure formatting, state reduction, history retention, storage validation, URL construction, and component behavior without real services.
@@ -204,7 +219,7 @@ Tests assert content availability and state behavior, not exact pixel appearance
 - Large tests cover representative deployed Pages-to-Workers journeys and production-like Web SDK configuration without real advertisement interaction.
 - User interaction tests use user-level interactions rather than dispatching isolated DOM events.
 - Route transition tests use the production route configuration rather than test-only routes.
-- Accessibility automation covers stable Web states, supplemented by keyboard, screen-reader, and zoom checks.
+- Accessibility automation (`acceptance/web-responsive-accessibility.medium.test.ts`) covers stable Web states with axe-core WCAG A/AA scans; section 10's manual checklist covers the keyboard, screen-reader, zoom, and appearance verification it does not replace.
 
 Classify tests by actual dependencies, not by component, integration, or E2E labels. Every overall coverage metric must reach at least 80% when repository coverage commands exist.
 
