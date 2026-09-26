@@ -21,7 +21,7 @@ export const RootLayout = () => {
     select: (state) => state.resolvedLocation?.pathname,
   });
   const mainRef = useRef<HTMLElement>(null);
-  const previousPathname = useRef<string>();
+  const previousPathname = useRef<string | undefined>(undefined);
 
   /*
    * Moves focus to the arriving screen's own heading after a client-side
