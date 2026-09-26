@@ -9,9 +9,10 @@ import {
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
+import { notFoundHeading } from "../document-title";
 import { AppProviders } from "../providers/AppProviders";
 import { createAppRouter } from "../routes/app-router";
-import { siteText } from "../site-text";
+import { pageTitle, siteText } from "../site-text";
 import { RootLayout } from "../views/RootLayout";
 
 /*
@@ -65,6 +66,42 @@ describe("route-change focus", () => {
       level: 1,
     });
     expect(heading).toHaveFocus();
+
+    // TR-001 (test review): the only prior check of a genuine client-side
+    // navigation's title update was the slow, cross-browser AT. A useEffect
+    // that never ran would still leave this test's own findByRole assertions
+    // passing on the old title, so this is checked in the same session as
+    // the click above rather than by a separate fresh mount.
+    expect(document.title).toBe(pageTitle(siteText.privacyLabel));
+  });
+
+  test("a client-side route change to an unknown path moves focus to the not-found heading", async () => {
+    // No screen links to a path no route claims, so the navigation itself is
+    // driven through the router directly rather than through a rendered
+    // <Link> (CR-CODE-002, code review: the not-found destination was
+    // untested here even though the client-side-navigation case for
+    // /privacy already was). Still a genuine client-side transition, not a
+    // fresh load -- router.navigate() is the same call a <Link> click makes.
+    const router = createAppRouter(
+      createMemoryHistory({ initialEntries: ["/"] }),
+    );
+
+    render(
+      <AppProviders>
+        <RouterProvider router={router} />
+      </AppProviders>,
+    );
+
+    await screen.findByRole("heading", { name: /Zipnami/, level: 1 });
+
+    await router.navigate({ to: "/no-such-route" });
+
+    const heading = await screen.findByRole("heading", {
+      name: notFoundHeading,
+      level: 1,
+    });
+    expect(heading).toHaveFocus();
+    expect(document.title).toBe(pageTitle(notFoundHeading));
   });
 
   /*
