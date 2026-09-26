@@ -546,6 +546,26 @@ describe("createApp", () => {
       expect(emptyConfig.headers.get("access-control-allow-origin")).toBeNull();
     });
 
+    // CR-002/TR-004: a comma-followed-by-space list is the natural way a
+    // human writes ALLOWED_ORIGINS, but the browser's real Origin header
+    // never carries leading whitespace, so a parser that splits without
+    // trimming silently drops every entry after the first.
+    test("authorizes both origins in a comma-space-separated allowlist", async () => {
+      const app = appServing([onlyPostalCode]);
+      const secondOrigin = "https://zipnami.example";
+      const allowedOrigins = `${ALLOWED_ORIGIN}, ${secondOrigin}`;
+
+      const first = await requestFrom(app, ALLOWED_ORIGIN, allowedOrigins);
+      const second = await requestFrom(app, secondOrigin, allowedOrigins);
+
+      expect(first.headers.get("access-control-allow-origin")).toBe(
+        ALLOWED_ORIGIN,
+      );
+      expect(second.headers.get("access-control-allow-origin")).toBe(
+        secondOrigin,
+      );
+    });
+
     // api-design.md section 6: "origin comparison does not use prefix or
     // substring matching". Each case below matches a naive `startsWith`,
     // `endsWith`, or case-insensitive comparison against ALLOWED_ORIGIN even
@@ -689,6 +709,25 @@ describe("createApp", () => {
         expect(offered).not.toContain("*");
       });
 
+      // TR-002: the assertions above only deny write verbs, which a future
+      // change widening the advertised list (e.g. to "GET, HEAD, OPTIONS,
+      // TRACE, CONNECT") would still pass. Pinning the exact value catches
+      // that.
+      test("pins the exact Access-Control-Allow-Methods value", async () => {
+        const app = appServing([onlyPostalCode]);
+
+        const asked = await preflightFrom(
+          app,
+          ALLOWED_ORIGIN,
+          "GET",
+          ALLOWED_ORIGIN,
+        );
+
+        expect(asked.headers.get("access-control-allow-methods")).toBe(
+          "GET, HEAD",
+        );
+      });
+
       test("does not reflect requested headers into Access-Control-Allow-Headers, and never opens *", async () => {
         const app = appServing([onlyPostalCode]);
 
@@ -708,6 +747,59 @@ describe("createApp", () => {
         expect(opened).not.toContain("authorization");
         expect(opened).not.toContain("x-api-key");
         expect(opened).not.toContain("x-zipnami");
+      });
+
+      // CR-003/TR-003: request-log.ts's own doc comment asserts every
+      // request this API handles produces a structured log entry, and
+      // app.ts's app.notFound/app.onError already follow that invariant
+      // (PR #35). corsMiddleware answers every OPTIONS itself, before a
+      // route handler is ever reached, so without a log call here a
+      // misconfigured allowlist's first symptom in production -- a denied
+      // preflight -- left zero server-side evidence.
+      test("logs a structured entry for a preflight, which never reaches a route handler to log it there", async () => {
+        const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+        const app = appServing([onlyPostalCode]);
+
+        const response = await preflightFrom(
+          app,
+          ALLOWED_ORIGIN,
+          "GET",
+          ALLOWED_ORIGIN,
+        );
+
+        expect(response.status).toBe(204);
+        expect(logSpy).toHaveBeenCalledTimes(1);
+        const entry = JSON.parse(logSpy.mock.calls[0]?.[0] as string) as Record<
+          string,
+          unknown
+        >;
+
+        expect(entry).toMatchObject({
+          route: "/api/random",
+          method: "OPTIONS",
+          status: 204,
+        });
+        expect(typeof entry.requestId).toBe("string");
+        expect(entry.requestId).not.toBe("");
+        expect(Number.isNaN(Date.parse(entry.timestamp as string))).toBe(false);
+        expect(typeof entry.durationMs).toBe("number");
+      });
+
+      // The invariant holds for a preflight the allowlist would refuse too --
+      // it is exactly that case (a misconfigured allowlist) that operability
+      // most needs a log entry for.
+      test("logs a preflight from a disallowed origin, not only an authorized one", async () => {
+        const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+        const app = appServing([onlyPostalCode]);
+
+        await preflightFrom(
+          app,
+          "https://someone-elses-site.example",
+          "GET",
+          ALLOWED_ORIGIN,
+        );
+
+        expect(logSpy).toHaveBeenCalledTimes(1);
       });
 
       // The endpoint has no cookie and no credential (api-design.md section
