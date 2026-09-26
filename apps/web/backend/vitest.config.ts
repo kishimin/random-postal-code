@@ -13,20 +13,25 @@ import { coverageConfigDefaults, defineConfig } from "vitest/config";
 // mis-named file would run on push where ADR-0043 puts medium tests later.
 export default defineConfig({
   test: {
-    // The acceptance test for Issue #4 lives outside every package (ADR-0062
-    // isolates acceptance/ from implementation code) and is not a Playwright
-    // test, so it matches no testMatch entry in playwright.config.ts. This
-    // package is the one the test exercises — it imports app.ts and index.ts
-    // directly — so its own Vitest run is the one that includes it, alongside
-    // the package's own small/medium/large test files.
+    // The acceptance tests for Issue #4 and Issue #11 live outside every
+    // package (ADR-0062 isolates acceptance/ from implementation code) and
+    // are not Playwright tests, so neither matches a testMatch entry in
+    // playwright.config.ts. This package is the one both tests exercise —
+    // they import app.ts and index.ts directly — so its own Vitest run is
+    // the one that includes them, alongside the package's own
+    // small/medium/large test files. ADR-0069 requires each acceptance test
+    // to be bound to exactly one runner by an explicit file name listed in
+    // that runner's config, rather than by a directory glob, which is why
+    // both entries are spelled out here instead of matched by pattern.
     //
-    // Removing or renaming this entry breaks nothing that CI checks today:
-    // the only automated guard is over the acceptance/ diff itself (ADR-0069),
-    // and this line sits outside that path. Do not treat a passing CI run as
-    // proof this entry is still wired up.
+    // Removing or renaming an entry breaks nothing that CI checks today:
+    // the only automated guard is ADR-0067's diff check over the
+    // acceptance/ directory itself, and this file sits outside that path.
+    // Do not treat a passing CI run as proof either entry is still wired up.
     include: [
       "**/*.{test,spec}.ts",
       "../../../acceptance/random-postal-code-api.medium.test.ts",
+      "../../../acceptance/cors-and-secret-boundaries.medium.test.ts",
     ],
     pool: cloudflarePool({
       wrangler: { configPath: "./wrangler.jsonc" },

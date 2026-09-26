@@ -478,4 +478,386 @@ describe("createApp", () => {
       });
     });
   });
+
+  // Issue #11, api-design.md section 6: "Allow only exact configured Web
+  // origins... Return the requesting origin only after an exact allowlist
+  // match; never return `*`." The allowlist itself is deployment
+  // configuration, not something createApp hard-codes, so each test below
+  // supplies it as the `env` createApp reads per request rather than as a
+  // constructor argument -- mirroring how the deployed Worker receives it.
+  describe("CORS allowlist (Issue #11)", () => {
+    const ALLOWED_ORIGIN = "https://zipnami.pages.dev";
+
+    const requestFrom = (
+      app: ReturnType<typeof appServing>,
+      origin: string,
+      allowedOrigins: string | undefined,
+    ) =>
+      app.request(
+        "/api/random",
+        { headers: { origin } },
+        allowedOrigins === undefined
+          ? undefined
+          : { ALLOWED_ORIGINS: allowedOrigins },
+      );
+
+    test("echoes back an origin that exactly matches the configured allowlist", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await requestFrom(app, ALLOWED_ORIGIN, ALLOWED_ORIGIN);
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("access-control-allow-origin")).toBe(
+        ALLOWED_ORIGIN,
+      );
+    });
+
+    test("sets no Access-Control-Allow-Origin for an origin the allowlist does not name", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await requestFrom(
+        app,
+        "https://someone-elses-site.example",
+        ALLOWED_ORIGIN,
+      );
+
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    test("never authorizes with a wildcard, even when the allowlist itself holds one", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await requestFrom(
+        app,
+        "https://anyone-at-all.example",
+        "*",
+      );
+
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    test("authorizes nothing when ALLOWED_ORIGINS is absent or empty", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const noConfig = await requestFrom(app, ALLOWED_ORIGIN, undefined);
+      const emptyConfig = await requestFrom(app, ALLOWED_ORIGIN, "");
+
+      expect(noConfig.headers.get("access-control-allow-origin")).toBeNull();
+      expect(emptyConfig.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    // CR-002/TR-004: a comma-followed-by-space list is the natural way a
+    // human writes ALLOWED_ORIGINS, but the browser's real Origin header
+    // never carries leading whitespace, so a parser that splits without
+    // trimming silently drops every entry after the first.
+    test("authorizes both origins in a comma-space-separated allowlist", async () => {
+      const app = appServing([onlyPostalCode]);
+      const secondOrigin = "https://zipnami.example";
+      const allowedOrigins = `${ALLOWED_ORIGIN}, ${secondOrigin}`;
+
+      const first = await requestFrom(app, ALLOWED_ORIGIN, allowedOrigins);
+      const second = await requestFrom(app, secondOrigin, allowedOrigins);
+
+      expect(first.headers.get("access-control-allow-origin")).toBe(
+        ALLOWED_ORIGIN,
+      );
+      expect(second.headers.get("access-control-allow-origin")).toBe(
+        secondOrigin,
+      );
+    });
+
+    // Codex review on this PR: a browser serializes many unrelated opaque
+    // contexts (a sandboxed iframe, a data: document, a redirected request)
+    // to the literal `Origin: null`, so authorizing that string the same way
+    // a real origin is authorized would open the boundary to all of them at
+    // once -- the same failure a literal `*` is rejected for above.
+    test("never authorizes a literal null origin, even when the allowlist itself holds one", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await requestFrom(app, "null", "null");
+
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    // api-design.md section 6: "origin comparison does not use prefix or
+    // substring matching". Each case below matches a naive `startsWith`,
+    // `endsWith`, or case-insensitive comparison against ALLOWED_ORIGIN even
+    // though it is a different origin under the Fetch/URL spec.
+    test.each([
+      ["a downgraded scheme", "http://zipnami.pages.dev"],
+      ["a different port", "https://zipnami.pages.dev:8443"],
+      [
+        "ALLOWED_ORIGIN as a prefix of an attacker's origin",
+        "https://zipnami.pages.dev.attacker.test",
+      ],
+      [
+        "ALLOWED_ORIGIN's host as a suffix of a different host",
+        "https://xzipnami.pages.dev",
+      ],
+      ["a subdomain of the allowed host", "https://preview.zipnami.pages.dev"],
+      ["a trailing slash", "https://zipnami.pages.dev/"],
+    ])("sets no Access-Control-Allow-Origin for %s", async (_case, origin) => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await requestFrom(app, origin, ALLOWED_ORIGIN);
+
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    // api-design.md section 6: "Include Vary: Origin whenever the response
+    // varies by Origin." Without it, a cache sitting in front of the Worker
+    // can serve a response authorized for one origin to a different one.
+    test("marks both an authorized and an unauthorized response Vary: Origin", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const allowed = await requestFrom(app, ALLOWED_ORIGIN, ALLOWED_ORIGIN);
+      const denied = await requestFrom(
+        app,
+        "https://someone-elses-site.example",
+        ALLOWED_ORIGIN,
+      );
+
+      expect(allowed.headers.get("vary")).toContain("Origin");
+      expect(denied.headers.get("vary")).toContain("Origin");
+    });
+
+    // api-design.md section 6: not every caller is a browser (a health
+    // check, curl); such a caller sends no Origin and is subject to no
+    // same-origin policy, so the endpoint must keep answering it without
+    // handing back a blanket authorization that would also reach a browser.
+    test("answers a request without an Origin header normally, authorizing nothing", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await app.request("/api/random", undefined, {
+        ALLOWED_ORIGINS: ALLOWED_ORIGIN,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    // api-design.md section 6: "Do not trust client-supplied forwarding
+    // headers... for security decisions." Every header below is one a caller
+    // sets freely, so the authorization decision must depend on nothing but
+    // the actual Origin header.
+    test("ignores X-Forwarded-*/Referer headers when deciding authorization", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await app.request(
+        "/api/random",
+        {
+          headers: {
+            origin: "https://someone-elses-site.example",
+            "x-forwarded-host": "zipnami.pages.dev",
+            "x-forwarded-proto": "https",
+            referer: `${ALLOWED_ORIGIN}/`,
+          },
+        },
+        { ALLOWED_ORIGINS: ALLOWED_ORIGIN },
+      );
+
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
+    // api-design.md section 6: "Permit GET and the minimum headers needed by
+    // the browser client" and "Handle OPTIONS only when required by the CORS
+    // middleware." A preflight that errors blocks the very GET the browser
+    // was asking about, so the endpoint would be unreachable from every
+    // allowed page.
+    describe("preflight (OPTIONS)", () => {
+      /** Splits a comma-separated response header into comparable entries. */
+      const entriesOf = (value: string | null): string[] =>
+        (value ?? "")
+          .split(",")
+          .map((entry) => entry.trim().toLowerCase())
+          .filter((entry) => entry !== "");
+
+      const preflightFrom = (
+        app: ReturnType<typeof appServing>,
+        origin: string,
+        requestMethod: string,
+        allowedOrigins: string,
+        requestHeaders?: string,
+      ) =>
+        app.request(
+          "/api/random",
+          {
+            method: "OPTIONS",
+            headers: {
+              origin,
+              "access-control-request-method": requestMethod,
+              ...(requestHeaders === undefined
+                ? {}
+                : { "access-control-request-headers": requestHeaders }),
+            },
+          },
+          { ALLOWED_ORIGINS: allowedOrigins },
+        );
+
+      test("answers an allowed origin's preflight without an error, authorizing GET but no write method", async () => {
+        const app = appServing([onlyPostalCode]);
+
+        const asked = await preflightFrom(
+          app,
+          ALLOWED_ORIGIN,
+          "GET",
+          ALLOWED_ORIGIN,
+        );
+
+        expect(asked.status).toBeLessThan(400);
+        expect(asked.headers.get("access-control-allow-origin")).toBe(
+          ALLOWED_ORIGIN,
+        );
+
+        const offered = entriesOf(
+          asked.headers.get("access-control-allow-methods"),
+        );
+
+        expect(offered).toContain("get");
+        expect(
+          offered.filter((method) =>
+            ["post", "put", "patch", "delete"].includes(method),
+          ),
+        ).toEqual([]);
+        expect(offered).not.toContain("*");
+      });
+
+      // TR-002: the assertions above only deny write verbs, which a future
+      // change widening the advertised list (e.g. to "GET, HEAD, OPTIONS,
+      // TRACE, CONNECT") would still pass. Pinning the exact value catches
+      // that.
+      test("pins the exact Access-Control-Allow-Methods value", async () => {
+        const app = appServing([onlyPostalCode]);
+
+        const asked = await preflightFrom(
+          app,
+          ALLOWED_ORIGIN,
+          "GET",
+          ALLOWED_ORIGIN,
+        );
+
+        expect(asked.headers.get("access-control-allow-methods")).toBe(
+          "GET, HEAD",
+        );
+      });
+
+      test("does not reflect requested headers into Access-Control-Allow-Headers, and never opens *", async () => {
+        const app = appServing([onlyPostalCode]);
+
+        const asked = await preflightFrom(
+          app,
+          ALLOWED_ORIGIN,
+          "GET",
+          ALLOWED_ORIGIN,
+          "authorization, x-api-key, x-zipnami",
+        );
+
+        const opened = entriesOf(
+          asked.headers.get("access-control-allow-headers"),
+        );
+
+        expect(opened).not.toContain("*");
+        expect(opened).not.toContain("authorization");
+        expect(opened).not.toContain("x-api-key");
+        expect(opened).not.toContain("x-zipnami");
+      });
+
+      // Codex review on this PR: only a browser's own preflight step sends
+      // Access-Control-Request-Method, so an OPTIONS request without it is
+      // not a CORS preflight and must not be answered with an unconditional
+      // 204 that misreports it as an authorized one -- it should reach the
+      // route like any other unsupported method and get the documented 405.
+      test("does not treat a plain OPTIONS request as a preflight", async () => {
+        const app = appServing([onlyPostalCode]);
+
+        const response = await app.request(
+          "/api/random",
+          { method: "OPTIONS", headers: { origin: ALLOWED_ORIGIN } },
+          { ALLOWED_ORIGINS: ALLOWED_ORIGIN },
+        );
+
+        expect(response.status).toBe(405);
+      });
+
+      // CR-003/TR-003: request-log.ts's own doc comment asserts every
+      // request this API handles produces a structured log entry, and
+      // app.ts's app.notFound/app.onError already follow that invariant
+      // (PR #35). corsMiddleware answers every OPTIONS itself, before a
+      // route handler is ever reached, so without a log call here a
+      // misconfigured allowlist's first symptom in production -- a denied
+      // preflight -- left zero server-side evidence.
+      test("logs a structured entry for a preflight, which never reaches a route handler to log it there", async () => {
+        const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+        const app = appServing([onlyPostalCode]);
+
+        const response = await preflightFrom(
+          app,
+          ALLOWED_ORIGIN,
+          "GET",
+          ALLOWED_ORIGIN,
+        );
+
+        expect(response.status).toBe(204);
+        expect(logSpy).toHaveBeenCalledTimes(1);
+        const entry = JSON.parse(logSpy.mock.calls[0]?.[0] as string) as Record<
+          string,
+          unknown
+        >;
+
+        expect(entry).toMatchObject({
+          route: "/api/random",
+          method: "OPTIONS",
+          status: 204,
+        });
+        expect(typeof entry.requestId).toBe("string");
+        expect(entry.requestId).not.toBe("");
+        expect(Number.isNaN(Date.parse(entry.timestamp as string))).toBe(false);
+        expect(typeof entry.durationMs).toBe("number");
+      });
+
+      // The invariant holds for a preflight the allowlist would refuse too --
+      // it is exactly that case (a misconfigured allowlist) that operability
+      // most needs a log entry for.
+      test("logs a preflight from a disallowed origin, not only an authorized one", async () => {
+        const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+        const app = appServing([onlyPostalCode]);
+
+        await preflightFrom(
+          app,
+          "https://someone-elses-site.example",
+          "GET",
+          ALLOWED_ORIGIN,
+        );
+
+        expect(logSpy).toHaveBeenCalledTimes(1);
+      });
+
+      // The endpoint has no cookie and no credential (api-design.md section
+      // 6): advertising credentialed CORS beside an echoed origin is how a
+      // boundary that looks narrow becomes one that sends a visitor's
+      // cookies somewhere.
+      test("never sets Access-Control-Allow-Credentials, on a GET or a preflight, for an allowed origin", async () => {
+        const app = appServing([onlyPostalCode]);
+
+        const succeeded = await requestFrom(
+          app,
+          ALLOWED_ORIGIN,
+          ALLOWED_ORIGIN,
+        );
+        const asked = await preflightFrom(
+          app,
+          ALLOWED_ORIGIN,
+          "GET",
+          ALLOWED_ORIGIN,
+        );
+
+        expect(
+          succeeded.headers.get("access-control-allow-credentials"),
+        ).toBeNull();
+        expect(
+          asked.headers.get("access-control-allow-credentials"),
+        ).toBeNull();
+      });
+    });
+  });
 });

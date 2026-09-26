@@ -1,0 +1,6 @@
+# Origins this Worker authorizes for CORS, comma-separated. Read only by
+# `wrangler dev` (never by `wrangler deploy`), so this default never reaches
+# a real deployment -- copy this file to .dev.vars to use it locally.
+# Issue #19 provisions the real production allowlist separately, in the
+# deployment's own environment configuration, not here.
+ALLOWED_ORIGINS="http://localhost:5173"

@@ -107,6 +107,78 @@ test("the documented API base URL reaches the port wrangler dev serves", () => {
   );
 });
 
+// Symmetric to the check above: that one keeps the backend's dev.port in
+// sync with the port the frontend calls; this one keeps ALLOWED_ORIGINS in
+// sync with the origin the frontend actually runs on, so the two configs
+// cannot drift apart with nothing in CI to catch it (CR-001/TR-001).
+//
+// Read from .dev.vars.example rather than wrangler.jsonc's top-level `vars`:
+// a Codex review on this PR found that a top-level `vars` entry is the
+// Worker's DEFAULT deployment config, so `wrangler deploy` with no
+// environment selected would have shipped this local-only origin as
+// production's allowlist. `.dev.vars` is read only by `wrangler dev`, never
+// by `wrangler deploy`, so the real value lives in the gitignored
+// `.dev.vars` a developer copies from this example -- the same pattern
+// apps/web/frontend/.env.example already uses for VITE_API_BASE_URL.
+test("apps/web/backend/.dev.vars.example's ALLOWED_ORIGINS matches the origin Vite's dev server serves", () => {
+  const devVarsExample = readRepositoryFile(
+    "apps",
+    "web",
+    "backend",
+    ".dev.vars.example",
+  );
+  const allowedOrigins = /^ALLOWED_ORIGINS="([^"]*)"$/m.exec(
+    devVarsExample,
+  )?.[1];
+
+  assert.ok(
+    allowedOrigins !== undefined,
+    "apps/web/backend/.dev.vars.example must set ALLOWED_ORIGINS, or local development has no allowlist to authorize the frontend's own origin",
+  );
+
+  // vite.config.ts declares no server.port, so Vite serves its dev server on
+  // its own documented default (5173) rather than a value this repository
+  // chose and could restate in a config file. Guarded here: if vite.config.ts
+  // ever does pin a port, this assertion fails so the expected origin below
+  // gets updated to match instead of silently drifting from it.
+  const viteConfig = readRepositoryFile(
+    "apps",
+    "web",
+    "frontend",
+    "vite.config.ts",
+  );
+
+  assert.ok(
+    !/\bserver\s*:\s*\{[^}]*\bport\b/.test(viteConfig),
+    "vite.config.ts now pins a dev server port; update the expected origin in this test to match it",
+  );
+
+  assert.equal(allowedOrigins, "http://localhost:5173");
+});
+
+// TR-005: vitest.config.ts's own comment records that removing one of these
+// entries "breaks nothing that CI checks today" -- ADR-0067's diff guard
+// only watches the acceptance/ directory, which this file sits outside of.
+// This is the guard that comment says does not exist yet.
+test("apps/web/backend's vitest config still runs both acceptance tests", () => {
+  const vitestConfig = readRepositoryFile(
+    "apps",
+    "web",
+    "backend",
+    "vitest.config.ts",
+  );
+
+  for (const acceptanceTest of [
+    "random-postal-code-api.medium.test.ts",
+    "cors-and-secret-boundaries.medium.test.ts",
+  ]) {
+    assert.ok(
+      vitestConfig.includes(acceptanceTest),
+      `vitest.config.ts no longer lists acceptance/${acceptanceTest} in its include array, so that acceptance test would silently stop running`,
+    );
+  }
+});
+
 test("Pages serves index.html for a path no file matches", () => {
   const redirects = readRepositoryFile(
     "apps",
@@ -250,6 +322,10 @@ test("git ignores secrets, build output, dependencies and editor state", () => {
     "node_modules/anything",
     "apps/web/backend/.wrangler/state",
     ".idea/workspace.xml",
+    // TR-006: cors-middleware.ts documents `.dev.vars` as a supported
+    // location for ALLOWED_ORIGINS. Without this rule, following that
+    // guidance and running `git add -A` commits the local Workers secret file.
+    "apps/web/backend/.dev.vars",
   ];
 
   assert.deepEqual(
@@ -263,6 +339,12 @@ test("git keeps the example env file the README tells you to copy", () => {
   // purpose. A rewrite that drops the exemption removes the file a new
   // contributor starts from.
   assert.equal(isIgnored("apps/web/frontend/.env.example"), false);
+});
+
+test("git keeps the example .dev.vars file a developer copies for ALLOWED_ORIGINS", () => {
+  // Symmetric to the check above: the .dev.vars.* rule (TR-006) is broad
+  // enough to swallow this one too, so it needs the same exemption.
+  assert.equal(isIgnored("apps/web/backend/.dev.vars.example"), false);
 });
 
 test("nothing that should be ignored is already tracked", () => {

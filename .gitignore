@@ -28,6 +28,11 @@ playwright/.cache/
 !.env.example
 !.env.*.example
 
+# Cloudflare Workers local secrets (wrangler dev), same shape as .env above
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
 # User-specific IDE files
 .vscode/*
 !.vscode/settings.json

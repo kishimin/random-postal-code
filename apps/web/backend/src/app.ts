@@ -1,5 +1,9 @@
 import { Hono } from "hono";
 import { respondWithApiError } from "./controllers/api-error-response.ts";
+import {
+  corsMiddleware,
+  type CorsBindings,
+} from "./controllers/cors-middleware.ts";
 import { registerRandomPostalCodeRoute } from "./controllers/random-postal-code-controller.ts";
 import {
   requestIdMiddleware,
@@ -22,14 +26,17 @@ export type CreateAppDependencies = {
  * the service, the service selects, and only the infrastructure layer knows
  * where the dataset comes from.
  *
- * CORS is added by Issue #11; a response without CORS headers is correct
- * until then (api-design.md section 6).
+ * CORS is enforced by corsMiddleware (Issue #11, api-design.md section 6).
  */
 export const createApp = (deps: CreateAppDependencies) => {
-  const app = new Hono<{ Variables: RequestIdVariables }>();
+  const app = new Hono<{
+    Bindings: CorsBindings;
+    Variables: RequestIdVariables;
+  }>();
 
   app.use("*", requestIdMiddleware);
   app.use("*", securityHeadersMiddleware);
+  app.use("*", corsMiddleware);
 
   registerRandomPostalCodeRoute(app, deps);
 
