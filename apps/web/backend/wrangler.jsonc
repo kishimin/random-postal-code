@@ -13,6 +13,18 @@
     "port": 8787,
   },
 
+  // Default for local development only (CR-001/TR-001): the origin
+  // apps/web/frontend's Vite dev server serves on, so a `bun run dev`
+  // session against this Worker is authorized to call it out of the box.
+  // Not a secret -- ALLOWED_ORIGINS is a public list of permitted browser
+  // origins, safe to check in like the rest of this file (Issue #11,
+  // acceptance/cors-and-secret-boundaries.medium.test.ts). Issue #19
+  // (deployment) adds a production-specific override once the real
+  // Cloudflare Pages origin is provisioned; this value is not that one.
+  "vars": {
+    "ALLOWED_ORIGINS": "http://localhost:5173",
+  },
+
   // api-design.md section 7 requires structured request logs that distinguish
   // dataset unavailability from unexpected failures.
   "observability": {
