@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useDocumentTitle } from "../../hooks/use-document-title";
 import { pageTitle, siteText } from "../site-text";
-import { tapTargetClass } from "../styles";
+import { linkClass } from "../styles";
 
 // Reused for both the visible heading and the document title, so the two
 // never drift into two different phrasings of the same screen.
@@ -26,7 +26,7 @@ export const NotFoundView = () => {
       <p>
         {"お探しのページは移動したか、アドレスが誤っている可能性があります。"}
       </p>
-      <Link className={tapTargetClass} to={"/"}>
+      <Link className={linkClass} to={"/"}>
         {siteText.backToGenerator}
       </Link>
     </>

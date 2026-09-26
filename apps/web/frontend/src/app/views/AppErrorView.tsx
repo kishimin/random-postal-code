@@ -1,5 +1,5 @@
 import { siteText } from "../site-text";
-import { tapTargetClass } from "../styles";
+import { linkClass } from "../styles";
 import { AppErrorContent } from "./AppErrorContent";
 
 /**
@@ -19,7 +19,7 @@ export const AppErrorView = () => {
     <div className={"flex min-h-dvh flex-col"}>
       <header className={"border-b"}>
         <div className={"mx-auto w-full max-w-[1200px] px-4 py-3"}>
-          <a className={tapTargetClass} href={"/"}>
+          <a className={linkClass} href={"/"}>
             {siteText.name}
           </a>
         </div>
@@ -32,7 +32,7 @@ export const AppErrorView = () => {
       <footer className={"border-t"}>
         <div className={"mx-auto w-full max-w-[1200px] px-4 py-4 text-sm"}>
           <p>{siteText.attribution}</p>
-          <a className={tapTargetClass} href={"/privacy"}>
+          <a className={linkClass} href={"/privacy"}>
             {siteText.privacyLabel}
           </a>
         </div>

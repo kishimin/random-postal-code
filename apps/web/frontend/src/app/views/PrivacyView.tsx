@@ -1,6 +1,6 @@
 import { useDocumentTitle } from "../../hooks/use-document-title";
 import { pageTitle, siteText } from "../site-text";
-import { tapTargetClass } from "../styles";
+import { linkClass } from "../styles";
 import { privacyText } from "./privacy-text";
 
 const FIRST_PARTY_HEADING_ID = "privacy-first-party-heading";
@@ -42,7 +42,7 @@ export const PrivacyView = () => {
       </section>
 
       <p>
-        <a className={tapTargetClass} href={privacyText.contactHref}>
+        <a className={linkClass} href={privacyText.contactHref}>
           {privacyText.contactLabel}
         </a>
       </p>

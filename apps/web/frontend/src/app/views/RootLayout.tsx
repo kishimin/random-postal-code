@@ -1,7 +1,7 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { siteText } from "../site-text";
-import { tapTargetClass } from "../styles";
+import { linkClass } from "../styles";
 
 /**
  * Frame shared by every route.
@@ -52,7 +52,7 @@ export const RootLayout = () => {
     <div className={"flex min-h-dvh flex-col"}>
       <header className={"border-b"}>
         <div className={"mx-auto w-full max-w-[1200px] px-4 py-3"}>
-          <Link className={tapTargetClass} to={"/"}>
+          <Link className={linkClass} to={"/"}>
             {siteText.name}
           </Link>
         </div>
@@ -68,7 +68,7 @@ export const RootLayout = () => {
       <footer className={"border-t"}>
         <div className={"mx-auto w-full max-w-[1200px] px-4 py-4 text-sm"}>
           <p>{siteText.attribution}</p>
-          <Link className={tapTargetClass} to={"/privacy"}>
+          <Link className={linkClass} to={"/privacy"}>
             {siteText.privacyLabel}
           </Link>
         </div>

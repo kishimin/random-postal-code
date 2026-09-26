@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useDocumentTitle } from "../../hooks/use-document-title";
 import { pageTitle, siteText } from "../site-text";
-import { tapTargetClass } from "../styles";
+import { linkClass } from "../styles";
 
 // Reused for both the visible heading and the document title, so the two
 // never drift into two different phrasings of the same failure.
@@ -49,7 +49,7 @@ export const AppErrorContent = () => {
         <h1>{HEADING}</h1>
         <p>{"画面を表示できませんでした。時間をおいて再度お試しください。"}</p>
       </div>
-      <a className={tapTargetClass} href={"/"}>
+      <a className={linkClass} href={"/"}>
         {siteText.backToGenerator}
       </a>
     </>
