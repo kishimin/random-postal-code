@@ -54,23 +54,23 @@ describe("document title per screen", () => {
   // titles are captured one at a time instead of three trees left stacked in
   // the same document.
   test("gives the three screens three different titles", async () => {
-    const generatorScreen = renderAt("/");
+    const { unmount: unmountGenerator } = renderAt("/");
     await screen.findByRole("heading", { name: /Zipnami/, level: 1 });
     const generatorTitle = document.title;
-    generatorScreen.unmount();
+    unmountGenerator();
 
-    const privacyScreen = renderAt("/privacy");
+    const { unmount: unmountPrivacy } = renderAt("/privacy");
     await screen.findByRole("heading", { name: /プライバシー/, level: 1 });
     const privacyTitle = document.title;
-    privacyScreen.unmount();
+    unmountPrivacy();
 
-    const notFoundScreen = renderAt("/this-path-does-not-exist");
+    const { unmount: unmountNotFound } = renderAt("/this-path-does-not-exist");
     await screen.findByRole("heading", {
       name: /ページが見つかりません/,
       level: 1,
     });
     const notFoundTitle = document.title;
-    notFoundScreen.unmount();
+    unmountNotFound();
 
     expect(new Set([generatorTitle, privacyTitle, notFoundTitle]).size).toBe(3);
   });

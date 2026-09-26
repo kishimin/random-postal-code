@@ -8,7 +8,7 @@ import { useEffect } from "react";
  * whatever the previously mounted screen last set. `document.title` is
  * browser UI outside React's own tree, which is exactly what useEffect exists
  * to synchronize with (WCAG 2.4.2, Page Titled).
- * @param title - The full title text to assign to the document.
+ * @param {string} title - The full title text to assign to the document.
  */
 export const useDocumentTitle = (title: string) => {
   useEffect(() => {

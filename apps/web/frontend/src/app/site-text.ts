@@ -16,7 +16,7 @@ export const siteText = {
 /**
  * Builds a document title that names one screen while every tab still
  * carries the product name (WCAG 2.4.2, Page Titled).
- * @param pageName - The current screen's own name. Omitted for the
+ * @param {string} [pageName] - The current screen's own name. Omitted for the
  * generator, which is the product's home screen and needs no name of its
  * own ahead of it.
  */
