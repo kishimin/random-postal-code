@@ -111,20 +111,29 @@ test("the documented API base URL reaches the port wrangler dev serves", () => {
 // sync with the port the frontend calls; this one keeps ALLOWED_ORIGINS in
 // sync with the origin the frontend actually runs on, so the two configs
 // cannot drift apart with nothing in CI to catch it (CR-001/TR-001).
-test("wrangler.jsonc's default local ALLOWED_ORIGINS matches the origin Vite's dev server serves", () => {
-  const wrangler = readFileSync(
-    path.join(backendRoot, "wrangler.jsonc"),
-    "utf8",
+//
+// Read from .dev.vars.example rather than wrangler.jsonc's top-level `vars`:
+// a Codex review on this PR found that a top-level `vars` entry is the
+// Worker's DEFAULT deployment config, so `wrangler deploy` with no
+// environment selected would have shipped this local-only origin as
+// production's allowlist. `.dev.vars` is read only by `wrangler dev`, never
+// by `wrangler deploy`, so the real value lives in the gitignored
+// `.dev.vars` a developer copies from this example -- the same pattern
+// apps/web/frontend/.env.example already uses for VITE_API_BASE_URL.
+test("apps/web/backend/.dev.vars.example's ALLOWED_ORIGINS matches the origin Vite's dev server serves", () => {
+  const devVarsExample = readRepositoryFile(
+    "apps",
+    "web",
+    "backend",
+    ".dev.vars.example",
   );
-  // Scoped to the vars block for the same reason the dev.port check above
-  // is scoped to the dev block: an unrelated ALLOWED_ORIGINS-shaped string
-  // elsewhere in the file must not satisfy this by accident.
-  const allowedOrigins =
-    /"vars"\s*:\s*\{[^}]*"ALLOWED_ORIGINS"\s*:\s*"([^"]*)"/.exec(wrangler)?.[1];
+  const allowedOrigins = /^ALLOWED_ORIGINS="([^"]*)"$/m.exec(
+    devVarsExample,
+  )?.[1];
 
   assert.ok(
     allowedOrigins !== undefined,
-    "wrangler.jsonc must set vars.ALLOWED_ORIGINS, or local development has no allowlist to authorize the frontend's own origin",
+    "apps/web/backend/.dev.vars.example must set ALLOWED_ORIGINS, or local development has no allowlist to authorize the frontend's own origin",
   );
 
   // vite.config.ts declares no server.port, so Vite serves its dev server on
@@ -330,6 +339,12 @@ test("git keeps the example env file the README tells you to copy", () => {
   // purpose. A rewrite that drops the exemption removes the file a new
   // contributor starts from.
   assert.equal(isIgnored("apps/web/frontend/.env.example"), false);
+});
+
+test("git keeps the example .dev.vars file a developer copies for ALLOWED_ORIGINS", () => {
+  // Symmetric to the check above: the .dev.vars.* rule (TR-006) is broad
+  // enough to swallow this one too, so it needs the same exemption.
+  assert.equal(isIgnored("apps/web/backend/.dev.vars.example"), false);
 });
 
 test("nothing that should be ignored is already tracked", () => {
