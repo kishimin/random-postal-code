@@ -1,6 +1,11 @@
 import { useEffect, useRef } from "react";
-import { siteText } from "../site-text";
+import { useDocumentTitle } from "../../hooks/use-document-title";
+import { pageTitle, siteText } from "../site-text";
 import { tapTargetClass } from "../styles";
+
+// Reused for both the visible heading and the document title, so the two
+// never drift into two different phrasings of the same failure.
+const HEADING = "問題が発生しました";
 
 /**
  * What a visitor reads after a render failed, with no frame of its own.
@@ -22,6 +27,10 @@ import { tapTargetClass } from "../styles";
 export const AppErrorContent = () => {
   const summaryRef = useRef<HTMLDivElement>(null);
 
+  // CR-006 of Issue #10's review, applied here too: a title has to name this
+  // screen the same way the routed ones do (WCAG 2.4.2).
+  useDocumentTitle(pageTitle(HEADING));
+
   /*
    * A live region only announces what changes after it is observed, and this
    * one arrives already filled in, so a screen reader may say nothing at all.
@@ -37,7 +46,7 @@ export const AppErrorContent = () => {
   return (
     <>
       <div ref={summaryRef} role={"alert"} tabIndex={-1}>
-        <h1>{"問題が発生しました"}</h1>
+        <h1>{HEADING}</h1>
         <p>{"画面を表示できませんでした。時間をおいて再度お試しください。"}</p>
       </div>
       <a className={tapTargetClass} href={"/"}>
