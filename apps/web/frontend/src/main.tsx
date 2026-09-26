@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { titleForPathname } from "./app/document-title";
+import { applyInitialDocumentTitle } from "./app/document-title";
 import { RootErrorBoundary } from "./app/providers/RootErrorBoundary";
 import { App } from "./app/views/App";
 import "./theme/globals.css";
@@ -19,7 +19,7 @@ if (!rootElement) {
  * #16, reliably on WebKit). Setting it here, synchronously and before React
  * ever mounts, means the title is never wrong even for that first instant.
  */
-document.title = titleForPathname(window.location.pathname);
+applyInitialDocumentTitle(window.location.pathname);
 
 /*
  * A second boundary, outside App rather than inside it.

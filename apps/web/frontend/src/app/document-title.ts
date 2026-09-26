@@ -39,3 +39,18 @@ export const titleForPathname = (pathname: string): string => {
   if (pathname === PRIVACY_PATH) return pageTitle(siteText.privacyLabel);
   return pageTitle(notFoundHeading);
 };
+
+/**
+ * Writes `titleForPathname`'s guess for `pathname` to `document.title`.
+ *
+ * Extracted out of main.tsx (TR-002, test review) so the one statement that
+ * actually closes the WebKit title race -- not just the pure function it
+ * calls -- has something to import and assert against. main.tsx stays a
+ * one-line caller, and this function is the whole of what a test needs to
+ * exercise to prove the wiring, not just titleForPathname's own logic.
+ * @param {string} pathname - The path to guess a title for, typically
+ * `window.location.pathname`.
+ */
+export const applyInitialDocumentTitle = (pathname: string): void => {
+  document.title = titleForPathname(pathname);
+};
