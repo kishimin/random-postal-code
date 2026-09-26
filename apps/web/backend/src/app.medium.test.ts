@@ -566,6 +566,19 @@ describe("createApp", () => {
       );
     });
 
+    // Codex review on this PR: a browser serializes many unrelated opaque
+    // contexts (a sandboxed iframe, a data: document, a redirected request)
+    // to the literal `Origin: null`, so authorizing that string the same way
+    // a real origin is authorized would open the boundary to all of them at
+    // once -- the same failure a literal `*` is rejected for above.
+    test("never authorizes a literal null origin, even when the allowlist itself holds one", async () => {
+      const app = appServing([onlyPostalCode]);
+
+      const response = await requestFrom(app, "null", "null");
+
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    });
+
     // api-design.md section 6: "origin comparison does not use prefix or
     // substring matching". Each case below matches a naive `startsWith`,
     // `endsWith`, or case-insensitive comparison against ALLOWED_ORIGIN even
@@ -747,6 +760,23 @@ describe("createApp", () => {
         expect(opened).not.toContain("authorization");
         expect(opened).not.toContain("x-api-key");
         expect(opened).not.toContain("x-zipnami");
+      });
+
+      // Codex review on this PR: only a browser's own preflight step sends
+      // Access-Control-Request-Method, so an OPTIONS request without it is
+      // not a CORS preflight and must not be answered with an unconditional
+      // 204 that misreports it as an authorized one -- it should reach the
+      // route like any other unsupported method and get the documented 405.
+      test("does not treat a plain OPTIONS request as a preflight", async () => {
+        const app = appServing([onlyPostalCode]);
+
+        const response = await app.request(
+          "/api/random",
+          { method: "OPTIONS", headers: { origin: ALLOWED_ORIGIN } },
+          { ALLOWED_ORIGINS: ALLOWED_ORIGIN },
+        );
+
+        expect(response.status).toBe(405);
       });
 
       // CR-003/TR-003: request-log.ts's own doc comment asserts every
