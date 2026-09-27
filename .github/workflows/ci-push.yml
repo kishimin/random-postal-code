@@ -50,6 +50,9 @@ jobs:
       - name: Test custom ESLint rules
         run: bun run test:eslint
 
+      - name: Check postal data for drift
+        run: bun run check:postal-data
+
       - name: Build production bundle
         run: bun run build
 
