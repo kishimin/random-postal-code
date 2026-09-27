@@ -49,4 +49,28 @@ describe("check-dataset CLI", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  test("exits non-zero and leaves the artifact file's bytes unchanged when it has drifted from what the source regenerates", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "postal-data-check-"));
+    const sourcePath = path.join(dir, "source.csv");
+    const artifactPath = path.join(dir, "artifact.json");
+    const driftedArtifact = JSON.stringify([]);
+    writeFileSync(sourcePath, wellFormedSource);
+    writeFileSync(artifactPath, driftedArtifact);
+
+    try {
+      const result = runCheck(sourcePath, artifactPath);
+
+      expect(result.error).toBeUndefined();
+      expect(result.signal).toBeNull();
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toMatch(/drift/i);
+      // A check that "fixes" drift by overwriting the artifact and then
+      // reporting success would pass the exit-code assertion above for the
+      // wrong reason; pinning the bytes here catches that.
+      expect(readFileSync(artifactPath, "utf8")).toBe(driftedArtifact);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
