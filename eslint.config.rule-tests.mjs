@@ -196,6 +196,14 @@ run("require-e2e-fixture-import", requireE2eFixtureImport, {
       filename: "acceptance/postal-data-normalization.medium.test.ts",
       code: 'import { test } from "vitest";',
     },
+    {
+      // Issue #18's CI quality gates acceptance test reads workflow YAML and
+      // spawns local processes; it has no screen to drive either, and runs
+      // under `bun:test` rather than Vitest. Its `test` import is unrelated
+      // to the Playwright fixture this rule protects.
+      filename: "acceptance/ci-quality-gates.medium.test.ts",
+      code: 'import { describe, expect, test } from "bun:test";',
+    },
   ],
   invalid: [
     {
@@ -277,6 +285,12 @@ run("require-e2e-page-fixture", requireE2ePageFixture, {
       // not ask it for one.
       filename: "acceptance/postal-data-normalization.medium.test.ts",
       code: 'import { test } from "vitest";\n\ntest("documents the source", () => {});',
+    },
+    {
+      // Issue #18's CI quality gates test runs under bun:test, not
+      // Playwright, so it never receives a Page Object fixture either.
+      filename: "acceptance/ci-quality-gates.medium.test.ts",
+      code: 'import { test } from "bun:test";\n\ntest("checks a gate", () => {});',
     },
   ],
   invalid: [

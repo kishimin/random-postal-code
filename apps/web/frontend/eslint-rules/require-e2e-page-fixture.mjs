@@ -2,17 +2,20 @@ const e2eDirectoryPattern = /(?:^|\/)(?:e2e|acceptance)\//;
 const testFilePattern = /(?:\.test|\.spec)\.[cm]?[jt]sx?$/;
 
 // acceptance/ can also hold a non-Playwright acceptance test (Issue #3's
-// dataset build has no screen to drive, so it runs under Vitest). Its
-// `test(...)` calls never receive a Playwright Page Object fixture and are
-// not this rule's concern. A RuleTester fragment has no import at all, and
-// that case must keep reporting as before, so this only opts a file out when
-// it positively imports `test` from vitest rather than requiring proof that
-// it is Playwright.
-const importsVitestTest = (programNode) =>
+// dataset build has no screen to drive, so it runs under Vitest; Issue #18's
+// CI quality gates test reads workflow YAML and spawns local processes, so it
+// runs under bun:test). Its `test(...)` calls never receive a Playwright Page
+// Object fixture and are not this rule's concern. A RuleTester fragment has
+// no import at all, and that case must keep reporting as before, so this only
+// opts a file out when it positively imports `test` from vitest or bun:test
+// rather than requiring proof that it is Playwright.
+const nonPlaywrightTestSources = new Set(["vitest", "bun:test"]);
+
+const importsNonPlaywrightTest = (programNode) =>
   programNode.body.some(
     (statement) =>
       statement.type === "ImportDeclaration" &&
-      statement.source.value === "vitest" &&
+      nonPlaywrightTestSources.has(statement.source.value) &&
       statement.specifiers.some(
         (specifier) =>
           specifier.type === "ImportSpecifier" &&
@@ -52,7 +55,7 @@ export default {
     return {
       Program(node) {
         if (isE2eTest) {
-          isPlaywrightTest = !importsVitestTest(node);
+          isPlaywrightTest = !importsNonPlaywrightTest(node);
         }
       },
       CallExpression(node) {
