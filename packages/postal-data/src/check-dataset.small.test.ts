@@ -119,4 +119,18 @@ describe("checkPostalDataForDrift", () => {
 
     expect(result.drifted).toBe(true);
   });
+
+  test("reports drift when the committed artifact holds the same entries in a different order", async () => {
+    // Order is part of the contract (design.md 4.3: "the same input must
+    // produce the same content and order"), so reordering the committed
+    // entries must count as drift even though the content set is unchanged.
+    const reordered = [...twoEntryDataset].reverse();
+
+    const result = await checkPostalDataForDrift({
+      source: twoEntrySource,
+      committedArtifact: JSON.stringify(reordered),
+    });
+
+    expect(result.drifted).toBe(true);
+  });
 });
