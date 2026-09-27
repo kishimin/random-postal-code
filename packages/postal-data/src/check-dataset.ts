@@ -1,8 +1,7 @@
 import { buildPostalCodeDataset } from "./build-postal-code-dataset.ts";
 
 export type PostalDataDriftCheck =
-  | { drifted: false }
-  | { drifted: true; reason: string };
+  { drifted: false } | { drifted: true; reason: string };
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
