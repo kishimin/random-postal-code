@@ -100,4 +100,23 @@ describe("checkPostalDataForDrift", () => {
 
     expect(result).toEqual({ drifted: false });
   });
+
+  test("reports drift when the committed artifact has an entry that regenerating the source does not produce", async () => {
+    const committedArtifact = JSON.stringify([
+      ...twoEntryDataset,
+      {
+        postalCode: "6008216",
+        addresses: [
+          { prefecture: "Kyoto", city: "Kyoto City", town: "Higashishiokoji" },
+        ],
+      },
+    ]);
+
+    const result = await checkPostalDataForDrift({
+      source: twoEntrySource,
+      committedArtifact,
+    });
+
+    expect(result.drifted).toBe(true);
+  });
 });
