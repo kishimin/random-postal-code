@@ -21,6 +21,50 @@ Shift-JIS to UTF-8 is a separate, later concern — `buildPostalCodeDataset`
 takes already-decoded UTF-8 source text, so whoever performs that fetch and
 decode step only needs to hand this package the result.
 
+### The committed source for the generated artifact
+
+`apps/web/backend/src/data/postal-codes.generated.json` is the artifact the
+Worker imports at runtime. Its source is committed at
+`data/ken-all.source.csv`: a small `KEN_ALL.CSV`-shaped file, hand-built the
+same way as the test fixture above, covering the same five postal codes the
+Worker's artifact holds. Regenerating from it through
+`buildPostalCodeDataset` reproduces that artifact's content and order
+exactly (design.md §4.3's "the same input must produce the same content and
+order").
+
+## Checking the generated artifact for drift
+
+```sh
+bun run check:postal-data
+```
+
+This runs `scripts/check-dataset.ts` from the repository root against
+`data/ken-all.source.csv` and the Worker's committed artifact. It **compares
+without overwriting**: it regenerates the dataset from the source in memory,
+parses the committed artifact's JSON, and reports a mismatch — it never
+writes to the artifact file, so a drifted artifact is never silently
+"fixed" by the check itself. Comparison is by parsed content (`src/
+check-dataset.ts`'s `jsonDeepEqual`), not by exact bytes: array order is
+significant, but object key order is not, since the committed artifact is
+hand-formatted and need not match the generator's key order byte-for-byte.
+Exit code 0 means the artifact matches; non-zero means it has drifted from
+what `data/ken-all.source.csv` regenerates. This command runs on every pull
+request (see `.github/workflows/ci-pull-request.yml`'s `Static checks` job).
+
+### Updating the dataset
+
+When the source postal-code data changes: update `data/ken-all.source.csv`
+(or replace it with a fresh `KEN_ALL.CSV` download, decoded to UTF-8),
+regenerate the artifact, and commit both together so `check:postal-data`
+keeps passing:
+
+```sh
+bun run --filter @zipnami/postal-data regenerate -- \
+  packages/postal-data/data/ken-all.source.csv \
+  apps/web/backend/src/data/postal-codes.generated.json
+bun run check:postal-data
+```
+
 ## What this package does
 
 `buildPostalCodeDataset(source)` (`src/index.ts`) turns KEN_ALL.CSV-shaped
