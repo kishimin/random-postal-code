@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { applyInitialDocumentTitle } from "./app/document-title";
 import { RootErrorBoundary } from "./app/providers/RootErrorBoundary";
 import { App } from "./app/views/App";
 import "./theme/globals.css";
@@ -8,6 +9,17 @@ const rootElement = document.getElementById("root");
 if (!rootElement) {
   throw new Error("Root element #root is missing from index.html.");
 }
+
+/*
+ * Closes a race a direct navigation could otherwise expose: the browser's
+ * `load` event can fire before this application's asynchronous initial
+ * route match commits and the matched screen's own useDocumentTitle call
+ * runs, which left index.html's static "Zipnami" title in place long enough
+ * for an unpolled read right after navigation to observe it (AC-6 of Issue
+ * #16, reliably on WebKit). Setting it here, synchronously and before React
+ * ever mounts, means the title is never wrong even for that first instant.
+ */
+applyInitialDocumentTitle(window.location.pathname);
 
 /*
  * A second boundary, outside App rather than inside it.

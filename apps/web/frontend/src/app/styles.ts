@@ -8,3 +8,15 @@
  * height on the target.
  */
 export const tapTargetClass = "inline-flex min-h-11 items-center";
+
+/**
+ * Classes for an in-content link.
+ *
+ * Tailwind's preflight resets `a { color: inherit; text-decoration: inherit; }`
+ * (CR-005 of Issue #10's review), which leaves a link with no affordance but
+ * its surrounding color. `underline` restores one that survives regardless of
+ * whichever color tokens the UI foundation work fixes later, and keeps
+ * tapTargetClass's sizing intact. Presentation only, so no test asserts it
+ * (ADR-0012); the manual checklist in ui-design.md section 10 covers it.
+ */
+export const linkClass = `${tapTargetClass} underline`;
