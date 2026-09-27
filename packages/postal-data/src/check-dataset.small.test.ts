@@ -83,4 +83,21 @@ describe("checkPostalDataForDrift", () => {
 
     expect(result.drifted).toBe(true);
   });
+
+  test("reports no drift when the committed artifact holds the same content with its object keys in a different order", async () => {
+    // The committed artifact is hand-formatted; a generator that only
+    // compares serialized text would report drift over key order alone,
+    // even though the content is identical. Comparison must be by content.
+    const reorderedKeys = twoEntryDataset.map((entry) => ({
+      addresses: entry.addresses,
+      postalCode: entry.postalCode,
+    }));
+
+    const result = await checkPostalDataForDrift({
+      source: twoEntrySource,
+      committedArtifact: JSON.stringify(reorderedKeys),
+    });
+
+    expect(result).toEqual({ drifted: false });
+  });
 });
