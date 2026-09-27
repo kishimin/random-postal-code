@@ -22,6 +22,16 @@ describe("titleForPathname", () => {
       `${notFoundHeading} | ${siteText.name}`,
     );
   });
+
+  // Codex review on this PR: app-router.tsx sets no trailingSlash option, so
+  // createRouter's "never" default resolves "/privacy/" to the same route as
+  // "/privacy" -- this guess must agree, or a direct navigation to the
+  // slashed form would show the not-found title for a moment.
+  test("names the privacy screen for its path with a trailing slash too", () => {
+    expect(titleForPathname("/privacy/")).toBe(
+      `${siteText.privacyLabel} | ${siteText.name}`,
+    );
+  });
 });
 
 describe("applyInitialDocumentTitle", () => {
