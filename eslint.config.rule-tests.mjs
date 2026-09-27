@@ -196,6 +196,14 @@ run("require-e2e-fixture-import", requireE2eFixtureImport, {
       filename: "acceptance/postal-data-normalization.medium.test.ts",
       code: 'import { test } from "vitest";',
     },
+    {
+      // Issue #18's CI quality gates acceptance test reads workflow YAML and
+      // spawns local processes; it has no screen to drive either, and runs
+      // under `bun:test` rather than Vitest. Its `test` import is unrelated
+      // to the Playwright fixture this rule protects.
+      filename: "acceptance/ci-quality-gates.medium.test.ts",
+      code: 'import { describe, expect, test } from "bun:test";',
+    },
   ],
   invalid: [
     {
