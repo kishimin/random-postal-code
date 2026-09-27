@@ -67,6 +67,9 @@ jobs:
       - name: Test custom ESLint rules
         run: bun run test:eslint
 
+      - name: Check postal data for drift
+        run: bun run check:postal-data
+
       - name: Build production bundle
         run: bun run build
 
@@ -113,7 +116,11 @@ jobs:
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Running Issue #18's CI quality gates acceptance test below re-runs
+    # test:coverage:pr, build, and check:postal-data inside itself (it judges
+    # the real gates, not a mock of them), roughly doubling this job's own
+    # work on top of checkout and setup.
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
@@ -128,6 +135,14 @@ jobs:
       # threshold is applied by the script through COVERAGE_THRESHOLD.
       - name: Vitest coverage (Small and Medium)
         run: bun run test:coverage:pr
+
+      # Issue #18's Medium acceptance test is registered here, in an
+      # existing required check, rather than in a new job: the main
+      # ruleset's required checks are fixed, and a job nobody requires would
+      # not block a merge on failure (ADR-0031, ADR-0042). This job needs no
+      # browser, matching the test's own Medium classification.
+      - name: Run Issue #18 CI quality gates acceptance test (Medium)
+        run: bun test ./acceptance/ci-quality-gates.medium.test.ts
 
       - name: Upload coverage report
         if: ${{ !cancelled() }}
