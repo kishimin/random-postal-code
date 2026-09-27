@@ -17,6 +17,22 @@ const GENERATOR_PATH = "/";
 const PRIVACY_PATH = "/privacy";
 
 /**
+ * Strips a single trailing slash, except from the root path itself.
+ *
+ * app-router.tsx sets no `trailingSlash` option, so createRouter's default
+ * (`"never"`) applies: the router resolves `/privacy/` to the same route as
+ * `/privacy`. Without this, a direct navigation to the slashed form would
+ * guess the not-found title even though the router lands on PrivacyView
+ * (Codex review on this PR).
+ * @param {string} pathname - The raw path, typically
+ * `window.location.pathname`.
+ */
+const withoutTrailingSlash = (pathname: string): string =>
+  pathname.length > 1 && pathname.endsWith("/")
+    ? pathname.slice(0, -1)
+    : pathname;
+
+/**
  * A best-effort document title for a URL path, computed synchronously and
  * without the router.
  *
@@ -35,8 +51,9 @@ const PRIVACY_PATH = "/privacy";
  * `window.location.pathname`.
  */
 export const titleForPathname = (pathname: string): string => {
-  if (pathname === GENERATOR_PATH) return pageTitle();
-  if (pathname === PRIVACY_PATH) return pageTitle(siteText.privacyLabel);
+  const normalized = withoutTrailingSlash(pathname);
+  if (normalized === GENERATOR_PATH) return pageTitle();
+  if (normalized === PRIVACY_PATH) return pageTitle(siteText.privacyLabel);
   return pageTitle(notFoundHeading);
 };
 
