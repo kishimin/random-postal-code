@@ -58,8 +58,8 @@ keeps passing:
 
 ```sh
 bun run --filter @zipnami/postal-data regenerate -- \
-  packages/postal-data/data/ken-all.source.csv \
-  apps/web/backend/src/data/postal-codes.generated.json
+  data/ken-all.source.csv \
+  ../../apps/web/backend/src/data/postal-codes.generated.json
 ```
 
 ## What this package does
@@ -82,10 +82,14 @@ text into an array of `PostalCode` values (see `@zipnami/shared`):
 bun run --filter @zipnami/postal-data regenerate -- <path-to-decoded-ken-all.csv> [output.json]
 ```
 
-This runs the package's `regenerate` script (`scripts/build-dataset.ts`) from
-the repo root, reading a KEN_ALL.CSV-shaped file already decoded to UTF-8,
-building the dataset through `buildPostalCodeDataset`, and writing the
-result as JSON.
+This runs the package's `regenerate` script (`scripts/build-dataset.ts`)
+with this package's own directory (`packages/postal-data/`) as the working
+directory, not the repo root — `--filter <pkg> <script>` always runs a
+workspace's script from that workspace's own directory, so both path
+arguments above are resolved relative to `packages/postal-data/`, not the
+repository root (confirmed by running the command with each path style).
+It reads a KEN_ALL.CSV-shaped file already decoded to UTF-8, builds the
+dataset through `buildPostalCodeDataset`, and writes the result as JSON.
 
 With no output path, the JSON is written to stdout. JSON is a deliberately
 plain choice here: how the Worker ultimately loads the artifact, and the
