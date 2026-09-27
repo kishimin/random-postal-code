@@ -70,4 +70,17 @@ describe("checkPostalDataForDrift", () => {
 
     expect(result).toEqual({ drifted: false });
   });
+
+  test("reports drift when the committed artifact is missing an entry that regenerating the source would produce", async () => {
+    // Mirrors the acceptance test's drift scenario: an artifact with its
+    // first entry dropped, exactly like a hand edit that fell behind source.
+    const committedArtifact = JSON.stringify(twoEntryDataset.slice(1));
+
+    const result = await checkPostalDataForDrift({
+      source: twoEntrySource,
+      committedArtifact,
+    });
+
+    expect(result.drifted).toBe(true);
+  });
 });
