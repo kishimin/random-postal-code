@@ -34,35 +34,32 @@ order").
 
 ## Checking the generated artifact for drift
 
-```sh
-bun run check:postal-data
-```
-
-This runs `scripts/check-dataset.ts` from the repository root against
-`data/ken-all.source.csv` and the Worker's committed artifact. It **compares
-without overwriting**: it regenerates the dataset from the source in memory,
-parses the committed artifact's JSON, and reports a mismatch — it never
-writes to the artifact file, so a drifted artifact is never silently
-"fixed" by the check itself. Comparison is by parsed content (`src/
-check-dataset.ts`'s `jsonDeepEqual`), not by exact bytes: array order is
-significant, but object key order is not, since the committed artifact is
-hand-formatted and need not match the generator's key order byte-for-byte.
-Exit code 0 means the artifact matches; non-zero means it has drifted from
-what `data/ken-all.source.csv` regenerates. This command runs on every pull
-request (see `.github/workflows/ci-pull-request.yml`'s `Static checks` job).
+The repository root defines a `check:postal-data` script (see the root
+`README.md`'s Commands table for the exact invocation) that runs
+`scripts/check-dataset.ts` from here against `data/ken-all.source.csv` and
+the Worker's committed artifact. It **compares without overwriting**: it
+regenerates the dataset from the source in memory, parses the committed
+artifact's JSON, and reports a mismatch — it never writes to the artifact
+file, so a drifted artifact is never silently "fixed" by the check itself.
+Comparison is by parsed content (`src/check-dataset.ts`'s `jsonDeepEqual`),
+not by exact bytes: array order is significant, but object key order is
+not, since the committed artifact is hand-formatted and need not match the
+generator's key order byte-for-byte. Exit code 0 means the artifact
+matches; non-zero means it has drifted from what `data/ken-all.source.csv`
+regenerates. It runs on every pull request (see
+`.github/workflows/ci-pull-request.yml`'s `Static checks` job).
 
 ### Updating the dataset
 
 When the source postal-code data changes: update `data/ken-all.source.csv`
 (or replace it with a fresh `KEN_ALL.CSV` download, decoded to UTF-8),
-regenerate the artifact, and commit both together so `check:postal-data`
+regenerate the artifact, and commit both together so the drift check above
 keeps passing:
 
 ```sh
 bun run --filter @zipnami/postal-data regenerate -- \
   packages/postal-data/data/ken-all.source.csv \
   apps/web/backend/src/data/postal-codes.generated.json
-bun run check:postal-data
 ```
 
 ## What this package does
