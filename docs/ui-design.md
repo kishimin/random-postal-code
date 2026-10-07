@@ -189,11 +189,11 @@ The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the sixt
 
 | #   | Screen                      | Node     | Owner                               |
 | --- | --------------------------- | -------- | ----------------------------------- |
-| 01  | Web / Desktop / Start       | `11:2`   | #5, #16                             |
+| 01  | Web / Desktop / Start       | `11:2`   | #5, #6, #16                         |
 | 02  | Web / Desktop / Result      | `11:3`   | #6, #16                             |
-| 03  | Web / Tablet / Start        | `11:4`   | #5, #16                             |
+| 03  | Web / Tablet / Start        | `11:4`   | #5, #6, #16                         |
 | 04  | Web / Tablet / Result       | `11:5`   | #6, #16                             |
-| 05  | Web / Mobile / Start        | `11:6`   | #5, #16                             |
+| 05  | Web / Mobile / Start        | `11:6`   | #5, #6, #16                         |
 | 06  | Web / Mobile / Result       | `11:7`   | #6, #16                             |
 | 07  | Android / Start             | `11:8`   | V2 (#13)                            |
 | 08  | Android / Result            | `11:9`   | V2 (#13)                            |
@@ -206,19 +206,19 @@ The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the sixt
 | 15  | Global Error / Desktop      | `27:123` | #26                                 |
 | 16  | Global Error / Mobile       | `27:131` | #26                                 |
 
-Screens 09 and 10 (Field Error) are an open gap, not covered by any issue: Figma shows one address among several failing to load inside an otherwise successful result, but the Web API (Issues #3, #4) answers a request as a whole — a rejected dataset entry fails the entire response rather than producing a partial address list — and the frontend's `UiError` model (section 4 above) has only whole-request kinds (`offline`, `service-unavailable`, `invalid-response`, `unexpected`), not a partial-failure kind. Screens 13 through 16 (404 and Global Error) were the open gap this section once named; Issue #26 (closed) now covers both, so they are attributed to it above instead.
+Screens 09 and 10 (Field Error) are an open gap, not covered by any issue: Figma shows one address among several failing to load inside an otherwise successful result, but the Web API (Issues #3, #4) answers a request as a whole — a rejected dataset entry empties the dataset rather than producing a partial address list — and the frontend's `UiError` model (section 4 above) has only whole-request kinds (`offline`, `service-unavailable`, `invalid-response`, `unexpected`), not a partial-failure kind. Issue #25's own Notes section named screens 13 through 16 (404 and Global Error) as the uncovered ones instead; that claim is now stale, since Issue #26 (closed) covers both and is attributed to it above.
 
 ### 9.2 Color, Type, and Copy Values
 
-The Figma file fixes these values per screen. Adopting them into CSS or theme code is the separate job of the UI foundation issues (section 12); recording them here only makes that existing design decision legible without opening Figma.
+The Figma file fixes these values per screen; recording them here makes that existing design decision legible without opening Figma.
 
-**Color.** Background canvas `#F0F5F7`; page/frame surface `#FAFBFA`; header/card surface `#FFFFFF`; text primary `#091F33`; text secondary `#526B78`; brand/accent `#148CC7`; accent surface (the "Mystery card") `#E5F7F7`; error text/icon `#CC292E`; error surface `#FFF0F0`; address-card border `#D1E3E5`.
+**Color.** Page/frame surface `#FAFBFA`; header/card surface `#FFFFFF`; text primary `#091F33`; text secondary `#526B78`; brand/accent `#148CC7`; accent surface (the "Mystery card") `#E5F7F7`; error text/icon `#CC292E`; error surface `#FFF0F0`; address-card border `#D1E3E5`; map panel surface `#E8EDE3`; map pin `#E04D40`. (Figma's own canvas backdrop behind each screen's frame — `#F0F5F7` on some screens, `#FFFFFF` on others — is a board color, not a screen surface, and is not listed.)
 
-**Type.** Font family `Inter` throughout, at weights 400 (regular), 600 (semibold), and 700 (bold). Representative sizes: desktop display headline 52px with 68px line-height, desktop body 17px with 28px line-height, mobile display headline 34px with 46px line-height, mobile body 14px with 22px line-height, button label 16px, eyebrow label 13px, footer/caption 12px.
+**Type.** Font family `Inter` throughout, at weights 400 (regular), 600 (semibold), and 700 (bold). Representative sizes: desktop display headline 52px with 68px line-height, desktop body 17px with 28px line-height, mobile display headline 34px with 46px line-height, mobile body 14px with 22px line-height, button label 16px, eyebrow label 11-13px (mobile 11px, desktop 13px), footer/caption 11-12px (varies by screen).
 
 **Copy.** Two literal strings are fixed on every screen: the brand wordmark `"ZIPNAMI"` and the footer attribution `"© kishimin 2026"`. Per-screen headline and body copy is deliberately not fixed in this document; it is left to the mapped Figma node in section 9.1, because transcribing that literal Japanese text here would create a second source of truth that can drift from Figma without anything catching it — the same reason this repository's `CLAUDE.md` gives for not duplicating acceptance criteria into `docs/ACCEPTANCE.md`.
 
-The Figma design already fixes the color, typography, and copy values recorded in 9.1 and 9.2 above; elevation tokens are not yet fixed by that design. Adopting the fixed values into CSS or theme code, and deciding the unfixed ones, remains the separate job of the UI foundation issues (section 12) and must be documented without changing the information hierarchy in this file.
+The Figma design already fixes the color, typography, and copy values recorded in 9.2 above; elevation tokens are not yet fixed by that design. Adopting the fixed values into CSS or theme code remains the separate job of the UI foundation issues (section 12), which also still owns the per-screen copy and other values this document deliberately leaves open, and must be documented without changing the information hierarchy in this file.
 
 ## 10. Responsive Verification
 
@@ -262,10 +262,10 @@ Classify tests by actual dependencies, not by component, integration, or E2E lab
 
 The UI foundation Issues resolve:
 
-- exact design tokens and supported theme behavior;
+- adopting section 9.2's Figma-fixed design tokens into CSS or theme code, and supported theme behavior;
 - the component library, if any;
 - browser persistence adapters and version keys;
-- exact Japanese copy and contact destination;
+- per-screen Japanese copy (left to the Figma nodes in section 9.1) and the contact destination;
 - clipboard output with or without the display hyphen; and
 - SDK-specific empty-ad and consent presentation.
 
