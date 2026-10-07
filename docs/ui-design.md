@@ -185,7 +185,7 @@ Advertising uses a dedicated region labeled as advertising where required. An un
 
 ### 9.1 Figma Source and Screen Map
 
-The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the sixteen screens below. Each row names the screen, its Figma node id, and the issue that owns its behaviour — or marks the row `V2` or an open gap when no issue owns it yet.
+The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the sixteen screens below. Each row names the screen, its Figma node id, and the issue that owns its behavior — or marks the row `V2` or an open gap when no issue owns it yet.
 
 | #   | Screen                      | Node     | Owner                               |
 | --- | --------------------------- | -------- | ----------------------------------- |
@@ -208,17 +208,17 @@ The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the sixt
 
 Screens 09 and 10 (Field Error) are an open gap, not covered by any issue: Figma shows one address among several failing to load inside an otherwise successful result, but the Web API (Issues #3, #4) answers a request as a whole — a rejected dataset entry fails the entire response rather than producing a partial address list — and the frontend's `UiError` model (section 4 above) has only whole-request kinds (`offline`, `service-unavailable`, `invalid-response`, `unexpected`), not a partial-failure kind. Screens 13 through 16 (404 and Global Error) were the open gap this section once named; Issue #26 (closed) now covers both, so they are attributed to it above instead.
 
-### 9.2 Colour, Type, and Copy Values
+### 9.2 Color, Type, and Copy Values
 
-The Figma file fixes these values per screen. Adopting them into CSS or theme code is the separate job of the UI foundation issues (section 12); recording them here is only making the existing design decision legible without opening Figma.
+The Figma file fixes these values per screen. Adopting them into CSS or theme code is the separate job of the UI foundation issues (section 12); recording them here only makes that existing design decision legible without opening Figma.
 
-**Colour.** Background canvas `#F0F5F7`; page/frame surface `#FAFBFA`; header/card surface `#FFFFFF`; text primary `#091F33`; text secondary `#526B78`; brand/accent `#148CC7`; accent surface (the "Mystery card") `#E5F7F7`; error text/icon `#CC292E`; error surface `#FFF0F0`; address-card border `#D1E3E5`.
+**Color.** Background canvas `#F0F5F7`; page/frame surface `#FAFBFA`; header/card surface `#FFFFFF`; text primary `#091F33`; text secondary `#526B78`; brand/accent `#148CC7`; accent surface (the "Mystery card") `#E5F7F7`; error text/icon `#CC292E`; error surface `#FFF0F0`; address-card border `#D1E3E5`.
 
 **Type.** Font family `Inter` throughout, at weights 400 (regular), 600 (semibold), and 700 (bold). Representative sizes: desktop display headline 52px with 68px line-height, desktop body 17px with 28px line-height, mobile display headline 34px with 46px line-height, mobile body 14px with 22px line-height, button label 16px, eyebrow label 13px, footer/caption 12px.
 
 **Copy.** Two literal strings are fixed on every screen: the brand wordmark `"ZIPNAMI"` and the footer attribution `"© kishimin 2026"`. Per-screen headline and body copy is deliberately not fixed in this document; it is left to the mapped Figma node in section 9.1, because transcribing that literal Japanese text here would create a second source of truth that can drift from Figma without anything catching it — the same reason this repository's `CLAUDE.md` gives for not duplicating acceptance criteria into `docs/ACCEPTANCE.md`.
 
-The Figma file `40UjUstDqllFYEaQ31J8L0` already fixes the colour, typography, and copy values recorded in 9.1 and 9.2 above; elevation tokens are not yet fixed by that design. Adopting the fixed values into CSS or theme code, and deciding the unfixed ones, remains the separate job of the UI foundation issues (section 12) and must be documented without changing the information hierarchy in this file.
+The Figma design already fixes the color, typography, and copy values recorded in 9.1 and 9.2 above; elevation tokens are not yet fixed by that design. Adopting the fixed values into CSS or theme code, and deciding the unfixed ones, remains the separate job of the UI foundation issues (section 12) and must be documented without changing the information hierarchy in this file.
 
 ## 10. Responsive Verification
 
