@@ -144,6 +144,14 @@ jobs:
       - name: Run Issue #18 CI quality gates acceptance test (Medium)
         run: bun test ./acceptance/ci-quality-gates.medium.test.ts
 
+      # Issue #25's acceptance test exercises a repository document, not a
+      # workspace package, so no package's vitest.config.ts has a claim on
+      # it (ADR-0069). ADR-0077 binds such a non-package test to its runner
+      # by naming its path in a CI step directly, the same way Issue #18's
+      # own acceptance test above is bound.
+      - name: Run Issue #25 Figma UI source acceptance test (Medium)
+        run: bun test ./acceptance/figma-ui-source-and-screen-map.medium.test.ts
+
       - name: Upload coverage report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
