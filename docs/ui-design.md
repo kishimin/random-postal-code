@@ -190,11 +190,11 @@ The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the sixt
 | #   | Screen                      | Node     | Owner                               |
 | --- | --------------------------- | -------- | ----------------------------------- |
 | 01  | Web / Desktop / Start       | `11:2`   | #5, #6, #16                         |
-| 02  | Web / Desktop / Result      | `11:3`   | #6, #16                             |
+| 02  | Web / Desktop / Result      | `11:3`   | #6, #8, #16                         |
 | 03  | Web / Tablet / Start        | `11:4`   | #5, #6, #16                         |
-| 04  | Web / Tablet / Result       | `11:5`   | #6, #16                             |
+| 04  | Web / Tablet / Result       | `11:5`   | #6, #8, #16                         |
 | 05  | Web / Mobile / Start        | `11:6`   | #5, #6, #16                         |
-| 06  | Web / Mobile / Result       | `11:7`   | #6, #16                             |
+| 06  | Web / Mobile / Result       | `11:7`   | #6, #8, #16                         |
 | 07  | Android / Start             | `11:8`   | V2 (#13)                            |
 | 08  | Android / Result            | `11:9`   | V2 (#13)                            |
 | 09  | Web / Desktop / Field Error | `27:33`  | Open gap — not covered by any issue |
@@ -214,7 +214,7 @@ The Figma file fixes these values per screen; recording them here makes that exi
 
 **Color.** Page/frame surface `#FAFBFA`; header/card surface `#FFFFFF`; text primary `#091F33`; text secondary `#526B78`; brand/accent `#148CC7`; accent surface (the "Mystery card") `#E5F7F7`; error text/icon `#CC292E`; error surface `#FFF0F0`; address-card border `#D1E3E5`; map panel surface `#E8EDE3`; map pin `#E04D40`. (Figma's own canvas backdrop behind each screen's frame — `#F0F5F7` on some screens, `#FFFFFF` on others — is a board color, not a screen surface, and is not listed.)
 
-**Type.** Font family `Inter` throughout, at weights 400 (regular), 600 (semibold), and 700 (bold). Representative sizes: desktop display headline 52px with 68px line-height, desktop body 17px with 28px line-height, mobile display headline 34px with 46px line-height, mobile body 14px with 22px line-height, button label 16px, eyebrow label 11-13px (mobile 11px, desktop 13px), footer/caption 11-12px (varies by screen).
+**Type.** Font family `Inter` at weights 400 (regular), 600 (semibold), and 700 (bold). Representative sizes: desktop display headline 52px with 68px line-height, desktop body 17px with 28px line-height, mobile display headline 34px with 46px line-height, mobile body 14px with 22px line-height, button label 16px, eyebrow label 11-13px (mobile 11px, desktop 13px), footer/caption 11-12px (varies by screen). `Inter` has no Japanese glyphs, and every screen's body is Japanese (section 2); the Figma file's text styles name only `Inter` and do not specify a CJK fallback, so which Japanese-capable family renders that text is deliberately not fixed here — it is a choice the UI foundation issues still have to make (section 12).
 
 **Copy.** Two literal strings are fixed on every screen: the brand wordmark `"ZIPNAMI"` and the footer attribution `"© kishimin 2026"`. Per-screen headline and body copy is deliberately not fixed in this document; it is left to the mapped Figma node in section 9.1, because transcribing that literal Japanese text here would create a second source of truth that can drift from Figma without anything catching it — the same reason this repository's `CLAUDE.md` gives for not duplicating acceptance criteria into `docs/ACCEPTANCE.md`.
 
@@ -245,7 +245,7 @@ Tests assert content availability and state behavior, not exact pixel appearance
 - The advertising region's visual boundary (CR-004 of Issue #9's review): a border, background, or equivalent that separates it from application content by more than the label text alone.
 - Link affordance is not carried by color alone (CR-005 of Issue #10's review): every in-content link is recognizable as a link — e.g. underlined — without relying on its color.
 - The global error screen's (`AppErrorContent`/`AppErrorView`) focus move and document title: a browser cannot be driven to the render failure that reaches this screen, so unit and medium tests hold this instead of the acceptance test.
-- Maps (Issue #7) and history (Issue #8) are not yet built and this list covers none of their behavior; whichever Issue delivers them must add its own automated and manual checks rather than assume this checklist already applies to them.
+- Maps (Issue #8) and history (Issue #7) are not yet built and this list covers none of their behavior; whichever Issue delivers them must add its own automated and manual checks rather than assume this checklist already applies to them.
 
 ## 11. Test Contract
 
@@ -263,6 +263,7 @@ Classify tests by actual dependencies, not by component, integration, or E2E lab
 The UI foundation Issues resolve:
 
 - adopting section 9.2's Figma-fixed design tokens into CSS or theme code, and supported theme behavior;
+- the Japanese-capable font family or fallback stack that renders every screen's body text (section 9.2 fixes only `Inter`, which has no Japanese glyphs);
 - the component library, if any;
 - browser persistence adapters and version keys;
 - per-screen Japanese copy (left to the Figma nodes in section 9.1) and the contact destination;
