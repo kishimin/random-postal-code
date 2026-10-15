@@ -371,9 +371,13 @@ describe("buildPostalCodeDataset", () => {
       },
     ]);
   });
+
   describe("town names split across consecutive records", () => {
-    const record = (postalCode: string, town: string, city = "City"): string =>
-      kenAllLine({ postalCode, prefecture: "Pref", city, town });
+    const record = (
+      postalCode: string,
+      town: string,
+      { city = "City", prefecture = "Pref" } = {},
+    ): string => kenAllLine({ postalCode, prefecture, city, town });
 
     const townsOf = async (source: string): Promise<string[]> =>
       (await buildPostalCodeDataset(source)).flatMap((entry) =>
@@ -418,11 +422,29 @@ describe("buildPostalCodeDataset", () => {
 
     test("does not join records whose cities differ", async () => {
       const source = [
-        record("1000001", "A（b、", "City1"),
-        record("1000001", "c）", "City2"),
+        record("1000001", "A（b、", { city: "City1" }),
+        record("1000001", "c）", { city: "City2" }),
       ].join("\n");
 
       expect(await townsOf(source)).toEqual(["A（b、", "c）"]);
+    });
+
+    test("does not join records whose prefectures differ", async () => {
+      const source = [
+        record("1000001", "A（b、", { prefecture: "Pref1" }),
+        record("1000001", "c）", { prefecture: "Pref2" }),
+      ].join("\n");
+
+      expect(await townsOf(source)).toEqual(["A（b、", "c）"]);
+    });
+
+    test("counts every parenthesis, so a town with a closed pair before an unclosed （ still continues", async () => {
+      const source = [
+        record("1000001", "A（b）C（d、"),
+        record("1000001", "e）"),
+      ].join("\n");
+
+      expect(await townsOf(source)).toEqual(["A（b）C（d、e）"]);
     });
 
     test("keeps an unmatched （ in the last record as it is", async () => {
