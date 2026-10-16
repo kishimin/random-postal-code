@@ -47,7 +47,11 @@ const pullRequestWorkflowPath = path.join(
   "ci-pull-request.yml",
 );
 
-const NETWORK_TIMEOUT_MS = 60_000;
+// Two sequential GitHub calls, each with up to two retry waits of at most
+// MAX_RETRY_AFTER_MS, have to finish inside this budget so a persistent
+// outage ends with the helper's own diagnostic rather than a generic test
+// timeout (Issue #48).
+const NETWORK_TIMEOUT_MS = 120_000;
 
 type Step = { run?: string; uses?: string };
 type Job = {
@@ -109,18 +113,82 @@ const repositorySlug = (): string => {
   return match[1];
 };
 
+/*
+ * A nightly run that cannot reach GitHub has not found a misconfigured
+ * ruleset, and its report must not read as if it had (Issue #48). Transient
+ * failures (a network error, a 5xx, 429, or a rate-limited 403) are retried
+ * with backoff. If they persist, the error says the API was unavailable,
+ * which is distinct both from a refused request and from a ruleset that
+ * does not match the workflow.
+ */
+const GITHUB_ATTEMPTS = 3;
+
+// The longest a retry-after header is honored. Kept well under the test
+// budget above (2 calls x 2 waits x 10 s = 40 s), so the retries actually
+// happen and a persistent failure is reported as such.
+const MAX_RETRY_AFTER_MS = 10_000;
+
+/*
+ * A 403 is a rate limit, not a refusal, when GitHub says so. A primary
+ * limit sets x-ratelimit-remaining to 0. A secondary limit may instead send
+ * retry-after, or only name the limit in its message (GitHub's REST
+ * rate-limit guidance).
+ */
+const isTransient = async (response: Response): Promise<boolean> => {
+  if (response.status >= 500 || response.status === 429) return true;
+  if (response.status !== 403) return false;
+  if (response.headers.get("x-ratelimit-remaining") === "0") return true;
+  if (response.headers.get("retry-after") !== null) return true;
+  return /rate limit/i.test(await response.clone().text());
+};
+
+/** How long to wait before the next attempt: retry-after if sent, else backoff. */
+const retryDelayMs = (response: Response | undefined, attempt: number) => {
+  const retryAfter = Number(response?.headers.get("retry-after"));
+  return Number.isFinite(retryAfter) && retryAfter > 0
+    ? Math.min(retryAfter * 1000, MAX_RETRY_AFTER_MS)
+    : 1000 * 2 ** (attempt - 2);
+};
+
 const github = async (resource: string): Promise<unknown> => {
   const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
-  const response = await fetch(`https://api.github.com/${resource}`, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`GET ${resource} failed: ${response.status}`);
+  const failures: string[] = [];
+  let previous: Response | undefined;
+
+  for (let attempt = 1; attempt <= GITHUB_ATTEMPTS; attempt += 1) {
+    if (attempt > 1) {
+      await Bun.sleep(retryDelayMs(previous, attempt));
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`https://api.github.com/${resource}`, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      // Read inside the retried block: a connection that drops while a 2xx
+      // body is still arriving is as transient as one that never connects.
+      if (response.ok) return (await response.json()) as unknown;
+    } catch (error) {
+      failures.push(`network error: ${String(error)}`);
+      previous = undefined;
+      continue;
+    }
+
+    previous = response;
+    if (!(await isTransient(response))) {
+      throw new Error(
+        `GitHub API refused GET ${resource}: HTTP ${response.status} (not a ruleset mismatch)`,
+      );
+    }
+    failures.push(`HTTP ${response.status}`);
   }
-  return response.json();
+
+  throw new Error(
+    `GitHub API unavailable for GET ${resource} after ${GITHUB_ATTEMPTS} attempts (${failures.join("; ")}); this is not a ruleset mismatch`,
+  );
 };
 
 type Rule = {
