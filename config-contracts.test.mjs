@@ -473,6 +473,30 @@ test("the acceptance lock refuses renaming an acceptance test even with approval
   assert.notEqual(checkLock(directory, base, true).status, 0);
 });
 
+test("the acceptance lock refuses turning an acceptance test into a symlink, with or without approval", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  // Recorded straight into the index, so the test needs no filesystem
+  // symlink support (Windows checkouts often have none).
+  const target = spawnSync("git", ["hash-object", "-w", "--stdin"], {
+    cwd: directory,
+    input: "../elsewhere.test.ts",
+    encoding: "utf8",
+  }).stdout.trim();
+  git(
+    directory,
+    "update-index",
+    "--cacheinfo",
+    `120000,${target},acceptance/a.test.ts`,
+  );
+  git(directory, "commit", "--quiet", "-m", "redirect");
+
+  for (const approved of [false, true]) {
+    const result = checkLock(directory, base, approved);
+    assert.notEqual(result.status, 0, `approved=${approved}`);
+    assert.match(result.stdout, /acceptance\/a\.test\.ts/);
+  }
+});
+
 test("the pull request workflow runs the lock script and re-runs it when the label changes", () => {
   const workflow = readFileSync(
     path.join(repositoryRoot, ".github", "workflows", "ci-pull-request.yml"),
