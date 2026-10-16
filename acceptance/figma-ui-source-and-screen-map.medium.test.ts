@@ -83,10 +83,6 @@ const uiDesignPath = path.join(repositoryRoot, "docs", "ui-design.md");
 
 const document = readFileSync(uiDesignPath, "utf8");
 const lines = document.split(/\r?\n/);
-const paragraphs = document
-  .split(/\r?\n[ \t]*\r?\n/)
-  .map((paragraph) => paragraph.replaceAll(/\s+/g, " ").trim())
-  .filter((paragraph) => paragraph.length > 0);
 
 /** The Figma file named in the Issue as the visual source. */
 const figmaFileKey = "40UjUstDqllFYEaQ31J8L0";
@@ -142,21 +138,21 @@ const entryLines = (screen: (typeof screens)[number]): string[] =>
   });
 
 /**
- * The body of the section that holds the visual and content contract, located
- * by its heading rather than by its number so renumbering the file does not
- * break this test.
+ * The body of the first section whose heading matches `heading`, up to the
+ * next heading at the same or a higher level. Located by heading rather
+ * than by number, so renumbering the file does not break this test.
  */
-const visualAndContentContract = (): string[] => {
+const sectionBody = (
+  heading: (line: string) => boolean,
+  within: string[] = lines,
+): string[] => {
   const headingPattern = /^#{1,6}\s/;
-  const start = lines.findIndex(
-    (line) =>
-      headingPattern.test(line) &&
-      /visual/i.test(line) &&
-      /content/i.test(line),
+  const start = within.findIndex(
+    (line) => headingPattern.test(line) && heading(line),
   );
   if (start === -1) return [];
-  const depth = (/^#+/.exec(lines[start]) ?? [""])[0].length;
-  const rest = lines.slice(start + 1);
+  const depth = (/^#+/.exec(within[start]) ?? [""])[0].length;
+  const rest = within.slice(start + 1);
   const end = rest.findIndex(
     (line) =>
       headingPattern.test(line) &&
@@ -164,6 +160,37 @@ const visualAndContentContract = (): string[] => {
   );
   return end === -1 ? rest : rest.slice(0, end);
 };
+
+/** The section that holds the visual and content contract as a whole. */
+const visualAndContentContract = (): string[] =>
+  sectionBody((line) => /visual/i.test(line) && /content/i.test(line));
+
+/*
+ * The two subsections Issue #25 introduced (Issue #50): the screen map, and
+ * the colour, type, and copy values. Each check reads only the subsection it
+ * is about, so a line elsewhere in the contract — written before this Issue,
+ * or about something else — cannot satisfy it. Both are looked for inside
+ * the contract itself: a map moved out from under it is no longer part of
+ * the contract.
+ */
+const screenMapSection = (): string[] =>
+  sectionBody((line) => /screen\s+map/i.test(line), visualAndContentContract());
+
+/**
+ * The screen's entry inside the screen map. Its V2 marking and its owner
+ * are read here only (Issue #50): a matching line elsewhere in the document
+ * is not the map's attribution.
+ */
+const mapEntryLines = (screen: (typeof screens)[number]): string[] => {
+  const map = screenMapSection();
+  return entryLines(screen).filter((line) => map.includes(line));
+};
+
+const valuesSection = (): string[] =>
+  sectionBody(
+    (line) => /colou?r/i.test(line) && /type/i.test(line) && /copy/i.test(line),
+    visualAndContentContract(),
+  );
 
 // Six or eight digits, not three: `#123` is also how an issue is referenced,
 // and an owner column must not be mistaken for a recorded colour.
@@ -173,10 +200,7 @@ const typeSubject =
   /font|typeface|typograph|type\s*scale|weight|letter-spacing/i;
 const typeValue =
   /\b\d+(?:\.\d+)?(?:px|rem|em|pt)\b|\b[1-9]00\b|`[^`\n]+`|"[^"\n]+"/;
-// A display string the screens fix, quoted so a reader can see it is a literal:
-// the UI language is Japanese (section 2), and the wordmark is the one fixed
-// string that is not.
-const japanese = /[぀-ヿ㐀-䶿一-鿿＀-￯]/;
+// A display string the screens fix, quoted so a reader can see it is a literal.
 const quotedLiteral = /`([^`\n]+)`|"([^"\n]+)"|“([^”\n]+)”/g;
 
 /**
@@ -230,21 +254,39 @@ describe("Issue #25: the Figma UI source and its screen map", () => {
       visualAndContentContractSection: true,
     });
 
-    const contractParagraphs = contract
+    // Values, and explanations for values left open, count only from the
+    // subsection Issue #25 introduced (Issue #50). An older paragraph
+    // elsewhere in the contract neither records nor excuses them.
+    const values = valuesSection();
+    const valueParagraphs = values
       .join("\n")
       .split(/\n[ \t]*\n/)
       .map((paragraph) => paragraph.replaceAll(/\s+/g, " ").trim())
       .filter((paragraph) => paragraph.length > 0);
-
-    const colourRecorded = contract.some(
+    const colourRecorded = values.some(
       (line) => hexColour.test(line) || colourFunction.test(line),
     );
-    const typeRecorded = contract.some(
+    const typeRecorded = values.some(
       (line) => typeSubject.test(line) && typeValue.test(line),
     );
-    const copyRecorded = contract.some((line) =>
-      [...line.matchAll(quotedLiteral)].some((match) =>
-        japanese.test(match[1] ?? match[2] ?? match[3] ?? ""),
+    // A literal quoted where the copy values are written: on a line led by
+    // "Copy" (a bold lead-in, bullet, or table cell), or under a heading
+    // led by it. Requiring Japanese left the path unreachable: the two
+    // strings the design fixes, "ZIPNAMI" and "© kishimin 2026", contain
+    // none (Issue #50).
+    const ledByCopy = (line: string) => /^[\s>*_#|-]*copy\b/i.test(line);
+    const isHeading = (line: string) => /^#{1,6}\s/.test(line);
+    const copyLines = values.filter((line, index) => {
+      if (ledByCopy(line)) return true;
+      const heading = values
+        .slice(0, index)
+        .reverse()
+        .find((earlier) => isHeading(earlier));
+      return heading !== undefined && ledByCopy(heading);
+    });
+    const copyRecorded = copyLines.some((line) =>
+      [...line.matchAll(quotedLiteral)].some(
+        (match) => (match[1] ?? match[2] ?? match[3] ?? "").trim() !== "",
       ),
     );
 
@@ -257,7 +299,7 @@ describe("Issue #25: the Figma UI source and its screen map", () => {
       expect({
         category,
         recordedOrExplained:
-          recorded || notFixedOnPurpose(contractParagraphs, subject),
+          recorded || notFixedOnPurpose(valueParagraphs, subject),
       }).toEqual({ category, recordedOrExplained: true });
     }
   });
@@ -269,7 +311,7 @@ describe("Issue #25: the Figma UI source and its screen map", () => {
       expect({
         screen: screen.label,
         node: screen.node,
-        markedV2: entryLines(screen).some((line) => /\bV2\b/.test(line)),
+        markedV2: mapEntryLines(screen).some((line) => /\bV2\b/.test(line)),
       }).toEqual({
         screen: screen.label,
         node: screen.node,
@@ -277,19 +319,26 @@ describe("Issue #25: the Figma UI source and its screen map", () => {
       });
     }
 
-    expect({
-      androidExcludedFromWebMvp: paragraphs.some(
-        (paragraph) =>
-          /android/i.test(paragraph) &&
-          /\bnot\b|exclude/i.test(paragraph) &&
-          /web\s+mvp/i.test(paragraph),
-      ),
-    }).toEqual({ androidExcludedFromWebMvp: true });
+    // The exclusion has to come from the map itself (Issue #50), not from an
+    // older sentence elsewhere in the document: the map marks the Android
+    // rows V2 and no Web row, so V2 separates exactly the two platforms.
+    const map = screenMapSection();
+    const webRowsMarkedV2 = screens
+      .filter((screen) => screen.platform === "web")
+      .filter((screen) =>
+        mapEntryLines(screen).some((line) => /\bV2\b/.test(line)),
+      )
+      .map((screen) => screen.label);
+
+    expect({ mapExists: map.length > 0, webRowsMarkedV2 }).toEqual({
+      mapExists: true,
+      webRowsMarkedV2: [],
+    });
   });
 
   test("no screen is silently omitted: each one names the issue that owns it, or is listed as an open gap", () => {
     for (const screen of screens) {
-      const owned = entryLines(screen).some(
+      const owned = mapEntryLines(screen).some(
         (line) =>
           /#\d+/.test(line) ||
           /gap|not covered|uncovered|no issue/i.test(line) ||
@@ -305,5 +354,16 @@ describe("Issue #25: the Figma UI source and its screen map", () => {
         attributedToAnIssueOrListedAsAGap: true,
       });
     }
+
+    // A map whose every row is an open gap would pass the loop above while
+    // attributing nothing (Issue #50). At least one Web screen has to name
+    // the issue that owns it.
+    const webScreensWithAnOwner = screens.filter(
+      (screen) =>
+        screen.platform === "web" &&
+        mapEntryLines(screen).some((line) => /#\d+/.test(line)),
+    );
+
+    expect(webScreensWithAnOwner.length).toBeGreaterThan(0);
   });
 });
