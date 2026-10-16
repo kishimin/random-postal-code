@@ -138,11 +138,23 @@ const run = (
     timeout: 60_000,
   });
 
+  // A subprocess that timed out has refused nothing (Issue #58): status
+  // null used to pass every "not 0" check below as if it were a refusal.
+  if (result.status === null) {
+    throw new Error(
+      `bun ${args.join(" ")} did not finish: ${String(result.error)}`,
+    );
+  }
+
   return {
     status: result.status,
     output: `${result.stdout}\n${result.stderr}`,
   };
 };
+
+// Each test that runs the verifiers starts several bun processes in a row,
+// well past bun's 5 s default (Issue #58).
+const SUBPROCESS_TEST_TIMEOUT_MS = 180_000;
 
 const validFrontendSettings = {
   VITE_API_BASE_URL: "https://zipnami-api.example-subdomain.workers.dev",
@@ -166,6 +178,11 @@ describe("Issue #19: deploying the frontend to Pages and the API to Workers", ()
     );
 
     expect(build, "the Pages job deploys without building first").toBeDefined();
+    // What is uploaded is that build's output (Issue #58).
+    expect(pages.step.run ?? "").toMatch(/\bpages deploy\s+dist\b/);
+    expect(
+      (pages.step as { "working-directory"?: string })["working-directory"],
+    ).toBe("apps/web/frontend");
     expect(configurationReference(build?.env?.VITE_API_BASE_URL)).toBeDefined();
   });
 
@@ -194,29 +211,40 @@ describe("Issue #19: deploying the frontend to Pages and the API to Workers", ()
     expect(shared).not.toEqual([]);
   });
 
-  test("the Worker refuses to deploy with an allowlist that is not exactly one https origin", () => {
-    for (const unusable of [
-      undefined,
-      "",
-      "*",
-      "http://zipnami.pages.dev",
-      "https://zipnami.pages.dev/",
-      "https://zipnami.pages.dev/app",
-      "https://*.pages.dev",
-    ]) {
-      const result = verifyBackend({ ALLOWED_ORIGINS: unusable });
+  test(
+    "the Worker refuses to deploy with an allowlist that is not exactly one https origin",
+    () => {
+      for (const unusable of [
+        undefined,
+        "",
+        "*",
+        "http://zipnami.pages.dev",
+        "https://zipnami.pages.dev/",
+        "https://zipnami.pages.dev/app",
+        "https://*.pages.dev",
+      ]) {
+        const result = verifyBackend({ ALLOWED_ORIGINS: unusable });
 
-      expect({ unusable, status: result.status }).not.toEqual({
-        unusable,
-        status: 0,
+        expect({ unusable, status: result.status }).not.toEqual({
+          unusable,
+          status: 0,
+        });
+        expect(result.output).toContain("ALLOWED_ORIGINS");
+        // Named, never echoed (Issue #58).
+        if ((unusable ?? "").length > 3) {
+          expect(result.output).not.toContain(unusable);
+        }
+      }
+
+      const accepted = verifyBackend({
+        ALLOWED_ORIGINS: "https://zipnami.pages.dev",
       });
-      expect(result.output).toContain("ALLOWED_ORIGINS");
-    }
 
-    expect(
-      verifyBackend({ ALLOWED_ORIGINS: "https://zipnami.pages.dev" }).status,
-    ).toBe(0);
-  });
+      expect(accepted.status).toBe(0);
+      expect(accepted.output).not.toContain("https://zipnami.pages.dev");
+    },
+    SUBPROCESS_TEST_TIMEOUT_MS,
+  );
 
   test("frontend and backend can be deployed independently", () => {
     const { workflow } = deployment();
@@ -230,9 +258,10 @@ describe("Issue #19: deploying the frontend to Pages and the API to Workers", ()
     // Neither half waits for the other to deploy.
     expect(needsOf(pages.job)).not.toContain(worker.id);
     expect(needsOf(worker.job)).not.toContain(pages.id);
-    // Each can be chosen on its own.
-    expect(pages.job.if ?? "").toMatch(/frontend/);
-    expect(worker.job.if ?? "").toMatch(/backend/);
+    // Each can be chosen on its own: the condition compares the dispatch
+    // input with that half's name, not merely mentions it (Issue #58).
+    expect(pages.job.if ?? "").toMatch(/inputs\.target\s*==\s*'frontend'/);
+    expect(worker.job.if ?? "").toMatch(/inputs\.target\s*==\s*'backend'/);
   });
 
   test("frontend and backend can be rolled back independently", () => {
@@ -247,68 +276,101 @@ describe("Issue #19: deploying the frontend to Pages and the API to Workers", ()
     expect(pages.id).not.toBe(worker.id);
     expect(needsOf(pages.job)).not.toContain(worker.id);
     expect(needsOf(worker.job)).not.toContain(pages.id);
-    expect(pages.job.if ?? "").toMatch(/frontend/);
-    expect(worker.job.if ?? "").toMatch(/backend/);
+    expect(pages.job.if ?? "").toMatch(/inputs\.target\s*==\s*'frontend'/);
+    expect(worker.job.if ?? "").toMatch(/inputs\.target\s*==\s*'backend'/);
   });
 
-  test("deployment verifies the advertising settings before deploying, without printing them", () => {
-    for (const [name, unusable] of [
-      ["VITE_GOOGLE_ADSENSE_CLIENT_ID", undefined],
-      ["VITE_GOOGLE_ADSENSE_CLIENT_ID", "ca-pub-0000000000000000"],
-      ["VITE_GOOGLE_ADSENSE_SLOT_ID", undefined],
-      ["VITE_GOOGLE_ADSENSE_SLOT_ID", "0000000000"],
-      ["VITE_ADSENSE_TEST_MODE", "true"],
-      ["VITE_API_BASE_URL", "http://zipnami-api.example-subdomain.workers.dev"],
-    ] as const) {
-      const result = verifyFrontend({
-        ...validFrontendSettings,
-        [name]: unusable,
-      });
+  test(
+    "deployment verifies the advertising settings before deploying, without printing them",
+    () => {
+      for (const [name, unusable] of [
+        ["VITE_GOOGLE_ADSENSE_CLIENT_ID", undefined],
+        ["VITE_GOOGLE_ADSENSE_CLIENT_ID", "ca-pub-0000000000000000"],
+        ["VITE_GOOGLE_ADSENSE_SLOT_ID", undefined],
+        ["VITE_GOOGLE_ADSENSE_SLOT_ID", "0000000000"],
+        ["VITE_ADSENSE_TEST_MODE", "true"],
+        [
+          "VITE_API_BASE_URL",
+          "http://zipnami-api.example-subdomain.workers.dev",
+        ],
+      ] as const) {
+        const result = verifyFrontend({
+          ...validFrontendSettings,
+          [name]: unusable,
+        });
 
-      expect({ name, unusable, status: result.status }).not.toEqual({
-        name,
-        unusable,
-        status: 0,
-      });
-      expect(result.output).toContain(name);
-    }
-
-    const accepted = verifyFrontend(validFrontendSettings);
-
-    expect(accepted.status).toBe(0);
-    // Not even the accepted values are echoed: a log is not the place to
-    // learn what a production setting is.
-    for (const value of Object.values(validFrontendSettings)) {
-      if (value.length > 5) {
-        expect(accepted.output).not.toContain(value);
+        expect({ name, unusable, status: result.status }).not.toEqual({
+          name,
+          unusable,
+          status: 0,
+        });
+        expect(result.output).toContain(name);
       }
-    }
-    expect(
-      verifyFrontend({
-        ...validFrontendSettings,
-        VITE_GOOGLE_ADSENSE_CLIENT_ID: "ca-pub-0000000000000000",
-      }).output,
-    ).not.toContain("ca-pub-0000000000000000");
 
-    // The deployment runs both verifications before its deploy steps.
-    const { workflow } = deployment();
-    const pages = jobRunning(workflow, /\bwrangler\b[^\n]*\bpages deploy\b/);
-    const worker = jobRunning(
-      workflow,
-      /\bwrangler\b[^\n]*\bdeploy\b(?![^\n]*pages)/,
-    );
+      const accepted = verifyFrontend(validFrontendSettings);
 
-    for (const deploy of [pages, worker]) {
-      const verifiedFirst = (deploy.job.steps ?? [])
-        .slice(0, deploy.index)
-        .some((step) => /verify:deploy-env/.test(step.run ?? ""));
+      expect(accepted.status).toBe(0);
+      // Not even the accepted values are echoed: a log is not the place to
+      // learn what a production setting is.
+      for (const value of Object.values(validFrontendSettings)) {
+        if (value.length > 5) {
+          expect(accepted.output).not.toContain(value);
+        }
+      }
+      expect(
+        verifyFrontend({
+          ...validFrontendSettings,
+          VITE_GOOGLE_ADSENSE_CLIENT_ID: "ca-pub-0000000000000000",
+        }).output,
+      ).not.toContain("ca-pub-0000000000000000");
 
-      expect({ job: deploy.id, verifiedFirst }).toEqual({
-        job: deploy.id,
-        verifiedFirst: true,
-      });
-    }
-  });
+      // The deployment runs both verifications before its deploy steps.
+      const { workflow } = deployment();
+      const pages = jobRunning(workflow, /\bwrangler\b[^\n]*\bpages deploy\b/);
+      const worker = jobRunning(
+        workflow,
+        /\bwrangler\b[^\n]*\bdeploy\b(?![^\n]*pages)/,
+      );
+
+      for (const deploy of [pages, worker]) {
+        const verifiedFirst = (deploy.job.steps ?? [])
+          .slice(0, deploy.index)
+          .some((step) => /verify:deploy-env/.test(step.run ?? ""));
+
+        expect({ job: deploy.id, verifiedFirst }).toEqual({
+          job: deploy.id,
+          verifiedFirst: true,
+        });
+      }
+
+      // What is verified is what is used (Issue #58): every setting the Pages
+      // verify step reads comes from the same configuration value the build
+      // step bakes in, and the Worker's verify step reads the value its deploy
+      // step passes as ALLOWED_ORIGINS. A rename in one place would otherwise
+      // verify one value and ship another.
+      const stepRunning = (job: Job, pattern: RegExp) =>
+        (job.steps ?? []).find((step) => pattern.test(step.run ?? ""));
+      const pagesVerify = stepRunning(pages.job, /verify:deploy-env/);
+      const pagesBuild = stepRunning(pages.job, /\bbuild\b/);
+
+      expect(pagesVerify?.env ?? {}).not.toEqual({});
+      for (const [name, value] of Object.entries(pagesVerify?.env ?? {})) {
+        expect({ name, build: pagesBuild?.env?.[name] }).toEqual({
+          name,
+          build: value,
+        });
+      }
+
+      const workerVerify = stepRunning(worker.job, /verify:deploy-env/);
+      const verifiedOrigin = configurationReference(
+        workerVerify?.env?.ALLOWED_ORIGINS,
+      );
+
+      expect(verifiedOrigin).toBeDefined();
+      expect(stepText(worker.step)).toContain(verifiedOrigin as string);
+    },
+    SUBPROCESS_TEST_TIMEOUT_MS,
+  );
 
   test("a smoke check against production runs after deploying", () => {
     const { workflow } = deployment();
@@ -356,8 +418,10 @@ describe("Issue #19: deploying the frontend to Pages and the API to Workers", ()
       .map((file) => readFileSync(file, "utf8"))
       .join("\n");
 
-    expect(documents).toContain(deployment().name);
-    expect(documents).toContain(rollback().name);
+    // The full path, so a doc that only shares a word with a file name does
+    // not count (Issue #58).
+    expect(documents).toContain(`.github/workflows/${deployment().name}`);
+    expect(documents).toContain(`.github/workflows/${rollback().name}`);
     expect(documents).toMatch(/wrangler rollback/);
     expect(documents).toMatch(/deployments\/[^\s]*\/rollback/);
   });
