@@ -274,4 +274,40 @@ describe("Issue #34: retrieving the Japan Post KEN_ALL archive", () => {
       ),
     ).toEqual([]);
   });
+
+  test("documents one procedure: regenerate reads the file fetch-ken-all writes", () => {
+    const readme = readFileSync(
+      path.join(postalDataPackage, "README.md"),
+      "utf8",
+    );
+
+    // The README documents regenerate in several places with different
+    // inputs. What has to agree is the pair written down together as the
+    // retrieval procedure: the code block that runs fetch-ken-all (Issue
+    // #55). A shell line continuation is joined first.
+    const procedure = [...readme.matchAll(/```[a-z]*\n([\s\S]*?)```/g)]
+      .map(([, block]) => block.replace(/\\\n\s*/g, " "))
+      .find((block) => /\bfetch-ken-all\b/.test(block));
+
+    expect(procedure, "no code block runs fetch-ken-all").toBeDefined();
+
+    const written = /\bfetch-ken-all\s+--\s+(\S+)/.exec(procedure ?? "")?.[1];
+    const read = /\bregenerate\s+--\s+(\S+)/.exec(procedure ?? "")?.[1];
+
+    expect(written).toBeDefined();
+    expect(read).toBe(written);
+  });
+
+  test("records the date of an actual retrieval", () => {
+    const readme = readFileSync(
+      path.join(postalDataPackage, "README.md"),
+      "utf8",
+    );
+
+    // Issue #34's real retrieval has happened (2026-10-16), so the README
+    // must carry a concrete date and no longer say it has not (Issue #55).
+    // Whether the date matches a real download is not observable here.
+    expect(readme).toMatch(/Retrieval date: \*\*\d{4}-\d{2}-\d{2}\*\*/);
+    expect(readme).not.toMatch(/not yet retrieved/i);
+  });
 });
