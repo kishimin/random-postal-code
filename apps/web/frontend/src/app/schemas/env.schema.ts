@@ -11,13 +11,13 @@ export type AppEnv = {
 // (design.md section 7): a build with no VITE_GOOGLE_ADSENSE_CLIENT_ID set
 // still renders, requesting ads under this placeholder instead of failing
 // the build the way a missing VITE_API_BASE_URL does above.
-const DEV_ADSENSE_CLIENT_ID_PLACEHOLDER = "ca-pub-0000000000000000";
+export const DEV_ADSENSE_CLIENT_ID_PLACEHOLDER = "ca-pub-0000000000000000";
 
 // Not a real, restricted ad slot ID. Same optional-dependency contract as the
 // client ID placeholder above: a build with no VITE_GOOGLE_ADSENSE_SLOT_ID set
 // still renders, requesting this placeholder slot instead of failing the
 // build.
-const DEV_ADSENSE_SLOT_ID_PLACEHOLDER = "0000000000";
+export const DEV_ADSENSE_SLOT_ID_PLACEHOLDER = "0000000000";
 
 // The URL constructor rather than a pattern: it rejects a bare host:port and a
 // relative path the same way a browser would, and it exposes the protocol so a
