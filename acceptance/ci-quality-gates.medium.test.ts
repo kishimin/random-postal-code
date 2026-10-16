@@ -212,6 +212,35 @@ const runsScript = (commands: string, script: string): boolean =>
     `\\bbun run ${script.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w:-])`,
   ).test(commands);
 
+/*
+ * Issue #48: a script that exists but does nothing ("true", "echo ok",
+ * "exit 0") would pass a check that only asks whether the key is there.
+ * Each script category has to invoke the tool that does that job.
+ */
+const scriptRunners: Record<string, RegExp> = {
+  lint: /\b(?:eslint|oxlint)\b/,
+  typecheck: /\btsc\b/,
+  "test:small": /\b(?:vitest|bun test|playwright)\b/,
+  "test:medium": /\b(?:vitest|bun test|playwright)\b/,
+  "test:large": /\b(?:vitest|bun test|playwright)\b/,
+};
+
+const invokesItsTool = (script: string, body: string | undefined) =>
+  body !== undefined && scriptRunners[script].test(body);
+
+/*
+ * Registration has to be an instruction a runner follows, not a mention
+ * (Issue #48): in a workflow, a `run:` command; in a config file, code
+ * rather than a comment that happens to name the file.
+ */
+// Only comments that begin a line are removed, which is how these config
+// files write them. A pattern that finds `/*` anywhere would also match
+// inside a string such as "**/*.{test,spec}.ts" and delete real entries.
+const withoutComments = (source: string) =>
+  source
+    .replaceAll(/^\s*\/\*[\s\S]*?\*\/\s*$/gm, "")
+    .replaceAll(/^\s*\/\/.*$/gm, "");
+
 const fansOutToEveryWorkspace = (script: string | undefined) =>
   script !== undefined && /--filter\s+(['"])\*\1/.test(script);
 
@@ -287,17 +316,13 @@ describe("Issue #18: repository quality gates in CI", () => {
     expect(fansOutToEveryWorkspace(rootPackage.scripts.typecheck)).toBe(true);
 
     for (const workspace of workspacePackages()) {
-      expect({
-        name: workspace.name,
-        lint: typeof workspace.scripts.lint,
-      }).toEqual({
-        name: workspace.name,
-        lint: "string",
-      });
-      expect({
-        name: workspace.name,
-        typecheck: typeof workspace.scripts.typecheck,
-      }).toEqual({ name: workspace.name, typecheck: "string" });
+      for (const script of ["lint", "typecheck"]) {
+        expect({
+          name: workspace.name,
+          script,
+          invokesItsTool: invokesItsTool(script, workspace.scripts[script]),
+        }).toEqual({ name: workspace.name, script, invokesItsTool: true });
+      }
     }
   });
 
@@ -330,31 +355,37 @@ describe("Issue #18: repository quality gates in CI", () => {
         expect({
           name: workspace.name,
           script,
-          defined: script in workspace.scripts,
+          invokesItsTool: invokesItsTool(script, workspace.scripts[script]),
         }).toEqual({
           name: workspace.name,
           script,
-          defined: true,
+          invokesItsTool: true,
         });
       }
     }
   });
 
   test("every acceptance test is registered with a runner CI executes", () => {
+    // Config files count once their comments are removed; workflows count
+    // only through the commands their steps run (Issue #48).
     const registries = [
-      path.join(
-        repositoryRoot,
-        "apps",
-        "web",
-        "frontend",
-        "playwright.config.ts",
-      ),
-      ...workspacePackages()
-        .map((workspace) => path.join(workspace.directory, "vitest.config.ts"))
-        .filter((file) => existsSync(file)),
-      path.join(repositoryRoot, "package.json"),
-      ...workflowFiles(),
-    ].map((file) => readFileSync(file, "utf8"));
+      ...[
+        path.join(
+          repositoryRoot,
+          "apps",
+          "web",
+          "frontend",
+          "playwright.config.ts",
+        ),
+        ...workspacePackages()
+          .map((workspace) =>
+            path.join(workspace.directory, "vitest.config.ts"),
+          )
+          .filter((file) => existsSync(file)),
+      ].map((file) => withoutComments(readFileSync(file, "utf8"))),
+      readFileSync(path.join(repositoryRoot, "package.json"), "utf8"),
+      ...workflowFiles().map((file) => allCommands(readWorkflow(file))),
+    ];
 
     const acceptanceTests = readdirSync(
       path.join(repositoryRoot, "acceptance"),
@@ -367,12 +398,11 @@ describe("Issue #18: repository quality gates in CI", () => {
 
     // This file is a Medium gate, so it has to run on pull requests, either
     // named in the workflow or through a root script the workflow runs.
-    const pullRequestText = readFileSync(pullRequestWorkflowPath, "utf8");
     const pullRequestCommands = allCommands(
       readWorkflow(pullRequestWorkflowPath),
     );
     const runOnPullRequests =
-      pullRequestText.includes(thisFileName) ||
+      pullRequestCommands.includes(thisFileName) ||
       Object.entries(rootPackage.scripts).some(
         ([script, body]) =>
           body.includes(thisFileName) &&
@@ -596,9 +626,18 @@ describe("Issue #18: repository quality gates in CI", () => {
         permissions: { contents: "read" },
       });
       for (const [id, job] of Object.entries(workflow.jobs)) {
-        const writes = Object.entries(
-          (job.permissions ?? {}) as Record<string, string>,
-        ).filter(([, level]) => level === "write");
+        // `permissions` may also be a single string. "write-all" grants
+        // every write scope, and Object.entries over a string would only see
+        // its characters (Issue #48). Anything but "read-all" counts as a
+        // write.
+        const writes =
+          typeof job.permissions === "string"
+            ? job.permissions === "read-all"
+              ? []
+              : [["*", job.permissions]]
+            : Object.entries(
+                (job.permissions ?? {}) as Record<string, string>,
+              ).filter(([, level]) => level === "write");
         expect({ label, job: id, writes }).toEqual({
           label,
           job: id,

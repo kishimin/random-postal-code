@@ -109,18 +109,56 @@ const repositorySlug = (): string => {
   return match[1];
 };
 
+/*
+ * A nightly run that cannot reach GitHub has not found a misconfigured
+ * ruleset, and its report must not read as if it had (Issue #48). Transient
+ * failures (a network error, a 5xx, 429, or a rate-limited 403) are retried
+ * with backoff. If they persist, the error says the API was unavailable,
+ * which is distinct both from a refused request and from a ruleset that
+ * does not match the workflow.
+ */
+const GITHUB_ATTEMPTS = 3;
+
+const isTransient = (response: Response): boolean =>
+  response.status >= 500 ||
+  response.status === 429 ||
+  (response.status === 403 &&
+    response.headers.get("x-ratelimit-remaining") === "0");
+
 const github = async (resource: string): Promise<unknown> => {
   const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
-  const response = await fetch(`https://api.github.com/${resource}`, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`GET ${resource} failed: ${response.status}`);
+  const failures: string[] = [];
+
+  for (let attempt = 1; attempt <= GITHUB_ATTEMPTS; attempt += 1) {
+    if (attempt > 1) {
+      await Bun.sleep(1000 * 2 ** (attempt - 2));
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(`https://api.github.com/${resource}`, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+    } catch (error) {
+      failures.push(`network error: ${String(error)}`);
+      continue;
+    }
+
+    if (response.ok) return response.json();
+    if (!isTransient(response)) {
+      throw new Error(
+        `GitHub API refused GET ${resource}: HTTP ${response.status} (not a ruleset mismatch)`,
+      );
+    }
+    failures.push(`HTTP ${response.status}`);
   }
-  return response.json();
+
+  throw new Error(
+    `GitHub API unavailable for GET ${resource} after ${GITHUB_ATTEMPTS} attempts (${failures.join("; ")}); this is not a ruleset mismatch`,
+  );
 };
 
 type Rule = {
