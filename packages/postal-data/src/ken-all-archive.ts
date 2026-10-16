@@ -1,0 +1,217 @@
+import { crc32, inflateRawSync } from "node:zlib";
+
+/**
+ * Where Japan Post publishes the national KEN_ALL archive (the "読み仮名データの
+ * 促音・拗音を小書きで表記するもの" variant, the one `KEN_ALL.CSV` documents
+ * describe).
+ */
+export const KEN_ALL_ZIP_URL =
+  "https://www.post.japanpost.jp/zipcode/dl/kogaki/zip/ken_all.zip";
+
+const KEN_ALL_ENTRY_NAME = "KEN_ALL.CSV";
+
+const END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50;
+const CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
+const LOCAL_FILE_HEADER_SIGNATURE = 0x04034b50;
+const END_OF_CENTRAL_DIRECTORY_SIZE = 22;
+const MAX_ARCHIVE_COMMENT_SIZE = 0xffff;
+const STORED = 0;
+const DEFLATED = 8;
+
+export class KenAllArchiveError extends Error {
+  override name = "KenAllArchiveError";
+}
+
+type CentralDirectoryEntry = {
+  readonly name: string;
+  readonly method: number;
+  readonly checksum: number;
+  readonly compressedSize: number;
+  readonly size: number;
+  readonly localHeaderOffset: number;
+};
+
+// The end-of-central-directory record sits at the very end of the archive,
+// followed only by an optional comment, so it is searched for backwards.
+const findEndOfCentralDirectory = (archive: Buffer): number => {
+  const earliest = Math.max(
+    0,
+    archive.length - END_OF_CENTRAL_DIRECTORY_SIZE - MAX_ARCHIVE_COMMENT_SIZE,
+  );
+
+  for (
+    let offset = archive.length - END_OF_CENTRAL_DIRECTORY_SIZE;
+    offset >= earliest;
+    offset -= 1
+  ) {
+    if (archive.readUInt32LE(offset) === END_OF_CENTRAL_DIRECTORY_SIGNATURE) {
+      return offset;
+    }
+  }
+
+  throw new KenAllArchiveError(
+    "not a complete ZIP archive: no end-of-central-directory record " +
+      "(the download may be truncated)",
+  );
+};
+
+const readCentralDirectory = (archive: Buffer): CentralDirectoryEntry[] => {
+  const end = findEndOfCentralDirectory(archive);
+  const entryCount = archive.readUInt16LE(end + 10);
+  const entries: CentralDirectoryEntry[] = [];
+  let offset = archive.readUInt32LE(end + 16);
+
+  for (let index = 0; index < entryCount; index += 1) {
+    if (
+      offset + 46 > archive.length ||
+      archive.readUInt32LE(offset) !== CENTRAL_DIRECTORY_SIGNATURE
+    ) {
+      throw new KenAllArchiveError("corrupt ZIP central directory");
+    }
+
+    const nameLength = archive.readUInt16LE(offset + 28);
+    const extraLength = archive.readUInt16LE(offset + 30);
+    const commentLength = archive.readUInt16LE(offset + 32);
+
+    entries.push({
+      name: archive.toString("latin1", offset + 46, offset + 46 + nameLength),
+      method: archive.readUInt16LE(offset + 10),
+      checksum: archive.readUInt32LE(offset + 16),
+      compressedSize: archive.readUInt32LE(offset + 20),
+      size: archive.readUInt32LE(offset + 24),
+      localHeaderOffset: archive.readUInt32LE(offset + 42),
+    });
+    offset += 46 + nameLength + extraLength + commentLength;
+  }
+
+  return entries;
+};
+
+const readEntry = (
+  archive: Buffer,
+  entry: CentralDirectoryEntry,
+): Uint8Array => {
+  const header = entry.localHeaderOffset;
+
+  if (
+    header + 30 > archive.length ||
+    archive.readUInt32LE(header) !== LOCAL_FILE_HEADER_SIGNATURE
+  ) {
+    throw new KenAllArchiveError(`corrupt ZIP entry header for ${entry.name}`);
+  }
+
+  // The local header repeats the name and may carry a different extra field
+  // than the central directory, so the data offset comes from its own
+  // lengths.
+  const dataStart =
+    header +
+    30 +
+    archive.readUInt16LE(header + 26) +
+    archive.readUInt16LE(header + 28);
+  const dataEnd = dataStart + entry.compressedSize;
+
+  if (dataEnd > archive.length) {
+    throw new KenAllArchiveError(`${entry.name} is truncated`);
+  }
+
+  const data = archive.subarray(dataStart, dataEnd);
+  let content: Uint8Array;
+
+  if (entry.method === STORED) {
+    content = data;
+  } else if (entry.method === DEFLATED) {
+    try {
+      content = inflateRawSync(data);
+    } catch (cause) {
+      throw new KenAllArchiveError(`${entry.name} cannot be inflated`, {
+        cause,
+      });
+    }
+  } else {
+    throw new KenAllArchiveError(
+      `${entry.name} uses unsupported compression method ${entry.method}`,
+    );
+  }
+
+  // The checksum is what turns a silently damaged download into a loud
+  // failure: a size match alone would accept corrupted bytes.
+  if (content.length !== entry.size || crc32(content) !== entry.checksum) {
+    throw new KenAllArchiveError(`${entry.name} failed its integrity check`);
+  }
+
+  // A plain view over the same memory: callers get the Uint8Array the
+  // signature promises, not a Node Buffer, without copying the file again.
+  return new Uint8Array(content.buffer, content.byteOffset, content.byteLength);
+};
+
+/**
+ * Returns the raw bytes of `KEN_ALL.CSV` from a `ken_all.zip` archive.
+ *
+ * ZIP is read here rather than through a dependency: Node's zlib inflates
+ * the DEFLATE data but does not parse the ZIP container, and the subset this
+ * archive uses (one entry, stored or deflated, no encryption) is small
+ * enough that a dependency would add more supply-chain surface than code.
+ */
+export const extractKenAllCsv = (archive: Uint8Array): Uint8Array => {
+  const buffer = Buffer.from(
+    archive.buffer,
+    archive.byteOffset,
+    archive.byteLength,
+  );
+
+  if (buffer.length < END_OF_CENTRAL_DIRECTORY_SIZE) {
+    throw new KenAllArchiveError(
+      `not a ZIP archive: only ${buffer.length} bytes`,
+    );
+  }
+
+  const entry = readCentralDirectory(buffer).find(
+    (candidate) => candidate.name.toUpperCase() === KEN_ALL_ENTRY_NAME,
+  );
+
+  if (entry === undefined) {
+    throw new KenAllArchiveError(`the archive has no ${KEN_ALL_ENTRY_NAME}`);
+  }
+
+  return readEntry(buffer, entry);
+};
+
+/**
+ * Decodes Japan Post's Shift-JIS text. `fatal` makes a byte sequence that is
+ * not Shift-JIS an error instead of a replacement character that would end up
+ * inside an address.
+ */
+export const decodeShiftJis = (bytes: Uint8Array): string =>
+  new TextDecoder("shift_jis", { fatal: true }).decode(bytes);
+
+/**
+ * Downloads `ken_all.zip` and returns its `KEN_ALL.CSV` decoded to UTF-8
+ * text, ready for `buildPostalCodeDataset`. Rejects on any HTTP error, empty
+ * response, or damaged archive, so a caller never receives partial data.
+ */
+export const retrieveKenAllCsv = async (
+  url: string,
+  fetchArchive: typeof fetch = fetch,
+): Promise<string> => {
+  const response = await fetchArchive(url);
+
+  if (!response.ok) {
+    throw new KenAllArchiveError(
+      `downloading ${url} failed with HTTP ${response.status}`,
+    );
+  }
+
+  const archive = new Uint8Array(await response.arrayBuffer());
+
+  if (archive.length === 0) {
+    throw new KenAllArchiveError(`downloading ${url} returned no data`);
+  }
+
+  const text = decodeShiftJis(extractKenAllCsv(archive));
+
+  if (text.trim() === "") {
+    throw new KenAllArchiveError(`${KEN_ALL_ENTRY_NAME} is empty`);
+  }
+
+  return text;
+};

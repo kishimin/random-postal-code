@@ -6,20 +6,49 @@ CSV (`KEN_ALL.CSV`).
 ## Source
 
 Japan Post publishes the postal-code dataset used here at
-<https://www.post.japanpost.jp/zipcode/download.html>. The archive is
-distributed as a Shift-JIS CSV named `KEN_ALL.CSV`, fifteen comma-separated
-columns per record, quoted text fields.
+<https://www.post.japanpost.jp/zipcode/download.html>, as a ZIP archive at
+<https://www.post.japanpost.jp/zipcode/dl/kogaki/zip/ken_all.zip>. The archive
+holds one Shift-JIS CSV named `KEN_ALL.CSV`, fifteen comma-separated columns
+per record, quoted text fields.
 
-Retrieval date: **2026-09-21**.
+Retrieval date: **not yet retrieved from Japan Post.** The retrieval command
+below is implemented and tested against a locally served archive, but it has
+not been run against the live site, so no real download has a date yet. The
+committed data still comes from the hand-built source described next, shaped
+on 2026-09-21 like `KEN_ALL.CSV` (see also
+`acceptance/fixtures/japan-post-ken-all-excerpt.csv`). When someone runs the
+procedure below against Japan Post, this line records the date they ran it.
 
-That date is honest about what "retrieval" means at this stage of the
-project: this package's tests run against a small hand-built fixture shaped
-like `KEN_ALL.CSV`
-(`acceptance/fixtures/japan-post-ken-all-excerpt.csv`), not a real download
-of the archive. Fetching the live file from Japan Post and decoding it from
-Shift-JIS to UTF-8 is a separate, later concern — `buildPostalCodeDataset`
-takes already-decoded UTF-8 source text, so whoever performs that fetch and
-decode step only needs to hand this package the result.
+### Retrieving the archive from Japan Post
+
+Retrieval and regeneration are two commands, run from the repository root.
+The first writes `KEN_ALL.CSV` decoded to UTF-8; the second is the existing
+`regenerate` step, unchanged, reading that file:
+
+```sh
+bun run --filter @zipnami/postal-data fetch-ken-all -- data/ken-all.japan-post.csv
+bun run --filter @zipnami/postal-data regenerate --   data/ken-all.japan-post.csv <output.json>
+```
+
+`fetch-ken-all` (`scripts/fetch-ken-all.ts`, logic in
+`src/ken-all-archive.ts`) downloads `ken_all.zip`, extracts `KEN_ALL.CSV`,
+checks it against the CRC-32 the archive records, and decodes it with a strict
+Shift-JIS decoder. It exits non-zero and writes nothing on a network error, an
+HTTP error status, an empty response, a truncated or damaged archive, an
+archive without `KEN_ALL.CSV`, or bytes that are not Shift-JIS. It writes to a
+temporary file first and renames it into place, so a failed run never replaces
+an earlier, complete retrieval.
+
+The ZIP container is read in `src/ken-all-archive.ts` rather than through a
+dependency: Node's `zlib` inflates the compressed data but does not parse the
+ZIP format, and this archive uses only a small part of it (one entry, stored
+or deflated, no encryption).
+
+Japan Post publishes no checksum for `ken_all.zip`, so the CRC-32 check catches
+a damaged download but cannot prove the file is the one Japan Post intended.
+`ZIPNAMI_KEN_ALL_URL` overrides the download URL. It exists so the
+acceptance test can serve an archive locally, and is not part of the
+maintainer procedure.
 
 ### The committed source for the generated artifact
 
