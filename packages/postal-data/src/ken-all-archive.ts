@@ -18,6 +18,15 @@ const MAX_ARCHIVE_COMMENT_SIZE = 0xffff;
 const STORED = 0;
 const DEFLATED = 8;
 
+// The real KEN_ALL.CSV is about 12 MB. An entry declaring far more is not
+// Japan Post's file, and inflating it first would let a hostile or broken
+// archive exhaust memory before any check ran.
+const MAX_KEN_ALL_CSV_BYTES = 64 * 1024 * 1024;
+
+// Generous for a ~2 MB archive on a slow line, but finite: a stalled
+// download has to end as a failure rather than hang the maintainer's shell.
+const DOWNLOAD_TIMEOUT_MS = 120_000;
+
 export class KenAllArchiveError extends Error {
   override name = "KenAllArchiveError";
 }
@@ -114,6 +123,13 @@ const readEntry = (
     throw new KenAllArchiveError(`${entry.name} is truncated`);
   }
 
+  if (entry.size > MAX_KEN_ALL_CSV_BYTES) {
+    throw new KenAllArchiveError(
+      `${entry.name} declares ${entry.size} bytes, larger than ` +
+        `${MAX_KEN_ALL_CSV_BYTES} bytes any KEN_ALL.CSV needs`,
+    );
+  }
+
   const data = archive.subarray(dataStart, dataEnd);
   let content: Uint8Array;
 
@@ -121,7 +137,9 @@ const readEntry = (
     content = data;
   } else if (entry.method === DEFLATED) {
     try {
-      content = inflateRawSync(data);
+      // Stops inflating at the declared size, so data that expands beyond
+      // it fails here instead of after it has been held in memory.
+      content = inflateRawSync(data, { maxOutputLength: entry.size || 1 });
     } catch (cause) {
       throw new KenAllArchiveError(`${entry.name} cannot be inflated`, {
         cause,
@@ -193,7 +211,18 @@ export const retrieveKenAllCsv = async (
   url: string,
   fetchArchive: typeof fetch = fetch,
 ): Promise<string> => {
-  const response = await fetchArchive(url);
+  const response = await fetchArchive(url, {
+    signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+  });
+
+  // The CRC-32 inside the archive detects damage, not substitution, so the
+  // transport is the only protection against a tampered file. A redirect that
+  // drops https must not quietly remove it.
+  if (url.startsWith("https:") && response.url.startsWith("http:")) {
+    throw new KenAllArchiveError(
+      `downloading ${url} was redirected to ${response.url}, which is not https`,
+    );
+  }
 
   if (!response.ok) {
     throw new KenAllArchiveError(
