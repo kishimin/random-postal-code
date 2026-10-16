@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -360,4 +367,117 @@ test("nothing that should be ignored is already tracked", () => {
   );
 
   assert.deepEqual(escaped, []);
+});
+
+/*
+ * The acceptance-test lock (ADR-0067) and its one sanctioned exception: a
+ * pull request labeled atdd-unlock-approved may modify an existing
+ * acceptance test, after a human approved it on the Issue. Exercised
+ * against a throwaway repository, because the check's input is git history.
+ */
+const lockScript = path.join(
+  repositoryRoot,
+  ".github",
+  "scripts",
+  "check-acceptance-lock.sh",
+);
+
+const git = (cwd, ...args) => {
+  const result = spawnSync("git", args, { cwd, encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+};
+
+/** A repository whose base commit holds one acceptance test. */
+const repositoryWithAcceptanceTest = () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "zipnami-lock-"));
+  git(directory, "init", "--quiet", "--initial-branch=main");
+  git(directory, "config", "user.email", "lock@test.invalid");
+  git(directory, "config", "user.name", "lock test");
+  git(directory, "config", "core.autocrlf", "false");
+  mkdirSync(path.join(directory, "acceptance"));
+  writeFileSync(path.join(directory, "acceptance", "a.test.ts"), "original\n");
+  git(directory, "add", ".");
+  git(directory, "commit", "--quiet", "-m", "base");
+  return { directory, base: git(directory, "rev-parse", "HEAD") };
+};
+
+const commitAll = (directory) => {
+  git(directory, "add", "-A");
+  git(directory, "commit", "--quiet", "-m", "change");
+};
+
+const checkLock = (directory, base, approved) =>
+  spawnSync("bash", [lockScript, base], {
+    cwd: directory,
+    encoding: "utf8",
+    env: { ...process.env, ATDD_UNLOCK_APPROVED: approved ? "true" : "false" },
+  });
+
+test("the acceptance lock passes a change that leaves acceptance tests alone", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  writeFileSync(path.join(directory, "other.ts"), "x\n");
+  commitAll(directory);
+
+  assert.equal(checkLock(directory, base, false).status, 0);
+});
+
+test("the acceptance lock passes a newly added acceptance test", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  writeFileSync(path.join(directory, "acceptance", "b.test.ts"), "new\n");
+  commitAll(directory);
+
+  assert.equal(checkLock(directory, base, false).status, 0);
+});
+
+test("the acceptance lock refuses a modified acceptance test without approval", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  writeFileSync(path.join(directory, "acceptance", "a.test.ts"), "weaker\n");
+  commitAll(directory);
+
+  const result = checkLock(directory, base, false);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout, /acceptance\/a\.test\.ts/);
+});
+
+test("the acceptance lock passes an approved modification and names it", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  writeFileSync(path.join(directory, "acceptance", "a.test.ts"), "stronger\n");
+  commitAll(directory);
+
+  const result = checkLock(directory, base, true);
+  assert.equal(result.status, 0, result.stdout);
+  // Visible in the run, so the approval is never silent.
+  assert.match(result.stdout, /::notice::/);
+  assert.match(result.stdout, /acceptance\/a\.test\.ts/);
+});
+
+test("the acceptance lock refuses deleting an acceptance test even with approval", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  rmSync(path.join(directory, "acceptance", "a.test.ts"));
+  commitAll(directory);
+
+  const result = checkLock(directory, base, true);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout, /acceptance\/a\.test\.ts/);
+});
+
+test("the acceptance lock refuses renaming an acceptance test even with approval", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  git(directory, "mv", "acceptance/a.test.ts", "acceptance/c.test.ts");
+  commitAll(directory);
+
+  assert.notEqual(checkLock(directory, base, true).status, 0);
+});
+
+test("the pull request workflow runs the lock script and re-runs it when the label changes", () => {
+  const workflow = readFileSync(
+    path.join(repositoryRoot, ".github", "workflows", "ci-pull-request.yml"),
+    "utf8",
+  );
+
+  assert.match(workflow, /check-acceptance-lock\.sh/);
+  assert.match(workflow, /atdd-unlock-approved/);
+  assert.match(workflow, /\blabeled\b/);
+  assert.match(workflow, /\bunlabeled\b/);
 });
