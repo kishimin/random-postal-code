@@ -142,14 +142,17 @@ const entryLines = (screen: (typeof screens)[number]): string[] =>
  * next heading at the same or a higher level. Located by heading rather
  * than by number, so renumbering the file does not break this test.
  */
-const sectionBody = (heading: (line: string) => boolean): string[] => {
+const sectionBody = (
+  heading: (line: string) => boolean,
+  within: string[] = lines,
+): string[] => {
   const headingPattern = /^#{1,6}\s/;
-  const start = lines.findIndex(
+  const start = within.findIndex(
     (line) => headingPattern.test(line) && heading(line),
   );
   if (start === -1) return [];
-  const depth = (/^#+/.exec(lines[start]) ?? [""])[0].length;
-  const rest = lines.slice(start + 1);
+  const depth = (/^#+/.exec(within[start]) ?? [""])[0].length;
+  const rest = within.slice(start + 1);
   const end = rest.findIndex(
     (line) =>
       headingPattern.test(line) &&
@@ -166,10 +169,12 @@ const visualAndContentContract = (): string[] =>
  * The two subsections Issue #25 introduced (Issue #50): the screen map, and
  * the colour, type, and copy values. Each check reads only the subsection it
  * is about, so a line elsewhere in the contract — written before this Issue,
- * or about something else — cannot satisfy it.
+ * or about something else — cannot satisfy it. Both are looked for inside
+ * the contract itself: a map moved out from under it is no longer part of
+ * the contract.
  */
 const screenMapSection = (): string[] =>
-  sectionBody((line) => /screen\s+map/i.test(line));
+  sectionBody((line) => /screen\s+map/i.test(line), visualAndContentContract());
 
 /**
  * The screen's entry inside the screen map. Its V2 marking and its owner
@@ -184,6 +189,7 @@ const mapEntryLines = (screen: (typeof screens)[number]): string[] => {
 const valuesSection = (): string[] =>
   sectionBody(
     (line) => /colou?r/i.test(line) && /type/i.test(line) && /copy/i.test(line),
+    visualAndContentContract(),
   );
 
 // Six or eight digits, not three: `#123` is also how an issue is referenced,
