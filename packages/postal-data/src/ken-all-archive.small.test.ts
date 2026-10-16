@@ -113,6 +113,55 @@ describe("extractKenAllCsv", () => {
   });
 });
 
+describe("extractKenAllCsv on damaged archives", () => {
+  // Offsets within the archive `zip` builds: a 30-byte local header and the
+  // 11-byte name precede the data, and the end record is the last 22 bytes.
+  const LOCAL_HEADER = 0;
+  const DATA = 30 + "KEN_ALL.CSV".length;
+
+  const damaged = (damage: (archive: Buffer) => void): Buffer => {
+    const archive = zip("KEN_ALL.CSV", TOKYO_SHIFT_JIS);
+
+    damage(archive);
+
+    return archive;
+  };
+
+  test("refuses an archive whose central directory is not where the end record says", () => {
+    const archive = damaged((bytes) => {
+      bytes.writeUInt32LE(0, bytes.length - 22 + 16);
+    });
+
+    expect(() => extractKenAllCsv(archive)).toThrow(/central directory/);
+  });
+
+  test("refuses an entry whose local header is damaged", () => {
+    const archive = damaged((bytes) => {
+      bytes.writeUInt32LE(0, LOCAL_HEADER);
+    });
+
+    expect(() => extractKenAllCsv(archive)).toThrow(/entry header/);
+  });
+
+  test("refuses an entry whose data runs past the end of the archive", () => {
+    const archive = damaged((bytes) => {
+      const central = bytes.readUInt32LE(bytes.length - 22 + 16);
+
+      bytes.writeUInt32LE(0xffffff, central + 20);
+    });
+
+    expect(() => extractKenAllCsv(archive)).toThrow(/truncated/);
+  });
+
+  test("refuses deflated data that cannot be inflated", () => {
+    const archive = damaged((bytes) => {
+      bytes.fill(0xff, DATA, DATA + 2);
+    });
+
+    expect(() => extractKenAllCsv(archive)).toThrow(/cannot be inflated/);
+  });
+});
+
 describe("decodeShiftJis", () => {
   test("decodes Shift-JIS bytes to text", () => {
     expect(decodeShiftJis(TOKYO_SHIFT_JIS)).toBe("東京都");
