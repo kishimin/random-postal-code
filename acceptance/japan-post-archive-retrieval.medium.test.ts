@@ -307,7 +307,23 @@ describe("Issue #34: retrieving the Japan Post KEN_ALL archive", () => {
     // Issue #34's real retrieval has happened (2026-10-16), so the README
     // must carry a concrete date and no longer say it has not (Issue #55).
     // Whether the date matches a real download is not observable here.
-    expect(readme).toMatch(/Retrieval date: \*\*\d{4}-\d{2}-\d{2}\*\*/);
+    const recorded = /Retrieval date: \*\*(\d{4}-\d{2}-\d{2})\*\*/.exec(
+      readme,
+    )?.[1];
+
+    expect(recorded, "no retrieval date is recorded").toBeDefined();
+
+    // A real calendar day, not before the first real retrieval and not in
+    // the future. That rejects an impossible value such as 2026-99-99 or a
+    // regression to an earlier date. The exact day is deliberately not
+    // pinned: a later re-retrieval must be able to record its own date
+    // without rewriting this test.
+    const day = new Date(`${recorded}T00:00:00Z`);
+    const FIRST_REAL_RETRIEVAL = "2026-10-16";
+
+    expect(day.toISOString().slice(0, 10)).toBe(recorded);
+    expect(recorded >= FIRST_REAL_RETRIEVAL).toBe(true);
+    expect(day.getTime()).toBeLessThanOrEqual(Date.now());
     expect(readme).not.toMatch(/not yet retrieved/i);
   });
 });
