@@ -2,6 +2,14 @@ name: CI (Pull Request)
 
 on:
   pull_request:
+    # labeled/unlabeled re-run the checks when atdd-unlock-approved is added
+    # or removed, so the acceptance lock below reflects the current label.
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
 
 # Read-only by default: no job here needs to write to the repository, and CI
 # must not hand deployment, Maps, or advertising credentials to a build step.
@@ -38,19 +46,13 @@ jobs:
         run: bun run test:config
 
       # An acceptance test is fixed before the implementation is written, so a
-      # pull request may add one and must not edit one. A local `git status`
-      # cannot see this: edit an acceptance test, commit it, and the working
-      # tree is clean again. Comparing against the merge base can.
+      # pull request may add one and must not edit one, unless a human
+      # approved the edit on its Issue and the pull request is labeled
+      # atdd-unlock-approved (see the script for what that still refuses).
       - name: Check that no acceptance test was modified
-        run: |
-          base=$(git merge-base origin/${{ github.base_ref }} HEAD)
-          modified=$(git diff --diff-filter=MDR --name-only "$base"..HEAD -- acceptance/)
-          if [ -n "$modified" ]; then
-            echo "::error::An acceptance test was modified or deleted:"
-            echo "$modified"
-            exit 1
-          fi
-          echo "No acceptance test was modified."
+        env:
+          ATDD_UNLOCK_APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'atdd-unlock-approved') }}
+        run: bash .github/scripts/check-acceptance-lock.sh "$(git merge-base origin/${{ github.base_ref }} HEAD)"
 
       - name: Check formatting
         run: bun run format:check
