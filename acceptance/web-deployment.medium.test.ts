@@ -367,7 +367,21 @@ describe("Issue #19: deploying the frontend to Pages and the API to Workers", ()
       );
 
       expect(verifiedOrigin).toBeDefined();
-      expect(stepText(worker.step)).toContain(verifiedOrigin as string);
+
+      // The argument itself, resolved through the step's env when it names
+      // a shell variable: a reference that merely appears somewhere in the
+      // step would not prove the deploy passes it.
+      const argument = /--var\s+ALLOWED_ORIGINS:(\S+)/
+        .exec(worker.step.run ?? "")?.[1]
+        ?.replace(/^["']|["']$/g, "");
+      const shellVariable = /^\$\{?(\w+)\}?$/.exec(argument ?? "")?.[1];
+      const passedOrigin = configurationReference(
+        shellVariable === undefined
+          ? argument
+          : worker.step.env?.[shellVariable],
+      );
+
+      expect(passedOrigin).toBe(verifiedOrigin);
     },
     SUBPROCESS_TEST_TIMEOUT_MS,
   );
