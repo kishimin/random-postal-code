@@ -395,6 +395,9 @@ const repositoryWithAcceptanceTest = () => {
   git(directory, "config", "user.email", "lock@test.invalid");
   git(directory, "config", "user.name", "lock test");
   git(directory, "config", "core.autocrlf", "false");
+  // A developer's global commit.gpgSign would make the fixture's commits try
+  // to sign with this throwaway identity and fail before any assertion.
+  git(directory, "config", "commit.gpgSign", "false");
   mkdirSync(path.join(directory, "acceptance"));
   writeFileSync(path.join(directory, "acceptance", "a.test.ts"), "original\n");
   git(directory, "add", ".");

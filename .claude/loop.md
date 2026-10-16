@@ -40,7 +40,9 @@ Issueを選ぶときは `needs-decision` ラベルの付いたものを除外す
 - Acceptance TestがGreen
 - `bun run lint`、`bun run typecheck`、`bun run format:check`、`bun run test:coverage:pr` が成功
 - `git diff --name-only $(git merge-base main HEAD)..HEAD -- acceptance/` が、
-  そのIssueのATを確定したコミットで追加したファイルだけを挙げる
+  そのIssueのATを確定したコミットで追加したファイルだけを挙げる。ただし、そのIssueで
+  人間が既存ATの書き換えを承認している場合（`CLAUDE.md` の「例外: 人間が承認した書き換え」）は、
+  承認された範囲の既存ファイルが挙がってもよい
 
 **検証は実際にコマンドを実行し、その出力を残す。** 通ったと述べるだけにしない。
 
@@ -49,7 +51,7 @@ ATを書き換えてコミットすれば空になる。それは無改変の証
 
 ## 守ること
 
-- 実装フェーズで `acceptance/` を変更しない
+- 実装フェーズで `acceptance/` を変更しない（人間が承認した書き換えは例外。`CLAUDE.md` 参照）
 - Issue本文の `## Out of scope` をATで検証しない
 - 受け入れ条件が不足していてATを書けない場合は、推測で埋めずに報告して終える
 - 作業ブランチはpushする。`main` への直接pushとマージは行わない（`CLAUDE.md` の `### push`）
