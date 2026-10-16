@@ -47,7 +47,11 @@ const pullRequestWorkflowPath = path.join(
   "ci-pull-request.yml",
 );
 
-const NETWORK_TIMEOUT_MS = 60_000;
+// Two sequential GitHub calls, each with up to two retry waits of at most
+// MAX_RETRY_AFTER_MS, have to finish inside this budget so a persistent
+// outage ends with the helper's own diagnostic rather than a generic test
+// timeout (Issue #48).
+const NETWORK_TIMEOUT_MS = 120_000;
 
 type Step = { run?: string; uses?: string };
 type Job = {
@@ -119,9 +123,10 @@ const repositorySlug = (): string => {
  */
 const GITHUB_ATTEMPTS = 3;
 
-// The longest a retry-after header is honored; a nightly job should fail
-// with a clear message rather than sleep for many minutes.
-const MAX_RETRY_AFTER_MS = 60_000;
+// The longest a retry-after header is honored. Kept well under the test
+// budget above (2 calls x 2 waits x 10 s = 40 s), so the retries actually
+// happen and a persistent failure is reported as such.
+const MAX_RETRY_AFTER_MS = 10_000;
 
 /*
  * A 403 is a rate limit, not a refusal, when GitHub says so. A primary
@@ -163,13 +168,15 @@ const github = async (resource: string): Promise<unknown> => {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
+      // Read inside the retried block: a connection that drops while a 2xx
+      // body is still arriving is as transient as one that never connects.
+      if (response.ok) return (await response.json()) as unknown;
     } catch (error) {
       failures.push(`network error: ${String(error)}`);
       previous = undefined;
       continue;
     }
 
-    if (response.ok) return response.json();
     previous = response;
     if (!(await isTransient(response))) {
       throw new Error(

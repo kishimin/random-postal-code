@@ -230,10 +230,16 @@ const scriptRunners: Record<string, string[]> = {
  * "echo eslint" names a linter and runs echo. Each command in a chain
  * (&&, ||, ;, |) is checked after its leading VAR=value assignments.
  */
+// A chain joined by anything but && can succeed when the tool fails:
+// "eslint . || true", "vitest run; true", and "tsc | cat" all exit 0 after
+// a failing tool. Such a script is not a gate, whatever it runs.
+const masksFailure = (body: string) => /\|\||;|(?<!\|)\|(?!\|)/.test(body);
+
 const invokesItsTool = (script: string, body: string | undefined) =>
   body !== undefined &&
+  !masksFailure(body) &&
   body
-    .split(/&&|\|\||;|\|/)
+    .split("&&")
     .map((command) => command.trim().replace(/^(?:[A-Za-z_]\w*=\S*\s+)*/, ""))
     .some((command) =>
       scriptRunners[script].some(
