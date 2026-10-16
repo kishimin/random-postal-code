@@ -189,15 +189,27 @@ export const createAccessibilityPage = (page: Page) => {
 
   /**
    * Whether an element's text is fully shown rather than clipped inside its
-   * own box — for example an address cut off by `text-overflow: ellipsis`.
+   * own box — for example an address cut off by `text-overflow: ellipsis`,
+   * or its later lines hidden by `line-clamp`, `max-height`, or a fixed
+   * height with `overflow: hidden` (Issue #44).
+   *
+   * Content taller than the box counts as clipped even under the default
+   * `overflow-y: visible`. The extra lines are still painted, but outside a
+   * fixed or maximum height they overlap whatever follows (the next address
+   * in a list, for one) and can be covered by it, so being painted is not
+   * the same as being readable. An auto-height box always fits its content,
+   * so ordinary text is unaffected.
    * @param element - The element to measure. Must resolve to exactly one.
    */
   const showsAllOfItsText = async (element: Locator) => {
     await element.waitFor({ state: "visible" });
 
-    return element.evaluate(
-      (node) => node.scrollWidth <= node.clientWidth + 0.5,
-    );
+    return element.evaluate((node) => {
+      const fitsAcross = node.scrollWidth <= node.clientWidth + 0.5;
+      const fitsDown = node.scrollHeight <= node.clientHeight + 0.5;
+
+      return fitsAcross && fitsDown;
+    });
   };
 
   // Moves focus off every control, so the "before" picture below shows the
