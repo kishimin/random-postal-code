@@ -119,19 +119,40 @@ const repositorySlug = (): string => {
  */
 const GITHUB_ATTEMPTS = 3;
 
-const isTransient = (response: Response): boolean =>
-  response.status >= 500 ||
-  response.status === 429 ||
-  (response.status === 403 &&
-    response.headers.get("x-ratelimit-remaining") === "0");
+// The longest a retry-after header is honored; a nightly job should fail
+// with a clear message rather than sleep for many minutes.
+const MAX_RETRY_AFTER_MS = 60_000;
+
+/*
+ * A 403 is a rate limit, not a refusal, when GitHub says so. A primary
+ * limit sets x-ratelimit-remaining to 0. A secondary limit may instead send
+ * retry-after, or only name the limit in its message (GitHub's REST
+ * rate-limit guidance).
+ */
+const isTransient = async (response: Response): Promise<boolean> => {
+  if (response.status >= 500 || response.status === 429) return true;
+  if (response.status !== 403) return false;
+  if (response.headers.get("x-ratelimit-remaining") === "0") return true;
+  if (response.headers.get("retry-after") !== null) return true;
+  return /rate limit/i.test(await response.clone().text());
+};
+
+/** How long to wait before the next attempt: retry-after if sent, else backoff. */
+const retryDelayMs = (response: Response | undefined, attempt: number) => {
+  const retryAfter = Number(response?.headers.get("retry-after"));
+  return Number.isFinite(retryAfter) && retryAfter > 0
+    ? Math.min(retryAfter * 1000, MAX_RETRY_AFTER_MS)
+    : 1000 * 2 ** (attempt - 2);
+};
 
 const github = async (resource: string): Promise<unknown> => {
   const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
   const failures: string[] = [];
+  let previous: Response | undefined;
 
   for (let attempt = 1; attempt <= GITHUB_ATTEMPTS; attempt += 1) {
     if (attempt > 1) {
-      await Bun.sleep(1000 * 2 ** (attempt - 2));
+      await Bun.sleep(retryDelayMs(previous, attempt));
     }
 
     let response: Response;
@@ -144,11 +165,13 @@ const github = async (resource: string): Promise<unknown> => {
       });
     } catch (error) {
       failures.push(`network error: ${String(error)}`);
+      previous = undefined;
       continue;
     }
 
     if (response.ok) return response.json();
-    if (!isTransient(response)) {
+    previous = response;
+    if (!(await isTransient(response))) {
       throw new Error(
         `GitHub API refused GET ${resource}: HTTP ${response.status} (not a ruleset mismatch)`,
       );

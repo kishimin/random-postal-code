@@ -217,29 +217,79 @@ const runsScript = (commands: string, script: string): boolean =>
  * "exit 0") would pass a check that only asks whether the key is there.
  * Each script category has to invoke the tool that does that job.
  */
-const scriptRunners: Record<string, RegExp> = {
-  lint: /\b(?:eslint|oxlint)\b/,
-  typecheck: /\btsc\b/,
-  "test:small": /\b(?:vitest|bun test|playwright)\b/,
-  "test:medium": /\b(?:vitest|bun test|playwright)\b/,
-  "test:large": /\b(?:vitest|bun test|playwright)\b/,
+const scriptRunners: Record<string, string[]> = {
+  lint: ["eslint", "oxlint"],
+  typecheck: ["tsc"],
+  "test:small": ["vitest", "bun test", "playwright"],
+  "test:medium": ["vitest", "bun test", "playwright"],
+  "test:large": ["vitest", "bun test", "playwright"],
 };
 
+/*
+ * The tool has to be the command that runs, not just a word in the script:
+ * "echo eslint" names a linter and runs echo. Each command in a chain
+ * (&&, ||, ;, |) is checked after its leading VAR=value assignments.
+ */
 const invokesItsTool = (script: string, body: string | undefined) =>
-  body !== undefined && scriptRunners[script].test(body);
+  body !== undefined &&
+  body
+    .split(/&&|\|\||;|\|/)
+    .map((command) => command.trim().replace(/^(?:[A-Za-z_]\w*=\S*\s+)*/, ""))
+    .some((command) =>
+      scriptRunners[script].some(
+        (tool) => command === tool || command.startsWith(`${tool} `),
+      ),
+    );
 
 /*
  * Registration has to be an instruction a runner follows, not a mention
  * (Issue #48): in a workflow, a `run:` command; in a config file, code
  * rather than a comment that happens to name the file.
+ *
+ * Comments are removed by scanning, so that `//` or `/*` inside a string
+ * literal (for example "**\/*.{test,spec}.ts") stays, while a comment at the
+ * end of a line of code goes.
  */
-// Only comments that begin a line are removed, which is how these config
-// files write them. A pattern that finds `/*` anywhere would also match
-// inside a string such as "**/*.{test,spec}.ts" and delete real entries.
-const withoutComments = (source: string) =>
-  source
-    .replaceAll(/^\s*\/\*[\s\S]*?\*\/\s*$/gm, "")
-    .replaceAll(/^\s*\/\/.*$/gm, "");
+const withoutComments = (source: string): string => {
+  const kept: string[] = [];
+  let index = 0;
+  let quote: string | undefined;
+
+  while (index < source.length) {
+    const character = source[index];
+    const next = source[index + 1];
+
+    if (quote !== undefined) {
+      kept.push(character);
+      if (character === "\\") {
+        kept.push(next ?? "");
+        index += 2;
+        continue;
+      }
+      if (character === quote) quote = undefined;
+      index += 1;
+      continue;
+    }
+
+    if (character === "/" && next === "/") {
+      const end = source.indexOf("\n", index);
+      index = end === -1 ? source.length : end;
+      continue;
+    }
+    if (character === "/" && next === "*") {
+      const end = source.indexOf("*/", index + 2);
+      index = end === -1 ? source.length : end + 2;
+      continue;
+    }
+    if (character === '"' || character === "'" || character === "`") {
+      quote = character;
+    }
+    kept.push(character);
+    index += 1;
+  }
+
+  return kept.join("");
+};
 
 const fansOutToEveryWorkspace = (script: string | undefined) =>
   script !== undefined && /--filter\s+(['"])\*\1/.test(script);
