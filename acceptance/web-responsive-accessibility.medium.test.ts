@@ -571,6 +571,11 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     await advertisingPage.failEveryAdvertisingRequest();
     await postalCodeGeneratorPage.stubRandomEndpoint([respondWith(result)]);
     await postalCodeGeneratorPage.navigate();
+    // navigate() returns at `load`, and mobile WebKit regularly commits the
+    // first render after that, when nothing is on screen to count yet. The
+    // question is whether a region listens before the first generation can
+    // be started, so it is asked once the generate action exists (Issue #53).
+    await expect(postalCodeGeneratorPage.generateAction()).toBeVisible();
 
     // A region that arrives already holding its text is announced unreliably
     // across screen readers, so the region has to exist before the first
