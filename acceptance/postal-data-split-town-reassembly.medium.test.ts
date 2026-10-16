@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { buildPostalCodeDataset } from "@zipnami/postal-data";
 import type { PostalCode } from "@zipnami/shared";
 import { describe, expect, test } from "vitest";
@@ -152,10 +152,21 @@ describe("Issue #33: reassembling town names split across KEN_ALL.CSV records", 
       "utf8",
     );
 
-    expect(readdirSync(postalDataPackage)).toContain("README.md");
-    expect(readme).toMatch(/reassembl/i);
-    // The convention is the unmatched full-width opening parenthesis; a README
-    // that mentions reassembly without the signal does not document it.
-    expect(readme).toMatch(/（/);
+    // Each Markdown section, as its heading plus the text up to the next
+    // heading. The reassembly has to be explained in one place, so the
+    // mention and the signal it relies on must share a section (Issue #52):
+    // "reassembl" in one section and a full-width parenthesis in an unrelated
+    // example elsewhere would not document anything.
+    const sections = readme
+      .split(/^(?=#{1,6} )/m)
+      .map((section) => section.trim())
+      .filter((section) => section !== "");
+    const documenting = sections.filter((section) => {
+      const [heading = "", ...body] = section.split("\n");
+
+      return /reassembl/i.test(heading) && /（/.test(body.join("\n"));
+    });
+
+    expect(documenting).not.toEqual([]);
   });
 });
