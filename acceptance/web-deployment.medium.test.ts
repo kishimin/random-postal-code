@@ -375,13 +375,17 @@ describe("Issue #19: deploying the frontend to Pages and the API to Workers", ()
         .exec(worker.step.run ?? "")?.[1]
         ?.replace(/^["']|["']$/g, "");
       const shellVariable = /^\$\{?(\w+)\}?$/.exec(argument ?? "")?.[1];
-      const passedOrigin = configurationReference(
+      const passedExpression =
         shellVariable === undefined
           ? argument
-          : worker.step.env?.[shellVariable],
-      );
+          : worker.step.env?.[shellVariable];
 
-      expect(passedOrigin).toBe(verifiedOrigin);
+      // The whole expression, not only the reference inside it: a suffix
+      // such as "${{ vars.ZIPNAMI_PAGES_ORIGIN }}-preview" names the same
+      // variable but deploys a different origin.
+      expect(passedExpression?.trim()).toBe(
+        workerVerify?.env?.ALLOWED_ORIGINS?.trim(),
+      );
     },
     SUBPROCESS_TEST_TIMEOUT_MS,
   );
