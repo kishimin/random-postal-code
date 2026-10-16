@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    // The acceptance tests for Issues #3 and #33 live outside every package
+    // The acceptance tests for Issues #3, #33, and #34 live outside every package
     // (ADR-0062 isolates acceptance/ from implementation code) and are not
     // Playwright tests, so nothing else in the workspace claims them. This
     // package is the one they exercise, so its own Vitest run is the one that
@@ -11,7 +11,13 @@ export default defineConfig({
       "**/*.{test,spec}.ts",
       "../../acceptance/postal-data-normalization.medium.test.ts",
       "../../acceptance/postal-data-split-town-reassembly.medium.test.ts",
+      "../../acceptance/japan-post-archive-retrieval.medium.test.ts",
     ],
+    // The Issue #34 acceptance test runs `bun run` subprocesses
+    // asynchronously (an in-process server has to answer them), so unlike a
+    // spawnSync test, Vitest's 5 s default can cut them off on a slow runner
+    // before their own 30 s bound applies.
+    testTimeout: 60_000,
     reporters: process.env.GITHUB_ACTIONS
       ? ["dot", "github-actions", "json"]
       : ["dot"],
