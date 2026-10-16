@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { problemsWithAllowedOrigins } from "./deploy-settings";
+import { problemsWithAllowedOrigins } from "./deploy-settings.ts";
 
 describe("problemsWithAllowedOrigins", () => {
   test("accepts exactly one https origin", () => {

@@ -1,0 +1,10 @@
+{
+  // The deploy scripts run under Bun on a CI runner, not inside a Worker, so
+  // they get Node's types instead of the Workers types the application uses.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.scripts.tsbuildinfo",
+    "types": ["node"]
+  },
+  "include": ["."]
+}
