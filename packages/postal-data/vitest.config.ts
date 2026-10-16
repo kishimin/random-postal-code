@@ -13,6 +13,11 @@ export default defineConfig({
       "../../acceptance/postal-data-split-town-reassembly.medium.test.ts",
       "../../acceptance/japan-post-archive-retrieval.medium.test.ts",
     ],
+    // The Issue #34 acceptance test runs `bun run` subprocesses
+    // asynchronously (an in-process server has to answer them), so unlike a
+    // spawnSync test, Vitest's 5 s default can cut them off on a slow runner
+    // before their own 30 s bound applies.
+    testTimeout: 60_000,
     reporters: process.env.GITHUB_ACTIONS
       ? ["dot", "github-actions", "json"]
       : ["dot"],

@@ -199,8 +199,16 @@ export const extractKenAllCsv = (archive: Uint8Array): Uint8Array => {
  * not Shift-JIS an error instead of a replacement character that would end up
  * inside an address.
  */
-export const decodeShiftJis = (bytes: Uint8Array): string =>
-  new TextDecoder("shift_jis", { fatal: true }).decode(bytes);
+export const decodeShiftJis = (bytes: Uint8Array): string => {
+  try {
+    return new TextDecoder("shift_jis", { fatal: true }).decode(bytes);
+  } catch (cause) {
+    throw new KenAllArchiveError(
+      `${KEN_ALL_ENTRY_NAME} is not valid Shift-JIS`,
+      { cause },
+    );
+  }
+};
 
 /**
  * Downloads `ken_all.zip` and returns its `KEN_ALL.CSV` decoded to UTF-8
@@ -210,9 +218,10 @@ export const decodeShiftJis = (bytes: Uint8Array): string =>
 export const retrieveKenAllCsv = async (
   url: string,
   fetchArchive: typeof fetch = fetch,
+  { timeoutMs = DOWNLOAD_TIMEOUT_MS }: { timeoutMs?: number } = {},
 ): Promise<string> => {
   const response = await fetchArchive(url, {
-    signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   // The CRC-32 inside the archive detects damage, not substitution, so the
