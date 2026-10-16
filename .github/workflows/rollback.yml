@@ -1,0 +1,83 @@
+name: Rollback (Production)
+
+# Manual only, one half at a time: the Worker and the Pages site roll back
+# independently (design.md section 10). docs/deployment.md explains how to
+# find the version or deployment ID to restore.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which half to roll back
+        type: choice
+        options:
+          - backend
+          - frontend
+      version:
+        description: >-
+          Worker version ID (backend; empty restores the previous version) or
+          Pages deployment ID (frontend; required)
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# Shared with the deploy workflow, so a deploy and a rollback never race.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    name: Roll back Worker
+    if: inputs.target == 'backend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+
+      # --message skips wrangler's interactive confirmation. An empty
+      # VERSION_ID is left unquoted on purpose so it disappears, and wrangler
+      # then restores the version uploaded before the current one.
+      - name: Roll back Worker
+        working-directory: apps/web/backend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VERSION_ID: ${{ inputs.version }}
+        run: bunx wrangler rollback $VERSION_ID --message "Rolled back by GitHub Actions run $GITHUB_RUN_ID"
+
+  frontend:
+    name: Roll back Pages
+    if: inputs.target == 'frontend'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      # wrangler has no Pages rollback command, so this calls Cloudflare's
+      # API directly. Only an earlier successful production deployment can
+      # be restored this way.
+      - name: Roll back Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PAGES_PROJECT: ${{ vars.ZIPNAMI_PAGES_PROJECT }}
+          DEPLOYMENT_ID: ${{ inputs.version }}
+        run: |
+          if [ -z "$DEPLOYMENT_ID" ]; then
+            echo "::error::A Pages rollback needs the ID of the deployment to restore (see docs/deployment.md)."
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --output /dev/null \
+            --write-out "Pages rollback: HTTP %{http_code}\n" \
+            --request POST \
+            --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PAGES_PROJECT/deployments/$DEPLOYMENT_ID/rollback"
