@@ -277,13 +277,18 @@ describe("retrieveKenAllCsv", () => {
 
   test("rejects a response that declares a body larger than the limit without reading it", async () => {
     const reads = { count: 0 };
-    const body = new ReadableStream<Uint8Array>({
-      pull(controller) {
-        reads.count += 1;
-        controller.enqueue(new Uint8Array(64));
-        controller.close();
+    // highWaterMark 0: the stream does not pull until someone reads, so the
+    // count shows whether the body was read at all.
+    const body = new ReadableStream<Uint8Array>(
+      {
+        pull: (controller) => {
+          reads.count += 1;
+          controller.enqueue(new Uint8Array(64));
+          controller.close();
+        },
       },
-    });
+      { highWaterMark: 0 },
+    );
     const fetchArchive = responding(
       new Response(body, { headers: { "Content-Length": "1000" } }),
     );
@@ -299,7 +304,7 @@ describe("retrieveKenAllCsv", () => {
   test("stops reading a response body once it passes the limit, even without a declared length", async () => {
     const served = { chunks: 0 };
     const endless = new ReadableStream<Uint8Array>({
-      pull(controller) {
+      pull: (controller) => {
         served.chunks += 1;
         controller.enqueue(new Uint8Array(64));
       },

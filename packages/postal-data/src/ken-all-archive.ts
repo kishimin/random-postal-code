@@ -27,6 +27,10 @@ const DEFLATED = 8;
 // archive exhaust memory before any check ran.
 const MAX_KEN_ALL_CSV_BYTES = 64 * 1024 * 1024;
 
+// The real archive is about 2 MB. The same generous ceiling as the CSV it
+// holds: an archive cannot usefully be larger than its uncompressed content.
+const MAX_ARCHIVE_BYTES = MAX_KEN_ALL_CSV_BYTES;
+
 // Generous for a ~2 MB archive on a slow line, but finite: a stalled
 // download has to end as a failure rather than hang the maintainer's shell.
 const DOWNLOAD_TIMEOUT_MS = 120_000;
@@ -235,6 +239,67 @@ export const decodeShiftJis = (bytes: Uint8Array): string => {
   }
 };
 
+const tooLarge = (url: string, limit: number): KenAllArchiveError =>
+  new KenAllArchiveError(
+    `downloading ${url} returned more than ${limit} bytes, larger than ` +
+      "any ken_all.zip needs",
+  );
+
+type ReadState = { readonly chunks: Uint8Array[]; readonly length: number };
+
+// Reads chunk by chunk and stops as soon as the total passes the limit, so
+// an oversized or endless body fails before it is held in memory.
+const readChunksWithin = async (
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  url: string,
+  limit: number,
+  state: ReadState,
+): Promise<ReadState> => {
+  const { done, value } = await reader.read();
+
+  if (done) {
+    return state;
+  }
+
+  const length = state.length + value.byteLength;
+
+  if (length > limit) {
+    await reader.cancel();
+    throw tooLarge(url, limit);
+  }
+
+  return readChunksWithin(reader, url, limit, {
+    chunks: [...state.chunks, value],
+    length,
+  });
+};
+
+const readBodyWithin = async (
+  response: Response,
+  url: string,
+  limit: number,
+): Promise<Uint8Array> => {
+  const declared = Number(response.headers.get("Content-Length"));
+
+  if (declared > limit) {
+    await response.body?.cancel();
+    throw tooLarge(url, limit);
+  }
+
+  if (response.body === null) {
+    return new Uint8Array();
+  }
+
+  const { chunks } = await readChunksWithin(
+    response.body.getReader(),
+    url,
+    limit,
+    { chunks: [], length: 0 },
+  );
+
+  return Buffer.concat(chunks);
+};
+
 /**
  * Downloads `ken_all.zip` and returns its `KEN_ALL.CSV` decoded to UTF-8
  * text, ready for `buildPostalCodeDataset`. Rejects on any HTTP error, empty
@@ -243,7 +308,10 @@ export const decodeShiftJis = (bytes: Uint8Array): string => {
 export const retrieveKenAllCsv = async (
   url: string,
   fetchArchive: typeof fetch = fetch,
-  { timeoutMs = DOWNLOAD_TIMEOUT_MS }: { timeoutMs?: number } = {},
+  {
+    timeoutMs = DOWNLOAD_TIMEOUT_MS,
+    maxArchiveBytes = MAX_ARCHIVE_BYTES,
+  }: { timeoutMs?: number; maxArchiveBytes?: number } = {},
 ): Promise<string> => {
   const response = await fetchArchive(url, {
     signal: AbortSignal.timeout(timeoutMs),
@@ -264,7 +332,7 @@ export const retrieveKenAllCsv = async (
     );
   }
 
-  const archive = new Uint8Array(await response.arrayBuffer());
+  const archive = await readBodyWithin(response, url, maxArchiveBytes);
 
   if (archive.length === 0) {
     throw new KenAllArchiveError(`downloading ${url} returned no data`);
