@@ -8,24 +8,26 @@
 # test on its Issue (ADR-0062's unlock, ADR-0079), the pull request carries
 # the atdd-unlock-approved label and the caller sets ATDD_UNLOCK_APPROVED=true.
 # Then modifications pass, listed in a notice so the approval is never
-# silent. Deleting or renaming an acceptance test is refused even then: the
-# approval is to strengthen a test, never to drop one.
+# silent. Deleting or renaming an acceptance test, or changing its type
+# (T: replacing the file with a symlink or a submodule, which can point the
+# test anywhere), is refused even then: the approval is to strengthen a
+# test, never to drop or redirect one.
 #
 # Usage: ATDD_UNLOCK_APPROVED=true|false check-acceptance-lock.sh <merge-base>
 set -euo pipefail
 
 base="$1"
-changed=$(git diff --diff-filter=MDR --name-only "$base"..HEAD -- acceptance/)
+changed=$(git diff --diff-filter=MDRT --name-only "$base"..HEAD -- acceptance/)
 
 if [ -z "$changed" ]; then
   echo "No acceptance test was modified."
   exit 0
 fi
 
-removed=$(git diff --diff-filter=DR --name-only "$base"..HEAD -- acceptance/)
+removed=$(git diff --diff-filter=DRT --name-only "$base"..HEAD -- acceptance/)
 
 if [ -n "$removed" ]; then
-  echo "::error::An acceptance test was deleted or renamed. No approval allows that:"
+  echo "::error::An acceptance test was deleted, renamed, or replaced by a symlink or submodule. No approval allows that:"
   echo "$removed"
   exit 1
 fi
