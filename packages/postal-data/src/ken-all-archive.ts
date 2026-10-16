@@ -245,33 +245,30 @@ const tooLarge = (url: string, limit: number): KenAllArchiveError =>
       "any ken_all.zip needs",
   );
 
-type ReadState = { readonly chunks: Uint8Array[]; readonly length: number };
-
 // Reads chunk by chunk and stops as soon as the total passes the limit, so
-// an oversized or endless body fails before it is held in memory.
+// an oversized or endless body fails before it is held in memory. The chunk
+// list only grows; copying it per read would make a body that arrives in
+// many small chunks quadratic.
 const readChunksWithin = async (
-  reader: ReadableStreamDefaultReader<Uint8Array>,
+  body: ReadableStream<Uint8Array>,
   url: string,
   limit: number,
-  state: ReadState,
-): Promise<ReadState> => {
-  const { done, value } = await reader.read();
+): Promise<Uint8Array[]> => {
+  const chunks: Uint8Array[] = [];
+  const total = { length: 0 };
 
-  if (done) {
-    return state;
+  // Leaving the loop early (the throw below) cancels the stream.
+  for await (const chunk of body) {
+    total.length += chunk.byteLength;
+
+    if (total.length > limit) {
+      throw tooLarge(url, limit);
+    }
+
+    chunks.push(chunk);
   }
 
-  const length = state.length + value.byteLength;
-
-  if (length > limit) {
-    await reader.cancel();
-    throw tooLarge(url, limit);
-  }
-
-  return readChunksWithin(reader, url, limit, {
-    chunks: [...state.chunks, value],
-    length,
-  });
+  return chunks;
 };
 
 const readBodyWithin = async (
@@ -290,14 +287,7 @@ const readBodyWithin = async (
     return new Uint8Array();
   }
 
-  const { chunks } = await readChunksWithin(
-    response.body.getReader(),
-    url,
-    limit,
-    { chunks: [], length: 0 },
-  );
-
-  return Buffer.concat(chunks);
+  return Buffer.concat(await readChunksWithin(response.body, url, limit));
 };
 
 /**
