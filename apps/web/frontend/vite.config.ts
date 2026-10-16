@@ -55,6 +55,22 @@ const dirname =
     ? __dirname
     : path.dirname(fileURLToPath(import.meta.url));
 
+/*
+ * The browser that runs unit tests and stories cannot resolve the AdSense
+ * host (Issue #61). MSW's stand-in loader (src/api/mocks/handlers.ts)
+ * answers every AdSense request it sees, because the Service Worker
+ * intercepts before the network. In CI, though, a request sometimes got
+ * past it, and Google's real adsbygoogle.js then ran against the test DOM
+ * and threw TagError. With the host unresolvable, such a request fails like
+ * an ad blocker would, which the loader already handles, instead of
+ * loading third-party code into a test.
+ */
+const testBrowser = playwright({
+  launchOptions: {
+    args: ["--host-resolver-rules=MAP pagead2.googlesyndication.com ~NOTFOUND"],
+  },
+});
+
 export default defineConfig({
   plugins: [react(), tailwindcss(), validateBuildEnvironment()],
   resolve: {
@@ -126,7 +142,7 @@ export default defineConfig({
           browser: {
             enabled: true,
             headless: true,
-            provider: playwright(),
+            provider: testBrowser,
             instances: [{ browser: "chromium" }],
           },
           exclude: ["**/*.stories.{ts,tsx}"],
@@ -144,7 +160,7 @@ export default defineConfig({
           browser: {
             enabled: true,
             headless: true,
-            provider: playwright(),
+            provider: testBrowser,
             instances: [{ browser: "chromium" }],
           },
         },
