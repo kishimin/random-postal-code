@@ -153,6 +153,27 @@ describe("extractKenAllCsv on damaged archives", () => {
     expect(() => extractKenAllCsv(archive)).toThrow(/truncated/);
   });
 
+  test("refuses an entry that declares more content than any KEN_ALL.CSV could hold, before inflating it", () => {
+    const archive = damaged((bytes) => {
+      const central = bytes.readUInt32LE(bytes.length - 22 + 16);
+
+      bytes.writeUInt32LE(0xffffffff, central + 24);
+    });
+
+    expect(() => extractKenAllCsv(archive)).toThrow(/larger than/);
+  });
+
+  test("refuses deflated data that inflates past the size the entry declares", () => {
+    const content = new Uint8Array(4096);
+    const archive = zip("KEN_ALL.CSV", content);
+    const central = archive.readUInt32LE(archive.length - 22 + 16);
+
+    // Declares 16 bytes; the data inflates to 4096.
+    archive.writeUInt32LE(16, central + 24);
+
+    expect(() => extractKenAllCsv(archive)).toThrow(KenAllArchiveError);
+  });
+
   test("refuses deflated data that cannot be inflated", () => {
     const archive = damaged((bytes) => {
       bytes.fill(0xff, DATA, DATA + 2);
@@ -207,6 +228,34 @@ describe("retrieveKenAllCsv", () => {
     await expect(
       retrieveKenAllCsv("https://example.test/ken_all.zip", fetchArchive),
     ).rejects.toThrow(/empty/);
+  });
+
+  test("asks the download to give up after a time limit instead of waiting forever", async () => {
+    let signal: AbortSignal | null | undefined;
+    const fetchArchive: typeof fetch = (_input, init) => {
+      signal = init?.signal;
+
+      return Promise.resolve(new Response(zip("KEN_ALL.CSV", TOKYO_SHIFT_JIS)));
+    };
+
+    await retrieveKenAllCsv("https://example.test/ken_all.zip", fetchArchive);
+
+    expect(signal).toBeInstanceOf(AbortSignal);
+  });
+
+  test("rejects an https download that a redirect moved to plain http", async () => {
+    const redirected = new Response(zip("KEN_ALL.CSV", TOKYO_SHIFT_JIS));
+
+    Object.defineProperty(redirected, "url", {
+      value: "http://example.test/ken_all.zip",
+    });
+
+    await expect(
+      retrieveKenAllCsv(
+        "https://example.test/ken_all.zip",
+        responding(redirected),
+      ),
+    ).rejects.toThrow(/http:/);
   });
 
   test("passes a network failure through as a rejection", async () => {
