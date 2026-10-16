@@ -193,10 +193,12 @@ export const createAccessibilityPage = (page: Page) => {
    * or its later lines hidden by `line-clamp`, `max-height`, or a fixed
    * height with `overflow: hidden` (Issue #44).
    *
-   * Taller content only counts as clipped when the element's own vertical
-   * overflow hides it: with `overflow-y: visible` the extra lines are still
-   * drawn and readable, so measuring height alone would report text a
-   * visitor can see.
+   * Content taller than the box counts as clipped even under the default
+   * `overflow-y: visible`. The extra lines are still painted, but outside a
+   * fixed or maximum height they overlap whatever follows (the next address
+   * in a list, for one) and can be covered by it, so being painted is not
+   * the same as being readable. An auto-height box always fits its content,
+   * so ordinary text is unaffected.
    * @param element - The element to measure. Must resolve to exactly one.
    */
   const showsAllOfItsText = async (element: Locator) => {
@@ -204,9 +206,7 @@ export const createAccessibilityPage = (page: Page) => {
 
     return element.evaluate((node) => {
       const fitsAcross = node.scrollWidth <= node.clientWidth + 0.5;
-      const fitsDown =
-        node.scrollHeight <= node.clientHeight + 0.5 ||
-        getComputedStyle(node).overflowY === "visible";
+      const fitsDown = node.scrollHeight <= node.clientHeight + 0.5;
 
       return fitsAcross && fitsDown;
     });
