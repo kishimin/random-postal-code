@@ -171,6 +171,16 @@ const visualAndContentContract = (): string[] =>
 const screenMapSection = (): string[] =>
   sectionBody((line) => /screen\s+map/i.test(line));
 
+/**
+ * The screen's entry inside the screen map. Its V2 marking and its owner
+ * are read here only (Issue #50): a matching line elsewhere in the document
+ * is not the map's attribution.
+ */
+const mapEntryLines = (screen: (typeof screens)[number]): string[] => {
+  const map = screenMapSection();
+  return entryLines(screen).filter((line) => map.includes(line));
+};
+
 const valuesSection = (): string[] =>
   sectionBody(
     (line) => /colou?r/i.test(line) && /type/i.test(line) && /copy/i.test(line),
@@ -238,31 +248,41 @@ describe("Issue #25: the Figma UI source and its screen map", () => {
       visualAndContentContractSection: true,
     });
 
-    const contractParagraphs = contract
+    // Values, and explanations for values left open, count only from the
+    // subsection Issue #25 introduced (Issue #50). An older paragraph
+    // elsewhere in the contract neither records nor excuses them.
+    const values = valuesSection();
+    const valueParagraphs = values
       .join("\n")
       .split(/\n[ \t]*\n/)
       .map((paragraph) => paragraph.replaceAll(/\s+/g, " ").trim())
       .filter((paragraph) => paragraph.length > 0);
-
-    // Values count only from the subsection Issue #25 introduced (Issue
-    // #50); an older bullet elsewhere in the contract does not record them.
-    const values = valuesSection();
     const colourRecorded = values.some(
       (line) => hexColour.test(line) || colourFunction.test(line),
     );
     const typeRecorded = values.some(
       (line) => typeSubject.test(line) && typeValue.test(line),
     );
-    // A literal quoted in the copy paragraph itself. Requiring Japanese left
-    // the path unreachable: the two strings the design fixes, "ZIPNAMI" and
-    // "© kishimin 2026", contain none (Issue #50).
-    const copyRecorded = values
-      .filter((line) => /^\*\*copy\b/i.test(line.trim()))
-      .some((line) =>
-        [...line.matchAll(quotedLiteral)].some(
-          (match) => (match[1] ?? match[2] ?? match[3] ?? "").trim() !== "",
-        ),
-      );
+    // A literal quoted where the copy values are written: on a line led by
+    // "Copy" (a bold lead-in, bullet, or table cell), or under a heading
+    // led by it. Requiring Japanese left the path unreachable: the two
+    // strings the design fixes, "ZIPNAMI" and "© kishimin 2026", contain
+    // none (Issue #50).
+    const ledByCopy = (line: string) => /^[\s>*_#|-]*copy\b/i.test(line);
+    const isHeading = (line: string) => /^#{1,6}\s/.test(line);
+    const copyLines = values.filter((line, index) => {
+      if (ledByCopy(line)) return true;
+      const heading = values
+        .slice(0, index)
+        .reverse()
+        .find((earlier) => isHeading(earlier));
+      return heading !== undefined && ledByCopy(heading);
+    });
+    const copyRecorded = copyLines.some((line) =>
+      [...line.matchAll(quotedLiteral)].some(
+        (match) => (match[1] ?? match[2] ?? match[3] ?? "").trim() !== "",
+      ),
+    );
 
     const answered: [string, boolean, RegExp][] = [
       ["colour", colourRecorded, /colou?r|palette|surface|background/i],
@@ -273,7 +293,7 @@ describe("Issue #25: the Figma UI source and its screen map", () => {
       expect({
         category,
         recordedOrExplained:
-          recorded || notFixedOnPurpose(contractParagraphs, subject),
+          recorded || notFixedOnPurpose(valueParagraphs, subject),
       }).toEqual({ category, recordedOrExplained: true });
     }
   });
@@ -285,7 +305,7 @@ describe("Issue #25: the Figma UI source and its screen map", () => {
       expect({
         screen: screen.label,
         node: screen.node,
-        markedV2: entryLines(screen).some((line) => /\bV2\b/.test(line)),
+        markedV2: mapEntryLines(screen).some((line) => /\bV2\b/.test(line)),
       }).toEqual({
         screen: screen.label,
         node: screen.node,
@@ -300,9 +320,7 @@ describe("Issue #25: the Figma UI source and its screen map", () => {
     const webRowsMarkedV2 = screens
       .filter((screen) => screen.platform === "web")
       .filter((screen) =>
-        entryLines(screen).some(
-          (line) => map.includes(line) && /\bV2\b/.test(line),
-        ),
+        mapEntryLines(screen).some((line) => /\bV2\b/.test(line)),
       )
       .map((screen) => screen.label);
 
@@ -314,7 +332,7 @@ describe("Issue #25: the Figma UI source and its screen map", () => {
 
   test("no screen is silently omitted: each one names the issue that owns it, or is listed as an open gap", () => {
     for (const screen of screens) {
-      const owned = entryLines(screen).some(
+      const owned = mapEntryLines(screen).some(
         (line) =>
           /#\d+/.test(line) ||
           /gap|not covered|uncovered|no issue/i.test(line) ||
@@ -337,7 +355,7 @@ describe("Issue #25: the Figma UI source and its screen map", () => {
     const webScreensWithAnOwner = screens.filter(
       (screen) =>
         screen.platform === "web" &&
-        entryLines(screen).some((line) => /#\d+/.test(line)),
+        mapEntryLines(screen).some((line) => /#\d+/.test(line)),
     );
 
     expect(webScreensWithAnOwner.length).toBeGreaterThan(0);
