@@ -11,8 +11,10 @@ GitHub Actions workflow:
 | `.github/workflows/deploy.yml`   | Verifies settings, deploys the Worker and/or the Pages site, then runs the smoke check |
 | `.github/workflows/rollback.yml` | Restores an earlier Worker version or an earlier Pages deployment                      |
 
-Both run only when started by hand (`workflow_dispatch`), and both share
-one concurrency group, so a deploy and a rollback never overlap.
+Both run only when started by hand (`workflow_dispatch`). Their jobs run
+only from `main`, so code that hasn't been reviewed and merged can't reach
+production. Both share one concurrency group, so a deploy and a rollback
+never overlap.
 
 ## One-time setup
 
@@ -37,8 +39,10 @@ creates it. The workflows read every production value from the
    `backend` does it) and note its URL:
    `https://zipnami-api.<workers-subdomain>.workers.dev`.
 
-4. In the repository, create a GitHub Environment named `production` and
-   set:
+4. In the repository, create a GitHub Environment named `production`.
+   Under **Deployment branches and tags**, limit it to `main`, so the
+   credentials can't be used from any other branch even if a workflow
+   changes. Then set:
 
    | Kind     | Name                        | Value                                                       |
    | -------- | --------------------------- | ----------------------------------------------------------- |
@@ -98,6 +102,11 @@ To try it locally, run the Worker with
 `bunx vite preview --port 4173`, and point `SMOKE_BASE_URL` at
 `http://localhost:4173`.
 
+Deploy through the workflow, not with `bun run deploy` in
+`apps/web/backend`. That script is a plain `wrangler deploy`. It sets no
+`ALLOWED_ORIGINS`, and `wrangler.jsonc` deliberately carries none, so it
+would ship a Worker that refuses every browser origin.
+
 ## Rolling back
 
 Each half rolls back on its own.
@@ -118,6 +127,8 @@ gh workflow run rollback.yml -f target=backend -f version=<version-id>
 ```
 
 An empty `version` restores the version uploaded before the current one.
+Anything other than a lowercase version ID (a UUID) is refused, so the input
+can't add wrangler flags.
 The workflow runs
 `bunx wrangler rollback <version-id> --message "..."`, which immediately
 makes that version the active deployment.
@@ -137,8 +148,9 @@ Then run:
 gh workflow run rollback.yml -f target=frontend -f version=<deployment-id>
 ```
 
-wrangler has no Pages rollback command, so the workflow calls Cloudflare's
-API:
+The deployment ID must be a lowercase UUID. It becomes part of an
+authenticated API path, so anything else is refused. wrangler has no Pages
+rollback command, so the workflow calls Cloudflare's API:
 `POST https://api.cloudflare.com/client/v4/accounts/<account-id>/pages/projects/<project>/deployments/<deployment-id>/rollback`.
 The Cloudflare dashboard's **Rollback to this deployment** action does the
 same thing.

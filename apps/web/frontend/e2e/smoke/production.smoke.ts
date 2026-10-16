@@ -18,8 +18,23 @@ test("the deployed site generates and displays a postal code through the Worker"
 
   // A CORS refusal or a Worker failure shows up here first, as a status
   // other than 200, before the page can say anything.
-  expect((await apiResponse).status()).toBe(200);
-  await expect(page.getByRole("main").getByText(/^\d{3}-\d{4}$/)).toBeVisible();
+  const response = await apiResponse;
+
+  expect(response.status()).toBe(200);
+  // The page called a different origin than its own: the Worker, not a
+  // Pages path that happens to end in /api/random.
+  expect(new URL(response.url()).origin).not.toBe(new URL(page.url()).origin);
+
+  // What is displayed is what the Worker returned, not a placeholder.
+  const { postalCode } = (await response.json()) as { postalCode: string };
+
+  await expect(
+    page
+      .getByRole("main")
+      .getByText(`${postalCode.slice(0, 3)}-${postalCode.slice(3)}`, {
+        exact: true,
+      }),
+  ).toBeVisible();
 });
 
 test("a deep link and a refresh both reach the page rather than a 404", async ({

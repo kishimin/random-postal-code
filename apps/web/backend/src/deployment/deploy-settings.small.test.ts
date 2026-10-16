@@ -6,6 +6,12 @@ describe("problemsWithAllowedOrigins", () => {
     expect(problemsWithAllowedOrigins("https://zipnami.pages.dev")).toEqual([]);
   });
 
+  test("accepts an origin with surrounding whitespace, as a pasted variable often has", () => {
+    expect(problemsWithAllowedOrigins("  https://zipnami.pages.dev\n")).toEqual(
+      [],
+    );
+  });
+
   test.each([
     ["missing", undefined],
     ["empty", ""],

@@ -31,7 +31,9 @@ concurrency:
 jobs:
   backend:
     name: Deploy Worker
-    if: inputs.target == 'both' || inputs.target == 'backend'
+    # Only main deploys: a dispatch from another branch would otherwise ship
+    # unreviewed code to production.
+    if: github.ref == 'refs/heads/main' && (inputs.target == 'both' || inputs.target == 'backend')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
@@ -50,9 +52,10 @@ jobs:
 
       # The allowlist is passed with --var rather than committed to
       # wrangler.jsonc: it is the production Pages origin, which only exists
-      # once the project is provisioned. wrangler hides --var values in its
-      # output. Unquoted is safe: the step above has already proven the
-      # value is one https origin, so it holds no space or glob character.
+      # once the project is provisioned. It is a public origin, not a secret;
+      # do not pass secrets with --var, use `wrangler secret` instead.
+      # Unquoted is safe: the step above has already proven the value is one
+      # https origin, so it holds no space or glob character.
       - name: Deploy Worker
         working-directory: apps/web/backend
         env:
@@ -65,7 +68,7 @@ jobs:
     name: Deploy Pages
     # Deliberately not `needs: backend`: each half deploys on its own
     # (design.md section 10). With target "both" they run side by side.
-    if: inputs.target == 'both' || inputs.target == 'frontend'
+    if: github.ref == 'refs/heads/main' && (inputs.target == 'both' || inputs.target == 'frontend')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
@@ -114,7 +117,7 @@ jobs:
     # Runs after whichever halves this dispatch deployed. A skipped half is
     # fine (it was not chosen); a failed one means there is nothing sound to
     # check.
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    if: ${{ github.ref == 'refs/heads/main' && !cancelled() && !contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production

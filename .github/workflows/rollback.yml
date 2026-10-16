@@ -31,7 +31,7 @@ concurrency:
 jobs:
   backend:
     name: Roll back Worker
-    if: inputs.target == 'backend'
+    if: github.ref == 'refs/heads/main' && inputs.target == 'backend'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production
@@ -43,20 +43,30 @@ jobs:
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
 
-      # --message skips wrangler's interactive confirmation. An empty
-      # VERSION_ID is left unquoted on purpose so it disappears, and wrangler
-      # then restores the version uploaded before the current one.
+      # --message skips wrangler's interactive confirmation. The version is
+      # checked to be a version ID first, so a dispatch input cannot smuggle
+      # extra wrangler flags in. With no version, wrangler restores the one
+      # uploaded before the current one.
       - name: Roll back Worker
         working-directory: apps/web/backend
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           VERSION_ID: ${{ inputs.version }}
-        run: bunx wrangler rollback $VERSION_ID --message "Rolled back by GitHub Actions run $GITHUB_RUN_ID"
+        run: |
+          message="Rolled back by GitHub Actions run $GITHUB_RUN_ID"
+          if [ -z "$VERSION_ID" ]; then
+            bunx wrangler rollback --message "$message"
+          elif [[ "$VERSION_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+            bunx wrangler rollback "$VERSION_ID" --message "$message"
+          else
+            echo "::error::version must be a Worker version ID (a UUID) or empty."
+            exit 1
+          fi
 
   frontend:
     name: Roll back Pages
-    if: inputs.target == 'frontend'
+    if: github.ref == 'refs/heads/main' && inputs.target == 'frontend'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production
@@ -72,8 +82,11 @@ jobs:
           PAGES_PROJECT: ${{ vars.ZIPNAMI_PAGES_PROJECT }}
           DEPLOYMENT_ID: ${{ inputs.version }}
         run: |
-          if [ -z "$DEPLOYMENT_ID" ]; then
-            echo "::error::A Pages rollback needs the ID of the deployment to restore (see docs/deployment.md)."
+          # The ID becomes part of an authenticated API path, so anything but
+          # a deployment ID (a UUID) is refused rather than allowed to change
+          # which endpoint receives the POST.
+          if ! [[ "$DEPLOYMENT_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+            echo "::error::A Pages rollback needs the ID (a UUID) of the deployment to restore (see docs/deployment.md)."
             exit 1
           fi
           curl --fail-with-body --silent --show-error --output /dev/null \
