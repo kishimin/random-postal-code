@@ -319,6 +319,31 @@ describe("retrieveKenAllCsv", () => {
     expect(served.chunks).toBeLessThan(10);
   });
 
+  test("reads a body delivered in many small chunks in time proportional to its size", async () => {
+    // A ~100 KB stored archive served one byte per chunk: 100,000 reads.
+    // Copying the accumulated chunk list on each read would take minutes.
+    const content = new Uint8Array(100_000).fill(0x61);
+    const archive = zip("KEN_ALL.CSV", content, { method: 0 });
+    const served = { bytes: 0 };
+    const fragmented = new ReadableStream<Uint8Array>({
+      pull: (controller) => {
+        if (served.bytes === archive.length) {
+          controller.close();
+          return;
+        }
+        controller.enqueue(archive.subarray(served.bytes, served.bytes + 1));
+        served.bytes += 1;
+      },
+    });
+
+    const text = await retrieveKenAllCsv(
+      "https://example.test/ken_all.zip",
+      responding(new Response(fragmented)),
+    );
+
+    expect(text).toHaveLength(content.length);
+  }, 5_000);
+
   test("passes a network failure through as a rejection", async () => {
     const failure = new TypeError("fetch failed");
     const fetchArchive: typeof fetch = () => Promise.reject(failure);
