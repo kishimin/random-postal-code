@@ -54,3 +54,24 @@ test("a deep link and a refresh both reach the page rather than a 404", async ({
     page.getByRole("heading", { name: "プライバシーポリシー", level: 1 }),
   ).toBeVisible();
 });
+
+// Issue #38: the script policy from public/_headers has to reach every
+// document Pages serves. A deep link is answered through the SPA rewrite in
+// public/_redirects, and Cloudflare documents that "the redirect will win
+// out" when both files match. Locally (wrangler pages dev) a 200 rewrite
+// still carries the header; this checks the same in production.
+test("the root and a deep link both carry the script policy", async ({
+  request,
+}) => {
+  for (const pathname of ["/", "/privacy"]) {
+    const response = await request.get(pathname);
+    const policy =
+      response.headers()["content-security-policy-report-only"] ??
+      response.headers()["content-security-policy"];
+
+    expect({ pathname, policy }).toEqual({
+      pathname,
+      policy: expect.stringContaining("script-src"),
+    });
+  }
+});

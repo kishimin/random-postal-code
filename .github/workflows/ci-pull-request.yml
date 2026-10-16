@@ -161,6 +161,12 @@ jobs:
       - name: Run Issue #19 Web deployment acceptance test (Medium)
         run: bun test ./acceptance/web-deployment.medium.test.ts
 
+      # Issue #38's acceptance test runs the frontend production build and
+      # reads the _headers file Pages serves from it, so it belongs to no
+      # single package's vitest.config.ts either (ADR-0077).
+      - name: Run Issue #38 Content-Security-Policy acceptance test (Medium)
+        run: bun test ./acceptance/web-content-security-policy.medium.test.ts
+
       - name: Upload coverage report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
