@@ -23,7 +23,8 @@
     "e2e:medium": "playwright test medium.test",
     "e2e:large": "playwright test --pass-with-no-tests large.test",
     "mutation-test": "stryker run",
-    "verify:deploy-env": "bun run scripts/verify-deploy-env.ts"
+    "verify:deploy-env": "bun run scripts/verify-deploy-env.ts",
+    "smoke:production": "playwright test --config playwright.smoke.config.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

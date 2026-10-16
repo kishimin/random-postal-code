@@ -26,6 +26,7 @@
     "vite.config.ts",
     ".storybook/main.ts",
     "playwright.config.ts",
+    "playwright.smoke.config.ts",
     "e2e",
     "scripts"
   ]
