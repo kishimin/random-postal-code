@@ -89,12 +89,14 @@ describe("fetch-ken-all CLI", () => {
               ZIPNAMI_KEN_ALL_URL: `http://127.0.0.1:${port}/ken_all.zip`,
             },
           });
-          let stderr = "";
+          const stderr: Buffer[] = [];
           child.stderr.on("data", (chunk: Buffer) => {
-            stderr += chunk.toString("utf8");
+            stderr.push(chunk);
           });
           child.on("error", reject);
-          child.on("close", (code) => resolve({ code, stderr }));
+          child.on("close", (code) => {
+            resolve({ code, stderr: Buffer.concat(stderr).toString("utf8") });
+          });
         });
 
         expect(result.code).not.toBe(0);

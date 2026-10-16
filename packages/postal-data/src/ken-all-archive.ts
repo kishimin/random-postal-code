@@ -10,7 +10,11 @@ export const KEN_ALL_ZIP_URL =
 
 const KEN_ALL_ENTRY_NAME = "KEN_ALL.CSV";
 
-const END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50;
+// "PK", the end-of-central-directory signature as it appears in
+// the archive's little-endian bytes.
+const END_OF_CENTRAL_DIRECTORY_SIGNATURE = Buffer.from([
+  0x50, 0x4b, 0x05, 0x06,
+]);
 const CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
 const LOCAL_FILE_HEADER_SIGNATURE = 0x04034b50;
 const END_OF_CENTRAL_DIRECTORY_SIZE = 22;
@@ -27,6 +31,7 @@ const MAX_KEN_ALL_CSV_BYTES = 64 * 1024 * 1024;
 // download has to end as a failure rather than hang the maintainer's shell.
 const DOWNLOAD_TIMEOUT_MS = 120_000;
 
+/** Raised when a download cannot yield a usable KEN_ALL.CSV. */
 export class KenAllArchiveError extends Error {
   override name = "KenAllArchiveError";
 }
@@ -48,52 +53,91 @@ const findEndOfCentralDirectory = (archive: Buffer): number => {
     archive.length - END_OF_CENTRAL_DIRECTORY_SIZE - MAX_ARCHIVE_COMMENT_SIZE,
   );
 
-  for (
-    let offset = archive.length - END_OF_CENTRAL_DIRECTORY_SIZE;
-    offset >= earliest;
-    offset -= 1
-  ) {
-    if (archive.readUInt32LE(offset) === END_OF_CENTRAL_DIRECTORY_SIGNATURE) {
-      return offset;
-    }
+  const offset = archive.lastIndexOf(
+    END_OF_CENTRAL_DIRECTORY_SIGNATURE,
+    archive.length - END_OF_CENTRAL_DIRECTORY_SIZE,
+  );
+
+  if (offset < earliest) {
+    throw new KenAllArchiveError(
+      "not a complete ZIP archive: no end-of-central-directory record " +
+        "(the download may be truncated)",
+    );
   }
 
-  throw new KenAllArchiveError(
-    "not a complete ZIP archive: no end-of-central-directory record " +
-      "(the download may be truncated)",
-  );
+  return offset;
+};
+
+// Each central directory record is variable-length, so the next one's
+// offset is only known after reading the current one.
+const readCentralDirectoryFrom = (
+  archive: Buffer,
+  offset: number,
+  remaining: number,
+): CentralDirectoryEntry[] => {
+  if (remaining === 0) {
+    return [];
+  }
+
+  if (
+    offset + 46 > archive.length ||
+    archive.readUInt32LE(offset) !== CENTRAL_DIRECTORY_SIGNATURE
+  ) {
+    throw new KenAllArchiveError("corrupt ZIP central directory");
+  }
+
+  const nameLength = archive.readUInt16LE(offset + 28);
+  const extraLength = archive.readUInt16LE(offset + 30);
+  const commentLength = archive.readUInt16LE(offset + 32);
+  const entry: CentralDirectoryEntry = {
+    name: archive.toString("latin1", offset + 46, offset + 46 + nameLength),
+    method: archive.readUInt16LE(offset + 10),
+    checksum: archive.readUInt32LE(offset + 16),
+    compressedSize: archive.readUInt32LE(offset + 20),
+    size: archive.readUInt32LE(offset + 24),
+    localHeaderOffset: archive.readUInt32LE(offset + 42),
+  };
+
+  return [
+    entry,
+    ...readCentralDirectoryFrom(
+      archive,
+      offset + 46 + nameLength + extraLength + commentLength,
+      remaining - 1,
+    ),
+  ];
 };
 
 const readCentralDirectory = (archive: Buffer): CentralDirectoryEntry[] => {
   const end = findEndOfCentralDirectory(archive);
-  const entryCount = archive.readUInt16LE(end + 10);
-  const entries: CentralDirectoryEntry[] = [];
-  let offset = archive.readUInt32LE(end + 16);
 
-  for (let index = 0; index < entryCount; index += 1) {
-    if (
-      offset + 46 > archive.length ||
-      archive.readUInt32LE(offset) !== CENTRAL_DIRECTORY_SIGNATURE
-    ) {
-      throw new KenAllArchiveError("corrupt ZIP central directory");
-    }
+  return readCentralDirectoryFrom(
+    archive,
+    archive.readUInt32LE(end + 16),
+    archive.readUInt16LE(end + 10),
+  );
+};
 
-    const nameLength = archive.readUInt16LE(offset + 28);
-    const extraLength = archive.readUInt16LE(offset + 30);
-    const commentLength = archive.readUInt16LE(offset + 32);
-
-    entries.push({
-      name: archive.toString("latin1", offset + 46, offset + 46 + nameLength),
-      method: archive.readUInt16LE(offset + 10),
-      checksum: archive.readUInt32LE(offset + 16),
-      compressedSize: archive.readUInt32LE(offset + 20),
-      size: archive.readUInt32LE(offset + 24),
-      localHeaderOffset: archive.readUInt32LE(offset + 42),
-    });
-    offset += 46 + nameLength + extraLength + commentLength;
+const decompress = (entry: CentralDirectoryEntry, data: Buffer): Buffer => {
+  if (entry.method === STORED) {
+    return data;
   }
 
-  return entries;
+  if (entry.method !== DEFLATED) {
+    throw new KenAllArchiveError(
+      `${entry.name} uses unsupported compression method ${entry.method}`,
+    );
+  }
+
+  try {
+    // Stops inflating at the declared size, so data that expands beyond it
+    // fails here instead of after it has been held in memory.
+    return inflateRawSync(data, { maxOutputLength: entry.size || 1 });
+  } catch (cause) {
+    throw new KenAllArchiveError(`${entry.name} cannot be inflated`, {
+      cause,
+    });
+  }
 };
 
 const readEntry = (
@@ -130,26 +174,7 @@ const readEntry = (
     );
   }
 
-  const data = archive.subarray(dataStart, dataEnd);
-  let content: Uint8Array;
-
-  if (entry.method === STORED) {
-    content = data;
-  } else if (entry.method === DEFLATED) {
-    try {
-      // Stops inflating at the declared size, so data that expands beyond
-      // it fails here instead of after it has been held in memory.
-      content = inflateRawSync(data, { maxOutputLength: entry.size || 1 });
-    } catch (cause) {
-      throw new KenAllArchiveError(`${entry.name} cannot be inflated`, {
-        cause,
-      });
-    }
-  } else {
-    throw new KenAllArchiveError(
-      `${entry.name} uses unsupported compression method ${entry.method}`,
-    );
-  }
+  const content = decompress(entry, archive.subarray(dataStart, dataEnd));
 
   // The checksum is what turns a silently damaged download into a loud
   // failure: a size match alone would accept corrupted bytes.

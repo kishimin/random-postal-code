@@ -21,16 +21,12 @@ if (outputPath === undefined) {
 
 const url = process.env.ZIPNAMI_KEN_ALL_URL ?? KEN_ALL_ZIP_URL;
 
-let text: string;
-
-try {
-  text = await retrieveKenAllCsv(url);
-} catch (error) {
+const text = await retrieveKenAllCsv(url).catch((error: unknown) => {
   console.error(
     `Refusing to write ${outputPath}: ${error instanceof Error ? error.message : String(error)}`,
   );
   process.exit(1);
-}
+});
 
 // Written beside the target and then renamed over it, so an interrupted
 // write never leaves a half-written file where a previous, complete

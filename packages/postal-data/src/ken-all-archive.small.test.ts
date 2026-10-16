@@ -239,7 +239,7 @@ describe("retrieveKenAllCsv", () => {
     const stalled: typeof fetch = (_input, init) =>
       new Promise((_resolve, reject) => {
         init?.signal?.addEventListener("abort", () => {
-          reject(init.signal?.reason);
+          reject(new Error("download aborted", { cause: init.signal?.reason }));
         });
       });
 
