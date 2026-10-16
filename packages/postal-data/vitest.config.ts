@@ -2,14 +2,15 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    // The acceptance test for Issue #3 lives outside every package (ADR-0062
-    // isolates acceptance/ from implementation code) and is not a Playwright
-    // test, so nothing else in the workspace claims it. This package is the
-    // one the test exercises, so its own Vitest run is the one that includes
-    // it, alongside the package's own small/medium/large test files.
+    // The acceptance tests for Issues #3 and #33 live outside every package
+    // (ADR-0062 isolates acceptance/ from implementation code) and are not
+    // Playwright tests, so nothing else in the workspace claims them. This
+    // package is the one they exercise, so its own Vitest run is the one that
+    // includes them, alongside the package's own small/medium/large tests.
     include: [
       "**/*.{test,spec}.ts",
       "../../acceptance/postal-data-normalization.medium.test.ts",
+      "../../acceptance/postal-data-split-town-reassembly.medium.test.ts",
     ],
     reporters: process.env.GITHUB_ACTIONS
       ? ["dot", "github-actions", "json"]

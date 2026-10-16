@@ -76,6 +76,26 @@ text into an array of `PostalCode` values (see `@zipnami/shared`):
 - running the build twice against the same input produces byte-identical
   output.
 
+### Reassembling town names split across records
+
+`KEN_ALL.CSV` splits a town entry too long for one record (a kanji town
+name over 38 full-width characters, or a reading over 76 half-width
+characters) across two or more consecutive records that share the postal code,
+prefecture, and city. None of its flag columns marks such a continuation,
+so the build reassembles them by the convention other `KEN_ALL.CSV`
+parsers use: a town field with more full-width opening parentheses `（`
+than closing ones `）` continues in the next record. The town text of
+following records is appended until the parentheses balance, and the
+result becomes one address before grouping and deduplication. For
+example, `葛巻（第４０地割「…」～第４５` followed by `地割）` becomes
+`葛巻（第４０地割「…」～第４５地割）`.
+
+A record whose parentheses already balance is never merged with its
+neighbor. Nor is a record merged into a following record with a
+different postal code, prefecture, or city, even if its `（` is never
+closed: joining across those boundaries would invent an address that
+Japan Post never published, so the unclosed fragment is kept as it is.
+
 ## Regenerating the dataset
 
 ```sh
