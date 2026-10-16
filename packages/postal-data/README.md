@@ -6,18 +6,24 @@ CSV (`KEN_ALL.CSV`).
 ## Source
 
 Japan Post publishes the postal-code dataset used here at
-<https://www.post.japanpost.jp/zipcode/download.html>, as a ZIP archive at
-<https://www.post.japanpost.jp/zipcode/dl/kogaki/zip/ken_all.zip>. The archive
-holds one Shift-JIS CSV named `KEN_ALL.CSV`, fifteen comma-separated columns
-per record, quoted text fields.
+<https://www.post.japanpost.jp/service/search/zipcode/download/>, as a ZIP
+archive at
+<https://www.post.japanpost.jp/service/search/zipcode/download/kogaki/zip/ken_all.zip>.
+The archive holds one Shift-JIS CSV named `KEN_ALL.CSV`, fifteen
+comma-separated columns per record, quoted text fields. (The older
+`/zipcode/dl/kogaki/zip/ken_all.zip` path now answers HTTP 404.)
 
-Retrieval date: **not yet retrieved from Japan Post.** The retrieval command
-below is implemented and tested against a locally served archive, but it has
-not been run against the live site, so no real download has a date yet. The
-committed data still comes from the hand-built source described next, shaped
-on 2026-09-21 like `KEN_ALL.CSV` (see also
-`acceptance/fixtures/japan-post-ken-all-excerpt.csv`). When someone runs the
-procedure below against Japan Post, this line records the date they ran it.
+Retrieval date: **2026-10-16**, by running the procedure below against the
+live site. That retrieval yielded 124,840 records, which `regenerate`
+turned into 120,720 postal codes and 124,525 addresses. No town name was
+left with an unbalanced parenthesis after the split-town reassembly.
+
+The committed data has not been switched to that retrieval yet. The
+Worker's artifact still comes from the small hand-built source described
+next (shaped on 2026-09-21 like `KEN_ALL.CSV`; see also
+`acceptance/fixtures/japan-post-ken-all-excerpt.csv`). Replacing it with
+the full dataset is a separate decision, because the artifact's size and
+the Worker's limits come with it.
 
 ### Retrieving the archive from Japan Post
 

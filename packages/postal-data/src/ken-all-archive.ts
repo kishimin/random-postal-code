@@ -6,7 +6,7 @@ import { crc32, inflateRawSync } from "node:zlib";
  * describe).
  */
 export const KEN_ALL_ZIP_URL =
-  "https://www.post.japanpost.jp/zipcode/dl/kogaki/zip/ken_all.zip";
+  "https://www.post.japanpost.jp/service/search/zipcode/download/kogaki/zip/ken_all.zip";
 
 const KEN_ALL_ENTRY_NAME = "KEN_ALL.CSV";
 

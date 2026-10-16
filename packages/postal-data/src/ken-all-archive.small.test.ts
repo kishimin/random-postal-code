@@ -1,6 +1,7 @@
 import { crc32, deflateRawSync } from "node:zlib";
 import { describe, expect, test } from "vitest";
 import {
+  KEN_ALL_ZIP_URL,
   KenAllArchiveError,
   decodeShiftJis,
   extractKenAllCsv,
@@ -351,5 +352,17 @@ describe("retrieveKenAllCsv", () => {
     await expect(
       retrieveKenAllCsv("https://example.test/ken_all.zip", fetchArchive),
     ).rejects.toBe(failure);
+  });
+});
+
+describe("KEN_ALL_ZIP_URL", () => {
+  // The first real retrieval (2026-10-16) got HTTP 404 from the old
+  // /zipcode/dl/ path: Japan Post moved its download pages under
+  // /service/search/zipcode/download/. This pins the location that
+  // retrieval actually succeeded from.
+  test("points at the national archive's current location on Japan Post's site", () => {
+    expect(KEN_ALL_ZIP_URL).toBe(
+      "https://www.post.japanpost.jp/service/search/zipcode/download/kogaki/zip/ken_all.zip",
+    );
   });
 });
