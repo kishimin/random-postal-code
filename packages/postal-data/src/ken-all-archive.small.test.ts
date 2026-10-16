@@ -168,10 +168,12 @@ describe("extractKenAllCsv on damaged archives", () => {
     const archive = zip("KEN_ALL.CSV", content);
     const central = archive.readUInt32LE(archive.length - 22 + 16);
 
-    // Declares 16 bytes; the data inflates to 4096.
+    // Declares 16 bytes; the data inflates to 4096. Only inflation that
+    // stops at the declared size fails this way; inflating everything and
+    // comparing afterwards fails the integrity check instead.
     archive.writeUInt32LE(16, central + 24);
 
-    expect(() => extractKenAllCsv(archive)).toThrow(KenAllArchiveError);
+    expect(() => extractKenAllCsv(archive)).toThrow(/cannot be inflated/);
   });
 
   test("refuses deflated data that cannot be inflated", () => {
@@ -189,7 +191,9 @@ describe("decodeShiftJis", () => {
   });
 
   test("refuses bytes that are not Shift-JIS instead of inserting replacement characters", () => {
-    expect(() => decodeShiftJis(Uint8Array.from([0x81]))).toThrow();
+    expect(() => decodeShiftJis(Uint8Array.from([0x81]))).toThrow(
+      /not valid Shift-JIS/,
+    );
   });
 });
 
@@ -230,17 +234,30 @@ describe("retrieveKenAllCsv", () => {
     ).rejects.toThrow(/empty/);
   });
 
-  test("asks the download to give up after a time limit instead of waiting forever", async () => {
-    let signal: AbortSignal | null | undefined;
-    const fetchArchive: typeof fetch = (_input, init) => {
-      signal = init?.signal;
+  test("gives up on a download that does not finish within the time limit", async () => {
+    // Never answers on its own; settles only when the signal aborts.
+    const stalled: typeof fetch = (_input, init) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          reject(init.signal?.reason);
+        });
+      });
 
-      return Promise.resolve(new Response(zip("KEN_ALL.CSV", TOKYO_SHIFT_JIS)));
-    };
+    await expect(
+      retrieveKenAllCsv("https://example.test/ken_all.zip", stalled, {
+        timeoutMs: 10,
+      }),
+    ).rejects.toThrow(/timed out|abort/i);
+  });
 
-    await retrieveKenAllCsv("https://example.test/ken_all.zip", fetchArchive);
+  test("rejects an archive whose KEN_ALL.CSV is not Shift-JIS", async () => {
+    const fetchArchive = responding(
+      new Response(zip("KEN_ALL.CSV", Uint8Array.from([0x81]))),
+    );
 
-    expect(signal).toBeInstanceOf(AbortSignal);
+    await expect(
+      retrieveKenAllCsv("https://example.test/ken_all.zip", fetchArchive),
+    ).rejects.toThrow(/not valid Shift-JIS/);
   });
 
   test("rejects an https download that a redirect moved to plain http", async () => {
