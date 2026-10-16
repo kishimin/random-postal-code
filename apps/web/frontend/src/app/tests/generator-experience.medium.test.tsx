@@ -2,7 +2,7 @@ import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import type { Address, PostalCode } from "@zipnami/shared";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, delay, http } from "msw";
 import { describe, expect, test } from "vitest";
 import { worker } from "../../api/mocks/browser";
 import { postalGeneratorText } from "../../features/postal-generator/site-text";
@@ -44,7 +44,8 @@ const dataUnavailableBody = {
 };
 
 type StubbedResponse =
-  { outcome: "success"; result: PostalCode } | { outcome: "unavailable" };
+  | { outcome: "success"; result: PostalCode }
+  | { outcome: "unavailable"; delayMs?: number };
 
 /**
  * Queues answers for `GET /api/random`, repeating the last one once the
@@ -56,13 +57,17 @@ const queueRandomResponses = (responses: StubbedResponse[]) => {
   const requests: string[] = [];
 
   worker.use(
-    http.get(RANDOM_ENDPOINT, ({ request }) => {
+    http.get(RANDOM_ENDPOINT, async ({ request }) => {
       requests.push(request.url);
       const next = queue.length > 1 ? queue.shift() : queue.at(0);
 
-      return next?.outcome === "success"
-        ? HttpResponse.json(next.result)
-        : HttpResponse.json(dataUnavailableBody, { status: 503 });
+      if (next?.outcome === "success") {
+        return HttpResponse.json(next.result);
+      }
+
+      await delay(next?.delayMs ?? 0);
+
+      return HttpResponse.json(dataUnavailableBody, { status: 503 });
     }),
   );
 
@@ -515,9 +520,13 @@ describe("the generator experience", () => {
 
   test("a failed generation is announced, keeps the previous result, and allows another attempt", async () => {
     const user = userEvent.setup();
+    // The failure is held back long enough for the loading state to be
+    // observed. Issue #41: under CI load the 503 arrived after the
+    // assertions below had already run, and that exposed the race this
+    // delay now makes certain.
     queueRandomResponses([
       { outcome: "success", result: firstResult },
-      { outcome: "unavailable" },
+      { outcome: "unavailable", delayMs: 300 },
       { outcome: "success", result: secondResult },
     ]);
     renderAt("/");
