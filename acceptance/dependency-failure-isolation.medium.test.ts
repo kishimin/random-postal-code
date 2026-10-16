@@ -287,6 +287,15 @@ test.describe("Issue #17: core features stay usable during dependency failures",
     ).toBeVisible();
     // The first attempt and one retry reached the endpoint. The repeated
     // activations during the retry were refused, not queued and sent later.
+    //
+    // What refuses them here is the disabled button: React does not call
+    // onClick on a button whose `disabled` prop is set, however the click is
+    // delivered, so no activation from the page can reach use-generator.ts's
+    // own re-entry guard while it is disabled. That guard only matters before
+    // React commits the disabled state, and generator-experience.medium.test.tsx
+    // ("a second activation while a generation is in flight...") covers
+    // exactly that window. Removing the guard fails that test and not this one
+    // (Issue #46, checked by mutation).
     expect(dependencyFailurePage.randomRequestCount()).toBe(2);
   });
 

@@ -239,6 +239,18 @@ export const createDependencyFailurePage = (page: Page) => {
     advertisingRequests = 0;
     answeredAdvertisingRequests = 0;
 
+    // Counted from what the browser saw finish, not from this helper's own
+    // bookkeeping (Issue #46): any advertising request that got a response,
+    // from this route or any other, is counted. A held request never
+    // finishes until releaseHeldAdvertisingRequests ends it as a failure
+    // during teardown, so "answered" stays 0 only while every one is really
+    // still waiting.
+    page.on("requestfinished", (request) => {
+      if (advertisingRequestPattern.test(request.url())) {
+        answeredAdvertisingRequests += 1;
+      }
+    });
+
     await page.route(advertisingRequestPattern, (route) => {
       advertisingRequests += 1;
       heldAdvertisingRoutes.push(route);
