@@ -275,6 +275,45 @@ describe("retrieveKenAllCsv", () => {
     ).rejects.toThrow(/http:/);
   });
 
+  test("rejects a response that declares a body larger than the limit without reading it", async () => {
+    const reads = { count: 0 };
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        reads.count += 1;
+        controller.enqueue(new Uint8Array(64));
+        controller.close();
+      },
+    });
+    const fetchArchive = responding(
+      new Response(body, { headers: { "Content-Length": "1000" } }),
+    );
+
+    await expect(
+      retrieveKenAllCsv("https://example.test/ken_all.zip", fetchArchive, {
+        maxArchiveBytes: 100,
+      }),
+    ).rejects.toThrow(/larger than/);
+    expect(reads.count).toBe(0);
+  });
+
+  test("stops reading a response body once it passes the limit, even without a declared length", async () => {
+    const served = { chunks: 0 };
+    const endless = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        served.chunks += 1;
+        controller.enqueue(new Uint8Array(64));
+      },
+    });
+    const fetchArchive = responding(new Response(endless));
+
+    await expect(
+      retrieveKenAllCsv("https://example.test/ken_all.zip", fetchArchive, {
+        maxArchiveBytes: 100,
+      }),
+    ).rejects.toThrow(/larger than/);
+    expect(served.chunks).toBeLessThan(10);
+  });
+
   test("passes a network failure through as a rejection", async () => {
     const failure = new TypeError("fetch failed");
     const fetchArchive: typeof fetch = () => Promise.reject(failure);
