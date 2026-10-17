@@ -115,6 +115,10 @@ export const corsMiddleware: MiddlewareHandler<{
       );
       if (isReportRoute) {
         c.header("access-control-allow-headers", "Content-Type");
+        // Browsers send reports in bursts; caching the preflight (7200 s
+        // is Chrome's cap) keeps each report to one request instead of two.
+        // /api/random keeps its uncached default.
+        c.header("access-control-max-age", "7200");
       }
     }
 

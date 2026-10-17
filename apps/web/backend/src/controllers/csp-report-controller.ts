@@ -19,6 +19,11 @@ export const CSP_REPORT_PATH = "/api/csp-report";
 // comfortably. Anything larger is not a report worth reading.
 const MAX_REPORT_BYTES = 16 * 1024;
 
+// One request writes at most this many violation entries (api-design.md
+// section 4.3). Without a cap, a 16 KiB batch of minimal reports from this
+// unauthenticated route would write hundreds of log lines.
+const MAX_LOGGED_VIOLATIONS = 20;
+
 /*
  * Reads the body chunk by chunk and stops once it passes the limit, so an
  * oversized or endless body is refused without being held in memory.
@@ -107,12 +112,20 @@ export const registerCspReportRoute = (
       return refuse(400, "INVALID_REQUEST", "The body is not a CSP report.");
     }
 
-    for (const violation of violations) {
+    for (const violation of violations.slice(0, MAX_LOGGED_VIOLATIONS)) {
       writeStructuredLog(c, {
         type: "csp-violation",
         timestamp: new Date().toISOString(),
         requestId: c.get("requestId"),
         ...violation,
+      });
+    }
+    if (violations.length > MAX_LOGGED_VIOLATIONS) {
+      writeStructuredLog(c, {
+        type: "csp-violation-dropped",
+        timestamp: new Date().toISOString(),
+        requestId: c.get("requestId"),
+        count: violations.length - MAX_LOGGED_VIOLATIONS,
       });
     }
 

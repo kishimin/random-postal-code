@@ -40,6 +40,11 @@ const withoutQueryOrFragment = (value: unknown): string => {
   const raw = text(value);
   if (!URL.canParse(raw)) return raw;
   const url = new URL(raw);
+  // For data:, blob:, and other non-http(s) URLs the "path" is the content
+  // itself (a whole inline script, for data:), so only the scheme is kept.
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return url.protocol;
+  }
   return `${url.origin}${url.pathname}`.slice(0, MAX_FIELD_LENGTH);
 };
 
