@@ -64,7 +64,9 @@ visits. The two can't drift apart.
    live on it, and the first deploy is what puts the code live. The
    `pages.dev` URL is not promoted until release, so that window exists.
    - In AdSense, add the production site (`https://<project>.pages.dev`)
-     under **Sites**, if it is not there already.
+     under **Sites**, if it is not there already. Verify ownership and
+     request review there. A new site stays in **Requires review** and
+     serves no ads until Google approves it and its status is **Ready**.
    - Under **Privacy & messaging**, publish a message of the type
      **European regulations** for that site. This is the consent platform
      the privacy page names. Google's AdSense tag shows the message to
@@ -75,10 +77,14 @@ visits. The two can't drift apart.
      then gets non-personalized or limited ads rather than none.
    - Keep the floating link that lets a visitor revisit their choice; the
      privacy page tells visitors they can change it from the message.
-   - Afterwards, from an EEA connection (or a VPN exit there), load the
-     production site and confirm the message appears before any ad. This
-     is the release review design.md section 12 requires, because no
-     automated test can place a browser in a consent region.
+   - Once the site is **Ready**, so that real ads are eligible to serve,
+     load the production site from an EEA connection (or a VPN exit
+     there). Confirm the message appears before any ad, and that declining
+     still shows an ad slot filled with a non-personalized or limited ad.
+     A check made while the site is still under review passes trivially,
+     because no ad serves at all. This is the release review design.md
+     section 12 requires, since no automated test can place a browser in a
+     consent region.
 
 ## Deploying
 
