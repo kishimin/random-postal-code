@@ -58,6 +58,22 @@ creates it. The workflows read every production value from the
 CORS allowlist (`ALLOWED_ORIGINS`), and it is the site the smoke check
 visits. The two can't drift apart.
 
+5. In the AdSense account, under **Privacy & messaging**, create and
+   publish a **European regulations** message for the production site,
+   before the first production deploy (Issue #39). This is the consent
+   platform the privacy page names. Google's AdSense tag shows the message
+   to visitors from the EEA, the UK, and Switzerland, and gates ad requests
+   on their choice. Nothing in the code does this itself.
+   - Keep the ad setting that serves personalized ads only with consent,
+     and turn on **limited ads**. A visitor who declines personalization
+     then gets non-personalized or limited ads rather than none.
+   - Keep the floating link that lets a visitor revisit their choice; the
+     privacy page tells visitors they can change it from the message.
+   - Afterwards, from an EEA connection (or a VPN exit there), load the
+     production site and confirm the message appears before any ad. This
+     is the release review design.md section 12 requires, because no
+     automated test can place a browser in a consent region.
+
 ## Deploying
 
 ```sh
