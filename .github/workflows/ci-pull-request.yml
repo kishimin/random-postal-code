@@ -167,6 +167,11 @@ jobs:
       - name: Run Issue #38 Content-Security-Policy acceptance test (Medium)
         run: bun test ./acceptance/web-content-security-policy.medium.test.ts
 
+      # Issue #39's acceptance test also reads the production build and the
+      # deployment runbook, so it is bound here the same way (ADR-0077).
+      - name: Run Issue #39 consent management acceptance test (Medium)
+        run: bun test ./acceptance/web-consent-management.medium.test.ts
+
       - name: Upload coverage report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
