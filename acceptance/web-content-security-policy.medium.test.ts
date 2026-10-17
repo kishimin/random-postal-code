@@ -131,13 +131,18 @@ const sourcesFor = (policy: string, directive: string): string[] => {
  * "unlisted host" test while a browser allowed every https host.
  */
 /**
- * CSP scheme-part matching: a scheme matches itself, and an insecure scheme
- * also matches its secure upgrade (http: allows https:, ws: allows wss:).
+ * CSP scheme-part matching (CSP3): a scheme matches itself; http: also
+ * matches https:; ws: also matches wss:, http:, and https:; and wss: also
+ * matches https:. So ws: and wss: can allow https scripts too.
  */
+const upgradesTo: Record<string, string[]> = {
+  "http:": ["https:"],
+  "ws:": ["wss:", "http:", "https:"],
+  "wss:": ["https:"],
+};
+
 const schemeMatches = (source: string, protocol: string): boolean =>
-  source === protocol ||
-  (source === "http:" && protocol === "https:") ||
-  (source === "ws:" && protocol === "wss:");
+  source === protocol || (upgradesTo[source] ?? []).includes(protocol);
 
 const allows = (sources: string[], url: string): boolean => {
   const target = new URL(url, "https://site.pages.dev/");
