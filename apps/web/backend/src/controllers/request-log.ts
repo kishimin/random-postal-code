@@ -8,7 +8,8 @@ import type { RequestIdVariables } from "./request-id-middleware.ts";
  * is corsMiddleware's own preflight response (CR-003/TR-003), answered
  * before a request ever reaches a route handler.
  */
-export type RequestLogStatus = 200 | 204 | 400 | 404 | 405 | 500 | 503;
+export type RequestLogStatus =
+  200 | 204 | 400 | 404 | 405 | 413 | 415 | 500 | 503;
 
 /**
  * One structured log line for a completed request (CR-003, api-design.md
@@ -53,6 +54,18 @@ export type RequestLogEntry = {
 export const writeRequestLog = (
   c: Context<{ Bindings: CorsBindings; Variables: RequestIdVariables }>,
   entry: RequestLogEntry,
+): void => {
+  writeStructuredLog(c, entry);
+};
+
+/**
+ * Writes any structured entry the same way as a request log entry, through
+ * waitUntil when the runtime has one. Used for records that are not about
+ * the request itself, such as a CSP violation a report carried.
+ */
+export const writeStructuredLog = (
+  c: Context<{ Bindings: CorsBindings; Variables: RequestIdVariables }>,
+  entry: Readonly<Record<string, unknown>>,
 ): void => {
   const write = () => console.log(JSON.stringify(entry));
 

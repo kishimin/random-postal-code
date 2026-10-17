@@ -4,6 +4,7 @@ import {
   corsMiddleware,
   type CorsBindings,
 } from "./controllers/cors-middleware.ts";
+import { registerCspReportRoute } from "./controllers/csp-report-controller.ts";
 import { registerRandomPostalCodeRoute } from "./controllers/random-postal-code-controller.ts";
 import {
   requestIdMiddleware,
@@ -39,6 +40,7 @@ export const createApp = (deps: CreateAppDependencies) => {
   app.use("*", corsMiddleware);
 
   registerRandomPostalCodeRoute(app, deps);
+  registerCspReportRoute(app);
 
   // Hono's own 404 and its default error page are plain text, not the
   // documented JSON envelope (api-design.md section 4.2), so both are

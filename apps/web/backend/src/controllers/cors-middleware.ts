@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from "hono";
+import { CSP_REPORT_PATH } from "./csp-report-controller.ts";
 import type { RequestIdVariables } from "./request-id-middleware.ts";
 import { writeRequestLog } from "./request-log.ts";
 
@@ -44,6 +45,8 @@ const parseAllowedOrigins = (value: string | undefined): string[] =>
  * preflight can never get it granted.
  */
 const ALLOWED_METHODS = "GET, HEAD";
+
+const REPORT_ALLOWED_METHODS = "POST";
 
 /**
  * Enforces the Web API's CORS allowlist (Issue #11, api-design.md section
@@ -101,7 +104,22 @@ export const corsMiddleware: MiddlewareHandler<{
     // Headers, so nothing a caller asks for is ever opened or reflected.
     markAuthorization();
     if (isAuthorized) {
-      c.header("access-control-allow-methods", ALLOWED_METHODS);
+      // The CSP report route alone accepts a POST of JSON, because the
+      // Reporting API delivers reports cross-origin as
+      // application/reports+json (api-design.md section 6). Its allowed
+      // header is fixed, not reflected from the request.
+      const isReportRoute = c.req.path === CSP_REPORT_PATH;
+      c.header(
+        "access-control-allow-methods",
+        isReportRoute ? REPORT_ALLOWED_METHODS : ALLOWED_METHODS,
+      );
+      if (isReportRoute) {
+        c.header("access-control-allow-headers", "Content-Type");
+        // Browsers send reports in bursts; caching the preflight (7200 s
+        // is Chrome's cap) keeps each report to one request instead of two.
+        // /api/random keeps its uncached default.
+        c.header("access-control-max-age", "7200");
+      }
     }
 
     const response = c.body(null, 204);

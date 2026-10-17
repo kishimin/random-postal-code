@@ -7,7 +7,7 @@ import type { RequestIdVariables } from "./request-id-middleware.ts";
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 
 /** The HTTP statuses api-design.md section 4.2 maps an `ApiErrorCode` to. */
-type ApiErrorStatus = 400 | 404 | 405 | 500 | 503;
+type ApiErrorStatus = 400 | 404 | 405 | 413 | 415 | 500 | 503;
 
 /**
  * Answers one request with the stable JSON error envelope, carrying the same

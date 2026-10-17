@@ -10,5 +10,12 @@
 # This is the same family acceptance/selectors/advertising-selectors.ts
 # treats as advertising traffic. A new script host must be added here, or
 # acceptance/web-content-security-policy.medium.test.ts fails.
+#
+# Violations are reported to the Worker (Issue #72): report-to, through the
+# Reporting-Endpoints group below, and report-uri as the fallback for
+# browsers without the Reporting API. The endpoint placeholder is replaced
+# at build time with the Worker's /api/csp-report URL (vite.config.ts), and
+# the build fails if it is missing.
 /*
-  Content-Security-Policy-Report-Only: script-src 'self' https://*.googlesyndication.com https://*.doubleclick.net https://*.googletagservices.com https://www.googletagmanager.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; object-src 'none'; base-uri 'self'
+  Reporting-Endpoints: csp-endpoint="__CSP_REPORT_ENDPOINT__"
+  Content-Security-Policy-Report-Only: script-src 'self' https://*.googlesyndication.com https://*.doubleclick.net https://*.googletagservices.com https://www.googletagmanager.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; object-src 'none'; base-uri 'self'; report-uri __CSP_REPORT_ENDPOINT__; report-to csp-endpoint

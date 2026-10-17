@@ -117,6 +117,23 @@ Messages are safe, non-sensitive English text. Responses never expose stack trac
 
 All JSON errors use this envelope. Hono's default text or HTML error responses must not cross the public API boundary.
 
+### 4.3 `POST /api/csp-report`
+
+Receives the browser's Content-Security-Policy violation reports for the Web frontend's report-only policy (Issue #72), so the policy can be observed before it is enforced (#38). It is not a product endpoint, and the frontend never calls it from application code. Browsers send to it on their own, through the policy's `report-to` and `report-uri`.
+
+- Accepts `application/csp-report` (a `report-uri` object under `"csp-report"`) and `application/reports+json` (a Reporting API array, of which only `type: "csp-violation"` entries are read).
+- Answers `204` with no body. Nothing of the report is echoed back.
+- Writes one structured log entry per violation, up to 20 per request, plus one entry giving the count of any it dropped beyond that. Each entry has the document URL, effective directive, blocked URL, and disposition, each truncated. http(s) URLs lose their query and fragment, and any other URL (`data:`, `blob:`) is logged as its scheme only, because its content is the URL. It stores nothing else and changes no state.
+
+| Condition                                   | Status | Code                 |
+| ------------------------------------------- | -----: | -------------------- |
+| Body is not a report of its declared type   |    400 | `INVALID_REQUEST`    |
+| Body larger than 16 KiB, declared or read   |    413 | `INVALID_REQUEST`    |
+| Content-Type is not a CSP report media type |    415 | `INVALID_REQUEST`    |
+| Method other than `POST`                    |    405 | `METHOD_NOT_ALLOWED` |
+
+Threat review: the endpoint is unauthenticated by necessity, because browsers send reports without credentials. Anyone can therefore post fabricated reports. The worst outcome is noise in the logs. The bounded body, the per-request entry cap, the fixed fields, and the truncated values keep one request from writing unbounded, numerous, or attacker-shaped log lines, and no report data affects any other response. No application rate limit is defined, for the same reason as section 7; Cloudflare's platform limits apply.
+
 ## 5. Selection and Data Loading
 
 ```text
@@ -147,7 +164,7 @@ Random selection uses an unbiased integer in `[0, count)`. Implementations must 
 - Allow only exact configured Web origins, including scheme, host, and port.
 - Return the requesting origin only after an exact allowlist match; never return `*`.
 - Include `Vary: Origin` whenever the response varies by Origin.
-- Permit `GET` and the minimum headers needed by the browser client.
+- Permit `GET` and the minimum headers needed by the browser client. The one exception is `POST /api/csp-report` (section 4.3). It alone also allows `POST` and the `Content-Type` request header in its preflight, because the Reporting API delivers reports as cross-origin JSON. The allowed origins are the same exact allowlist, and no requested header is reflected.
 - Handle `OPTIONS` only when required by the CORS middleware; it is not a product endpoint.
 - Reject unsupported methods and overlong URLs or headers through platform/framework limits.
 - Set `X-Content-Type-Options: nosniff` on API responses.
@@ -170,7 +187,7 @@ Tests cover:
 - exact-address preservation and invalid artifact rejection;
 - first and last selectable indices and unique-postal-code sampling;
 - success headers and payload;
-- `400`, `404`, `405`, `500`, and `503` mappings without internal detail leakage;
+- `400`, `404`, `405`, `413`, `415`, `500`, and `503` mappings without internal detail leakage;
 - exact allowed origins, denied origins, `Vary: Origin`, and absence of wildcard CORS;
 - no runtime request to Japan Post or another address API;
 - one immutable dataset load per isolate where the runtime permits deterministic observation; and
