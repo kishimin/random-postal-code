@@ -34,10 +34,9 @@ export const privacyText = {
 
   /**
    * The third-party section: design.md section 2 lists an embedded Google
-   * Map, Google AdSense, and consent handling as MVP scope. Which script is
-   * loaded for consent is still unselected (section 12 routes the AdSense
-   * and consent configuration to human review before release), so consent is
-   * named as a subject the disclosure covers, not as a specific vendor.
+   * Map, Google AdSense, and consent handling as MVP scope. The consent
+   * platform is Google Privacy & messaging (Issue #39; design.md section 12),
+   * so `consent` names it.
    *
    * `googleMaps`, `googleAdSense`, and `consent` are worded to match what
    * this codebase actually does today rather than the finished product.
@@ -46,12 +45,14 @@ export const privacyText = {
    * this branch, so a present-tense "Zipnami uses Google Maps" would
    * misstate current third-party processing (flagged by Codex review on
    * this PR, the same class of finding as CR-001/the history claim above).
-   * No code here gates an ad request on consent (`AdSlot.tsx` pushes to
-   * `adsbygoogle` unconditionally), so `consent` states that a mechanism is
-   * not yet implemented instead of claiming one already runs — Issue #10's
-   * own Out of scope forbids a claim the SDK configuration does not
-   * support. AdSense may still set its own identifiers client-side even
-   * without a consent gate, which is why `googleAdSense` says so explicitly
+   * `consent` describes what Google's own AdSense tag does once the
+   * "European regulations" message is published in the AdSense account,
+   * which docs/deployment.md makes part of production setup. Nothing in
+   * this codebase gates or downgrades ad requests itself (`AdSlot.tsx`
+   * pushes to `adsbygoogle` and leaves the decision to the platform), so the
+   * sentence is true only once that message is published. The release
+   * review in design.md section 12 confirms it. AdSense may still set its
+   * own identifiers client-side, which is why `googleAdSense` says so explicitly
    * rather than leaving a reader to infer no advertising identifier exists
    * anywhere from the server-scoped denial in
    * `firstParty.noStoredAdvertisingIdentifier`.
@@ -63,7 +64,7 @@ export const privacyText = {
     googleAdSense:
       "広告の配信にはGoogle AdSenseを利用しています。AdSense側の設定により、お使いのブラウザに広告用の識別子やCookieが保存される場合があります。",
     consent:
-      "広告表示にあたり同意の取得が必要な地域向けの同意管理の仕組みは、本サービスでは現時点で未導入です。一般公開までに導入します。",
+      "欧州経済領域（EEA）、英国、スイスからのアクセスには、Googleの同意管理プラットフォーム（プライバシーとメッセージ）が同意を求めるメッセージを表示します。パーソナライズ広告に同意しない場合や同意が得られる前は、パーソナライズされていない広告または制限付き広告が表示されます。選択はこのメッセージからいつでも変更できます。",
   },
 
   /*

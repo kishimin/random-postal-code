@@ -58,6 +58,34 @@ creates it. The workflows read every production value from the
 CORS allowlist (`ALLOWED_ORIGINS`), and it is the site the smoke check
 visits. The two can't drift apart.
 
+5. **After the first production deploy, and before the site is announced
+   or linked anywhere**, set up consent (Issue #39). Google only lets a
+   message be created once the site is added to AdSense and its ad code is
+   live on it, and the first deploy is what puts the code live. The
+   `pages.dev` URL is not promoted until release, so that window exists.
+   - In AdSense, add the production site (`https://<project>.pages.dev`)
+     under **Sites**, if it is not there already. Verify ownership and
+     request review there. A new site stays in **Requires review** and
+     serves no ads until Google approves it and its status is **Ready**.
+   - Under **Privacy & messaging**, publish a message of the type
+     **European regulations** for that site. This is the consent platform
+     the privacy page names. Google's AdSense tag shows the message to
+     visitors from the EEA, the UK, and Switzerland, and gates ad requests
+     on their choice. Nothing in the code does this itself.
+   - Keep the ad setting that serves personalized ads only with consent,
+     and turn on **limited ads**. A visitor who declines personalization
+     then gets non-personalized or limited ads rather than none.
+   - Keep the floating link that lets a visitor revisit their choice; the
+     privacy page tells visitors they can change it from the message.
+   - Once the site is **Ready**, so that real ads are eligible to serve,
+     load the production site from an EEA connection (or a VPN exit
+     there). Confirm the message appears before any ad, and that declining
+     still shows an ad slot filled with a non-personalized or limited ad.
+     A check made while the site is still under review passes trivially,
+     because no ad serves at all. This is the release review design.md
+     section 12 requires, since no automated test can place a browser in a
+     consent region.
+
 ## Deploying
 
 ```sh
