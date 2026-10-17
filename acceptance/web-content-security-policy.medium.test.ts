@@ -130,6 +130,15 @@ const sourcesFor = (policy: string, directive: string): string[] => {
  * allowing nothing used to let a broad source such as `https://*` pass the
  * "unlisted host" test while a browser allowed every https host.
  */
+/**
+ * CSP scheme-part matching: a scheme matches itself, and an insecure scheme
+ * also matches its secure upgrade (http: allows https:, ws: allows wss:).
+ */
+const schemeMatches = (source: string, protocol: string): boolean =>
+  source === protocol ||
+  (source === "http:" && protocol === "https:") ||
+  (source === "ws:" && protocol === "wss:");
+
 const allows = (sources: string[], url: string): boolean => {
   const target = new URL(url, "https://site.pages.dev/");
 
@@ -140,9 +149,11 @@ const allows = (sources: string[], url: string): boolean => {
     if (source === "'self'") return target.origin === "https://site.pages.dev";
     // Other keywords ('none', 'unsafe-inline', nonces, hashes) allow no URL.
     if (source.startsWith("'")) return false;
-    // A scheme source such as https: allows every host on that scheme.
+    // A scheme source such as https: allows every host on that scheme. CSP
+    // also lets an insecure scheme match its secure upgrade, so http:
+    // allows https: URLs too (scheme-part matching).
     if (/^[a-z][a-z0-9+.-]*:$/.test(source)) {
-      return source === target.protocol;
+      return schemeMatches(source, target.protocol);
     }
 
     const match =
@@ -152,7 +163,9 @@ const allows = (sources: string[], url: string): boolean => {
     if (match === null) return true;
     const [, scheme, wildcard, host] = match;
     if (host === "*") return true;
-    if (scheme !== undefined && `${scheme}:` !== target.protocol) return false;
+    if (scheme !== undefined && !schemeMatches(`${scheme}:`, target.protocol)) {
+      return false;
+    }
     return wildcard === undefined
       ? target.hostname === host
       : target.hostname.endsWith(`.${host}`);
