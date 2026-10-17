@@ -1,7 +1,7 @@
 import type { MiddlewareHandler } from "hono";
+import { CSP_REPORT_PATH } from "./csp-report-controller.ts";
 import type { RequestIdVariables } from "./request-id-middleware.ts";
 import { writeRequestLog } from "./request-log.ts";
-import { CSP_REPORT_PATH } from "./csp-report-controller.ts";
 
 /**
  * The Workers environment binding this middleware reads. A single
