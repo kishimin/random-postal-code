@@ -79,8 +79,13 @@ const headersForRoot = (): Map<string, string> => {
       applies = pattern === "/*" || pattern === "/";
       continue;
     }
-    if (!applies) continue;
     const separator = line.indexOf(":");
+    // A header line without a name and value is a malformed rule, not one
+    // to skip (Issue #73): Pages would not serve what it seems to say.
+    if (separator <= 0) {
+      throw new Error(`malformed _headers line: ${JSON.stringify(line)}`);
+    }
+    if (!applies) continue;
     headers.set(
       line.slice(0, separator).trim().toLowerCase(),
       line.slice(separator + 1).trim(),
@@ -101,34 +106,52 @@ const servedPolicy = (): string | undefined => {
 
 /** The source list of `directive`, falling back to default-src as CSP does. */
 const sourcesFor = (policy: string, directive: string): string[] => {
-  const directives = new Map(
-    policy
-      .split(";")
-      .map((part) => part.trim().split(/\s+/))
-      .filter(([name]) => name !== undefined && name !== "")
-      .map(([name, ...sources]) => [name.toLowerCase(), sources]),
-  );
+  // CSP uses the first occurrence of a repeated directive and ignores the
+  // rest (Issue #73), so a later duplicate must not decide the outcome.
+  const directives = new Map<string, string[]>();
+  for (const [name, ...sources] of policy
+    .split(";")
+    .map((part) => part.trim().split(/\s+/))
+    .filter(([name]) => name !== undefined && name !== "")) {
+    const key = name.toLowerCase();
+    if (!directives.has(key)) directives.set(key, sources);
+  }
   return directives.get(directive) ?? directives.get("default-src") ?? [];
 };
 
 /**
  * Whether a script at `url` may load under `sources`, for a page served from
  * an https Pages origin. Covers the source forms a static allowlist uses:
- * 'self', a scheme, and a host with an optional leading `*.` wildcard.
+ * 'self', a scheme, and a host with an optional leading `*.` wildcard,
+ * compared case-insensitively, as browsers do.
+ *
+ * It fails closed (Issue #73): `*`, `https://*`, and any source form it does
+ * not recognize count as allowing everything. Treating an unknown form as
+ * allowing nothing used to let a broad source such as `https://*` pass the
+ * "unlisted host" test while a browser allowed every https host.
  */
 const allows = (sources: string[], url: string): boolean => {
   const target = new URL(url, "https://site.pages.dev/");
 
-  return sources.some((source) => {
-    if (source === "'self'") return target.origin === "https://site.pages.dev";
-    if (source === "https:") return target.protocol === "https:";
-    if (source.startsWith("'")) return false;
+  return sources.some((raw) => {
+    const source = raw.toLowerCase();
 
-    const match = /^(?:(https?):\/\/)?(\*\.)?([^/:]+)(?::\d+)?(\/.*)?$/.exec(
-      source,
-    );
-    if (match === null) return false;
+    if (source === "*") return true;
+    if (source === "'self'") return target.origin === "https://site.pages.dev";
+    // Other keywords ('none', 'unsafe-inline', nonces, hashes) allow no URL.
+    if (source.startsWith("'")) return false;
+    // A scheme source such as https: allows every host on that scheme.
+    if (/^[a-z][a-z0-9+.-]*:$/.test(source)) {
+      return source === target.protocol;
+    }
+
+    const match =
+      /^(?:([a-z][a-z0-9+.-]*):\/\/)?(\*\.)?([a-z0-9.-]+|\*)(?::(?:\d+|\*))?(\/\S*)?$/.exec(
+        source,
+      );
+    if (match === null) return true;
     const [, scheme, wildcard, host] = match;
+    if (host === "*") return true;
     if (scheme !== undefined && `${scheme}:` !== target.protocol) return false;
     return wildcard === undefined
       ? target.hostname === host
@@ -180,9 +203,13 @@ describe("Issue #38: a Content-Security-Policy restricting script sources", () =
       "the build no longer references the AdSense loader",
     ).toBeDefined();
     expect(allows(sources, loader as string)).toBe(true);
-    // Explicitly: by its host, not through a blanket https: or *.
+    // Explicitly: by its host, not through a blanket source. Any single
+    // source that would also allow an arbitrary unlisted host is blanket,
+    // whatever its spelling (HTTPS:, *, https://*) (Issue #73).
     expect(
-      sources.filter((source) => source === "https:" || source === "*"),
+      sources.filter((source) =>
+        allows([source], "https://scripts.example.invalid/x.js"),
+      ),
     ).toEqual([]);
   });
 
