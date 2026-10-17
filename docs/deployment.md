@@ -65,9 +65,9 @@ visits. The two can't drift apart.
    `pages.dev` URL is not promoted until release, so that window exists.
    - In AdSense, add the production site (`https://<project>.pages.dev`)
      under **Sites**, if it is not there already.
-   - Under **Privacy & messaging**, create and publish a **European
-     regulations** message for that site. This is the consent platform the
-     privacy page names. Google's AdSense tag shows the message to
+   - Under **Privacy & messaging**, publish a message of the type
+     **European regulations** for that site. This is the consent platform
+     the privacy page names. Google's AdSense tag shows the message to
      visitors from the EEA, the UK, and Switzerland, and gates ad requests
      on their choice. Nothing in the code does this itself.
    - Keep the ad setting that serves personalized ads only with consent,
