@@ -1,3 +1,4 @@
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
@@ -12,6 +13,8 @@ import {
 } from "vitest/config";
 // Extension included because this file is type checked under module: nodenext,
 // where an extensionless relative specifier does not resolve.
+import { createApiClient } from "./src/api/api-client.ts";
+import { fillCspReportEndpoint } from "./src/app/deployment/csp-headers.ts";
 import { parseAppEnv } from "./src/app/schemas/env.schema.ts";
 
 // A production bundle served over HTTPS cannot call these, but a build aimed at
@@ -50,6 +53,42 @@ const validateBuildEnvironment = (): Plugin => ({
   },
 });
 
+/*
+ * Writes the Worker's CSP report endpoint into the built _headers (Issue
+ * #72). public/_headers carries a placeholder because the Worker's URL is
+ * only known per build. Vite copies public/ into the output first, and
+ * this rewrites that copy once the bundle is closed. The build fails if the
+ * placeholder is missing or the URL cannot be written safely, so a deploy
+ * never serves a policy with a broken endpoint.
+ */
+const writeCspReportEndpoint = (): Plugin => {
+  const target = { headersFile: "", endpoint: "" };
+
+  return {
+    name: "zipnami:csp-report-endpoint",
+    apply: "build",
+    configResolved: (config) => {
+      target.headersFile = path.resolve(
+        config.root,
+        config.build.outDir,
+        "_headers",
+      );
+      target.endpoint = createApiClient(
+        parseAppEnv(config.env).apiBaseUrl,
+      ).resolveUrl("api/csp-report");
+    },
+    closeBundle: () => {
+      writeFileSync(
+        target.headersFile,
+        fillCspReportEndpoint(
+          readFileSync(target.headersFile, "utf8"),
+          target.endpoint,
+        ),
+      );
+    },
+  };
+};
+
 const dirname =
   typeof __dirname !== "undefined"
     ? __dirname
@@ -72,7 +111,12 @@ const testBrowser = playwright({
 });
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), validateBuildEnvironment()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    validateBuildEnvironment(),
+    writeCspReportEndpoint(),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(dirname, "./src"),
