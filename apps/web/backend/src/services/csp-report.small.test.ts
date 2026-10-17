@@ -46,15 +46,16 @@ describe("cspViolationsIn", () => {
   });
 
   test("falls back to violated-directive when effective-directive is absent", () => {
-    const [violation] = cspViolationsIn(
-      "application/csp-report",
-      JSON.stringify({
-        "csp-report": {
-          "violated-directive": "script-src-elem",
-          "blocked-uri": BLOCKED,
-        },
-      }),
-    );
+    const [violation] =
+      cspViolationsIn(
+        "application/csp-report",
+        JSON.stringify({
+          "csp-report": {
+            "violated-directive": "script-src-elem",
+            "blocked-uri": BLOCKED,
+          },
+        }),
+      ) ?? [];
 
     expect(violation?.effectiveDirective).toBe("script-src-elem");
   });
@@ -89,31 +90,34 @@ describe("cspViolationsIn", () => {
   // A visitor's address bar can carry anything after "?" or "#"; the log
   // keeps only where the violation happened, not what was in the URL.
   test("drops the query and fragment from document and blocked URLs", () => {
-    const [violation] = cspViolationsIn(
-      "application/csp-report",
-      JSON.stringify({
-        "csp-report": {
-          "document-uri": "https://zipnami.pages.dev/privacy?token=secret#top",
-          "effective-directive": "script-src",
-          "blocked-uri": `${BLOCKED}?session=abc`,
-        },
-      }),
-    );
+    const [violation] =
+      cspViolationsIn(
+        "application/csp-report",
+        JSON.stringify({
+          "csp-report": {
+            "document-uri":
+              "https://zipnami.pages.dev/privacy?token=secret#top",
+            "effective-directive": "script-src",
+            "blocked-uri": `${BLOCKED}?session=abc`,
+          },
+        }),
+      ) ?? [];
 
     expect(violation?.documentURL).toBe("https://zipnami.pages.dev/privacy");
     expect(violation?.blockedURL).toBe(BLOCKED);
   });
 
   test("keeps a non-URL blocked value such as inline as it is", () => {
-    const [violation] = cspViolationsIn(
-      "application/csp-report",
-      JSON.stringify({
-        "csp-report": {
-          "blocked-uri": "inline",
-          "effective-directive": "script-src",
-        },
-      }),
-    );
+    const [violation] =
+      cspViolationsIn(
+        "application/csp-report",
+        JSON.stringify({
+          "csp-report": {
+            "blocked-uri": "inline",
+            "effective-directive": "script-src",
+          },
+        }),
+      ) ?? [];
 
     expect(violation?.blockedURL).toBe("inline");
   });
@@ -131,15 +135,16 @@ describe("cspViolationsIn", () => {
   });
 
   test("truncates very long field values so one report cannot flood the log", () => {
-    const [violation] = cspViolationsIn(
-      "application/csp-report",
-      JSON.stringify({
-        "csp-report": {
-          "blocked-uri": "inline",
-          "effective-directive": "x".repeat(5000),
-        },
-      }),
-    );
+    const [violation] =
+      cspViolationsIn(
+        "application/csp-report",
+        JSON.stringify({
+          "csp-report": {
+            "blocked-uri": "inline",
+            "effective-directive": "x".repeat(5000),
+          },
+        }),
+      ) ?? [];
 
     expect(violation?.effectiveDirective.length).toBeLessThanOrEqual(200);
   });
