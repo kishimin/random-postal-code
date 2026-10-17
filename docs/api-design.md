@@ -123,7 +123,7 @@ Receives the browser's Content-Security-Policy violation reports for the Web fro
 
 - Accepts `application/csp-report` (a `report-uri` object under `"csp-report"`) and `application/reports+json` (a Reporting API array, of which only `type: "csp-violation"` entries are read).
 - Answers `204` with no body. Nothing of the report is echoed back.
-- Writes one structured log entry per violation: document URL, effective directive, blocked URL (each without query or fragment), and disposition, each truncated. It stores nothing else and changes no state.
+- Writes one structured log entry per violation, up to 20 per request, plus one entry giving the count of any it dropped beyond that. Each entry has the document URL, effective directive, blocked URL, and disposition, each truncated. http(s) URLs lose their query and fragment, and any other URL (`data:`, `blob:`) is logged as its scheme only, because its content is the URL. It stores nothing else and changes no state.
 
 | Condition                                   | Status | Code                 |
 | ------------------------------------------- | -----: | -------------------- |
@@ -132,7 +132,7 @@ Receives the browser's Content-Security-Policy violation reports for the Web fro
 | Content-Type is not a CSP report media type |    415 | `INVALID_REQUEST`    |
 | Method other than `POST`                    |    405 | `METHOD_NOT_ALLOWED` |
 
-Threat review: the endpoint is unauthenticated by necessity, because browsers send reports without credentials. Anyone can therefore post fabricated reports. The worst outcome is noise in the logs. The bounded body, the fixed fields, and the truncated values keep one request from writing an unbounded or attacker-shaped log line, and no report data affects any other response. No application rate limit is defined, for the same reason as section 7; Cloudflare's platform limits apply.
+Threat review: the endpoint is unauthenticated by necessity, because browsers send reports without credentials. Anyone can therefore post fabricated reports. The worst outcome is noise in the logs. The bounded body, the per-request entry cap, the fixed fields, and the truncated values keep one request from writing unbounded, numerous, or attacker-shaped log lines, and no report data affects any other response. No application rate limit is defined, for the same reason as section 7; Cloudflare's platform limits apply.
 
 ## 5. Selection and Data Loading
 
