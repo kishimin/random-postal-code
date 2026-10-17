@@ -116,4 +116,62 @@ describe("POST /api/csp-report", () => {
       ]),
     );
   });
+
+  test("logs at most 20 violations per request and counts the rest", async () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "log").mockImplementation((line: unknown) => {
+      lines.push(String(line));
+    });
+    const batch = Array.from({ length: 50 }, (_, index) => ({
+      type: "csp-violation",
+      body: {
+        blockedURL: `https://scripts.example.invalid/${index}.js`,
+        effectiveDirective: "script-src",
+      },
+    }));
+
+    const response = await post(JSON.stringify(batch), {
+      "content-type": "application/reports+json",
+    });
+
+    const entries = lines.map(
+      (line) => JSON.parse(line) as Record<string, unknown>,
+    );
+    expect(response.status).toBe(204);
+    expect(
+      entries.filter((entry) => entry.type === "csp-violation"),
+    ).toHaveLength(20);
+    expect(entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "csp-violation-dropped", count: 30 }),
+      ]),
+    );
+  });
+
+  test("lets a browser cache the report route's preflight, unlike the default", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const preflight = (path: string) =>
+      createApp({
+        postalCodeRepository: { listPostalCodes: () => Promise.resolve([]) },
+      }).request(
+        path,
+        {
+          method: "OPTIONS",
+          headers: {
+            origin: "https://zipnami.pages.dev",
+            "access-control-request-method": "POST",
+          },
+        },
+        { ALLOWED_ORIGINS: "https://zipnami.pages.dev" },
+      );
+
+    expect(
+      (await preflight("/api/csp-report")).headers.get(
+        "access-control-max-age",
+      ),
+    ).toBe("7200");
+    expect(
+      (await preflight("/api/random")).headers.get("access-control-max-age"),
+    ).toBeNull();
+  });
 });

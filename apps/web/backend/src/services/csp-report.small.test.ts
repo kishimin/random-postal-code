@@ -107,6 +107,27 @@ describe("cspViolationsIn", () => {
     expect(violation?.blockedURL).toBe(BLOCKED);
   });
 
+  test.each([
+    ["data:", "data:text/javascript,alert(document.cookie)"],
+    ["blob:", "blob:https://zipnami.pages.dev/3f2a9c1e-1b2c"],
+  ])(
+    "logs only the scheme of a %s URL, whose content is the URL itself",
+    (scheme, blocked) => {
+      const [violation] =
+        cspViolationsIn(
+          "application/csp-report",
+          JSON.stringify({
+            "csp-report": {
+              "blocked-uri": blocked,
+              "effective-directive": "script-src",
+            },
+          }),
+        ) ?? [];
+
+      expect(violation?.blockedURL).toBe(scheme);
+    },
+  );
+
   test("keeps a non-URL blocked value such as inline as it is", () => {
     const [violation] =
       cspViolationsIn(
