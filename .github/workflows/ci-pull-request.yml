@@ -172,6 +172,12 @@ jobs:
       - name: Run Issue #39 consent management acceptance test (Medium)
         run: bun test ./acceptance/web-consent-management.medium.test.ts
 
+      # Issue #72's policy-side acceptance test reads the production build's
+      # _headers, like Issue #38's (ADR-0077). Its Worker-side counterpart is
+      # registered in apps/web/backend/vitest.config.ts.
+      - name: Run Issue #72 CSP report policy acceptance test (Medium)
+        run: bun test ./acceptance/csp-report-policy.medium.test.ts
+
       - name: Upload coverage report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
