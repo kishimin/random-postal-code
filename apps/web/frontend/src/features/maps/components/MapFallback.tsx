@@ -15,7 +15,11 @@ export const MapFallback = ({ address }: MapFallbackProps) => (
   <div>
     <p>{mapsText.fallbackMessage}</p>
     <p>{fullAddressText(address)}</p>
-    <a href={buildExternalMapHref(address)} target={"_blank"} rel={"noreferrer"}>
+    <a
+      href={buildExternalMapHref(address)}
+      target={"_blank"}
+      rel={"noreferrer"}
+    >
       {mapsText.externalMapLinkLabel(address)}
     </a>
   </div>

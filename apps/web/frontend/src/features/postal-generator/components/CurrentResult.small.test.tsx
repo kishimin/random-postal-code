@@ -74,9 +74,7 @@ describe("CurrentResult", () => {
         result={result}
         onCopy={() => undefined}
         copyFeedback={""}
-        renderAddressExtra={(address) => (
-          <span>{`extra:${address.town}`}</span>
-        )}
+        renderAddressExtra={(address) => <span>{`extra:${address.town}`}</span>}
       />,
     );
 

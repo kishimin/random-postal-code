@@ -20,14 +20,14 @@ export const MapAddressActions = ({
   onSelect,
 }: MapAddressActionsProps) => (
   <>
-    <button
-      type={"button"}
-      aria-pressed={isSelected}
-      onClick={onSelect}
-    >
+    <button type={"button"} aria-pressed={isSelected} onClick={onSelect}>
       {mapsText.selectMapTargetLabel(address)}
     </button>
-    <a href={buildExternalMapHref(address)} target={"_blank"} rel={"noreferrer"}>
+    <a
+      href={buildExternalMapHref(address)}
+      target={"_blank"}
+      rel={"noreferrer"}
+    >
       {mapsText.externalMapLinkLabel(address)}
     </a>
   </>

@@ -133,8 +133,6 @@ describe("AddressMap", () => {
       vi.advanceTimersByTime(MAP_LOAD_TIMEOUT_MS);
     });
 
-    expect(
-      screen.getByTitle(mapsText.embedTitle(address)),
-    ).toBeInTheDocument();
+    expect(screen.getByTitle(mapsText.embedTitle(address))).toBeInTheDocument();
   });
 });

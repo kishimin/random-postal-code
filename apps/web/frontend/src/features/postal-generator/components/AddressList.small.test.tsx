@@ -26,9 +26,7 @@ describe("AddressList", () => {
     render(
       <AddressList
         addresses={addresses}
-        renderAddressExtra={(address) => (
-          <span>{`extra:${address.town}`}</span>
-        )}
+        renderAddressExtra={(address) => <span>{`extra:${address.town}`}</span>}
       />,
     );
 

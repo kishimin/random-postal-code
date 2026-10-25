@@ -41,9 +41,7 @@ const renderApp = () => {
 
 const generate = async () => {
   const user = userEvent.setup();
-  worker.use(
-    http.get(RANDOM_ENDPOINT, () => HttpResponse.json(result)),
-  );
+  worker.use(http.get(RANDOM_ENDPOINT, () => HttpResponse.json(result)));
 
   renderApp();
   await screen.findByRole("heading", { name: /Zipnami/, level: 1 });
@@ -82,13 +80,15 @@ describe("the maps experience", () => {
   test("selecting another address's map action moves the map region to it, leaving the result unchanged", async () => {
     const user = await generate();
 
-    await user.click(
-      screen.getByRole("button", { name: /丸の内.*地図/ }),
-    );
+    await user.click(screen.getByRole("button", { name: /丸の内.*地図/ }));
 
     const mapRegion = screen.getByRole("region", { name: "地図" });
-    expect(within(mapRegion).getByText("東京都千代田区丸の内")).toBeInTheDocument();
-    expect(within(mapRegion).queryByText("東京都千代田区千代田")).not.toBeInTheDocument();
+    expect(
+      within(mapRegion).getByText("東京都千代田区丸の内"),
+    ).toBeInTheDocument();
+    expect(
+      within(mapRegion).queryByText("東京都千代田区千代田"),
+    ).not.toBeInTheDocument();
 
     // The result itself -- outside the map region -- still lists both
     // addresses, unaffected by which one the map is showing. Scoped to the
@@ -96,7 +96,11 @@ describe("the maps experience", () => {
     // selected address's text, which would otherwise make either query match
     // two elements.
     const addressList = screen.getByRole("list");
-    expect(within(addressList).getByText("東京都千代田区千代田")).toBeInTheDocument();
-    expect(within(addressList).getByText("東京都千代田区丸の内")).toBeInTheDocument();
+    expect(
+      within(addressList).getByText("東京都千代田区千代田"),
+    ).toBeInTheDocument();
+    expect(
+      within(addressList).getByText("東京都千代田区丸の内"),
+    ).toBeInTheDocument();
   });
 });
