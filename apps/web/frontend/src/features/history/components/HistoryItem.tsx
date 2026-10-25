@@ -38,9 +38,7 @@ export const HistoryItem = ({ entry }: HistoryItemProps) => {
       {expanded && (
         <ul>
           {entry.addresses.map((address) => (
-            <li
-              key={`${address.prefecture}-${address.city}-${address.town}`}
-            >
+            <li key={`${address.prefecture}-${address.city}-${address.town}`}>
               {addressText(address)}
             </li>
           ))}

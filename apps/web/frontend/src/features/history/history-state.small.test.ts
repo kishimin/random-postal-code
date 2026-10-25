@@ -32,10 +32,13 @@ describe("prependHistoryEntry", () => {
   // rather than built up one call at a time, so this stays a single fast
   // pure-function check independent of how many calls it takes to fill it.
   test("drops only the oldest entry when adding beyond the configured limit", () => {
-    const fullHistory: PostalCode[] = Array.from({ length: 20 }, (_, index) => ({
-      postalCode: String(9000000 + index).padStart(7, "0"),
-      addresses: [{ prefecture: "県", city: "市", town: `${index}` }],
-    }));
+    const fullHistory: PostalCode[] = Array.from(
+      { length: 20 },
+      (_, index) => ({
+        postalCode: String(9000000 + index).padStart(7, "0"),
+        addresses: [{ prefecture: "県", city: "市", town: `${index}` }],
+      }),
+    );
 
     const result = prependHistoryEntry(fullHistory, secondResult, 20);
 

@@ -54,8 +54,7 @@ describe("HistoryItem", () => {
   test("collapses the addresses again when the expand control is activated a second time", async () => {
     const user = userEvent.setup();
     render(<HistoryItem entry={entry} />);
-    const toggle = () =>
-      screen.getByRole("button", { name: /住所/ });
+    const toggle = () => screen.getByRole("button", { name: /住所/ });
 
     await user.click(toggle());
     await user.click(toggle());
