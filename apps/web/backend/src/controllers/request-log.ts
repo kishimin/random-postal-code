@@ -1,9 +1,15 @@
 import type { ApiErrorCode } from "@zipnami/shared";
 import type { Context } from "hono";
+import type { CorsBindings } from "./cors-middleware.ts";
 import type { RequestIdVariables } from "./request-id-middleware.ts";
 
-/** The HTTP statuses a request-handling attempt on this API can end in. */
-export type RequestLogStatus = 200 | 400 | 404 | 405 | 500 | 503;
+/**
+ * The HTTP statuses a request-handling attempt on this API can end in. 204
+ * is corsMiddleware's own preflight response (CR-003/TR-003), answered
+ * before a request ever reaches a route handler.
+ */
+export type RequestLogStatus =
+  200 | 204 | 400 | 404 | 405 | 413 | 415 | 500 | 503;
 
 /**
  * One structured log line for a completed request (CR-003, api-design.md
@@ -39,13 +45,27 @@ export type RequestLogEntry = {
  *
  * Shared by `random-postal-code-controller.ts` (the 200/503/500 selection
  * outcomes, and the 400/405 requests it rejects before reaching the
- * service) and `app.ts` (the 404 `app.notFound()` fallback), so every path
- * a request can take through this API writes the same log shape instead of
- * each caller re-implementing the waitUntil/console.log fallback.
+ * service), `app.ts` (the 404 `app.notFound()` fallback), and
+ * `cors-middleware.ts` (the 204 it answers a preflight with, before the
+ * request ever reaches a route handler), so every path a request can take
+ * through this API writes the same log shape instead of each caller
+ * re-implementing the waitUntil/console.log fallback.
  */
 export const writeRequestLog = (
-  c: Context<{ Variables: RequestIdVariables }>,
+  c: Context<{ Bindings: CorsBindings; Variables: RequestIdVariables }>,
   entry: RequestLogEntry,
+): void => {
+  writeStructuredLog(c, entry);
+};
+
+/**
+ * Writes any structured entry the same way as a request log entry, through
+ * waitUntil when the runtime has one. Used for records that are not about
+ * the request itself, such as a CSP violation a report carried.
+ */
+export const writeStructuredLog = (
+  c: Context<{ Bindings: CorsBindings; Variables: RequestIdVariables }>,
+  entry: Readonly<Record<string, unknown>>,
 ): void => {
   const write = () => console.log(JSON.stringify(entry));
 

@@ -122,6 +122,11 @@ describe("application composition", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.queryByText(thrownDetail)).not.toBeInTheDocument();
+    // CR-006 of Issue #10's review, applied to the content-only form this
+    // screen takes when a route's own component fails (ui-design.md section
+    // 3.2): the acceptance test cannot reach a route built to throw, so this
+    // is where that half of the contract is held.
+    expect(document.title).toMatch(/問題が発生しました/);
   });
 
   test("the failing route replaces the page content, not the frame around it", async () => {

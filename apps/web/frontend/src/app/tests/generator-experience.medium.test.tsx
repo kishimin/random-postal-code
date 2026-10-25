@@ -2,7 +2,7 @@ import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import type { Address, PostalCode } from "@zipnami/shared";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, delay, http } from "msw";
 import { describe, expect, test } from "vitest";
 import { worker } from "../../api/mocks/browser";
 import { postalGeneratorText } from "../../features/postal-generator/site-text";
@@ -44,7 +44,8 @@ const dataUnavailableBody = {
 };
 
 type StubbedResponse =
-  { outcome: "success"; result: PostalCode } | { outcome: "unavailable" };
+  | { outcome: "success"; result: PostalCode }
+  | { outcome: "unavailable"; delayMs?: number };
 
 /**
  * Queues answers for `GET /api/random`, repeating the last one once the
@@ -56,13 +57,17 @@ const queueRandomResponses = (responses: StubbedResponse[]) => {
   const requests: string[] = [];
 
   worker.use(
-    http.get(RANDOM_ENDPOINT, ({ request }) => {
+    http.get(RANDOM_ENDPOINT, async ({ request }) => {
       requests.push(request.url);
       const next = queue.length > 1 ? queue.shift() : queue.at(0);
 
-      return next?.outcome === "success"
-        ? HttpResponse.json(next.result)
-        : HttpResponse.json(dataUnavailableBody, { status: 503 });
+      if (next?.outcome === "success") {
+        return HttpResponse.json(next.result);
+      }
+
+      await delay(next?.delayMs ?? 0);
+
+      return HttpResponse.json(dataUnavailableBody, { status: 503 });
     }),
   );
 
@@ -528,36 +533,38 @@ describe("the generator experience", () => {
 
   test("a failed generation is announced, keeps the previous result, and allows another attempt", async () => {
     const user = userEvent.setup();
+    // The failure is held back so the request is still loading when the
+    // test checks the announcer. That is the ordering CI load used to produce
+    // only some of the time (Issue #41). Keeping it here means a wait that
+    // accepts the loading text fails every time, not just under load.
     queueRandomResponses([
       { outcome: "success", result: firstResult },
-      { outcome: "unavailable" },
+      { outcome: "unavailable", delayMs: 300 },
       { outcome: "success", result: secondResult },
     ]);
     renderAt("/");
 
     await user.click(await screen.findByRole("button", { name: /生成/ }));
     expect(await currentResultText("100-0001")).toBeInTheDocument();
-    // Recorded before the retry: the live region already carries the first
-    // success's announcement, so waiting only for "non-empty" would be
-    // satisfied by that leftover text the instant the click handler returns
-    // -- before the failure this test is about ever reaches the DOM. Queried
+    // The live region already carries the first success's announcement, so
+    // the failure below must be told apart from that leftover text. Queried
     // by testid rather than the generic "status" role now that CurrentResult
     // renders its own, separate status region for copy feedback.
-    const announcedBeforeRetry = screen
-      .getByTestId("generation-announcer")
-      .textContent?.trim();
+    expect(screen.getByTestId("generation-announcer").textContent?.trim()).toBe(
+      postalGeneratorText.resultAnnouncement("100-0001"),
+    );
 
     await user.click(screen.getByRole("button", { name: /生成/ }));
 
-    // ui-design.md section 8 requires a request error to be announced; the
-    // exact wording is this Issue's to choose (section 12), so this only
-    // asserts that the live region says something new.
+    // ui-design.md section 8 requires a request error to be announced. The
+    // test waits for the failure's own text, not for any change: the loading
+    // announcement is a change too. Accepting it let the next click land
+    // while the request was in flight, when the generate button is disabled
+    // and ignores the click (Issue #41).
     await waitFor(() => {
-      const announced = screen
-        .getByTestId("generation-announcer")
-        .textContent?.trim();
-      expect(announced).not.toBe("");
-      expect(announced).not.toBe(announcedBeforeRetry);
+      expect(
+        screen.getByTestId("generation-announcer").textContent?.trim(),
+      ).toBe(postalGeneratorText.failureAnnouncement["service-unavailable"]);
     });
 
     // ui-design.md section 4: a failure keeps the previous result on screen.

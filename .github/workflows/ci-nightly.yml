@@ -96,6 +96,30 @@ jobs:
               sizes: ["Small", "Medium", "Large", "Storybook"],
             });
 
+  # Issue #18, "a failing required check blocks merge": whether the ruleset
+  # actually enforces this needs GitHub's API, which needs the network
+  # (ADR-0004, ADR-0044), so this Large acceptance test cannot share a
+  # pull-request-triggered workflow (ADR-0031/ADR-0042's secret and
+  # permission rules apply only there; nightly is schedule/workflow_dispatch,
+  # so it is outside them). GITHUB_TOKEN avoids GitHub's anonymous rate
+  # limit; it is the default token, not a repository secret.
+  acceptance-large:
+    name: Acceptance Tests (Large)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+
+      - name: Run Issue #18 CI quality gates acceptance test (Large)
+        run: bun test ./acceptance/ci-quality-gates.large.test.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   frontend-e2e-large:
     name: Frontend E2E (Large)
     runs-on: ubuntu-latest

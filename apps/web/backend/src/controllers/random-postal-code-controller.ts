@@ -3,6 +3,7 @@ import type { Context, Hono } from "hono";
 import type { PostalCodeRepository } from "../repositories/postal-code-repository.ts";
 import { selectRandomPostalCode } from "../services/random-postal-code-service.ts";
 import { respondWithApiError } from "./api-error-response.ts";
+import type { CorsBindings } from "./cors-middleware.ts";
 import type { RequestIdVariables } from "./request-id-middleware.ts";
 import { writeRequestLog, type RequestLogStatus } from "./request-log.ts";
 
@@ -23,7 +24,7 @@ type RandomPostalCodeControllerDependencies = {
  * request reaches this handler.
  */
 const hasRequestBody = (
-  c: Context<{ Variables: RequestIdVariables }>,
+  c: Context<{ Bindings: CorsBindings; Variables: RequestIdVariables }>,
 ): boolean => {
   const contentLength = c.req.header("content-length");
 
@@ -45,7 +46,7 @@ const hasRequestBody = (
  * (api-design.md section 4.2) that only one registered route can tell apart.
  */
 export const registerRandomPostalCodeRoute = (
-  app: Hono<{ Variables: RequestIdVariables }>,
+  app: Hono<{ Bindings: CorsBindings; Variables: RequestIdVariables }>,
   deps: RandomPostalCodeControllerDependencies,
 ): void => {
   // Return type annotated explicitly (CR-006): with it, a future outcome

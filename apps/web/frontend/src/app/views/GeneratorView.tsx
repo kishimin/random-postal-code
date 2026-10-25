@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createApiClient } from "../../api/api-client";
+import { AdvertisingRegion } from "../../features/advertising/components/AdvertisingRegion";
 import { HistoryList } from "../../features/history/components/HistoryList";
 import { useHistory } from "../../features/history/hooks/use-history";
 import { CurrentResult } from "../../features/postal-generator/components/CurrentResult";
@@ -7,7 +8,9 @@ import { GenerateAction } from "../../features/postal-generator/components/Gener
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
 import { useGenerator } from "../../features/postal-generator/hooks/use-generator";
 import { postalGeneratorText } from "../../features/postal-generator/site-text";
+import { useDocumentTitle } from "../../hooks/use-document-title";
 import { parseAppEnv } from "../schemas/env.schema";
+import { pageTitle, siteText } from "../site-text";
 
 /**
  * Generator screen (Issue #6): the generate action, its current result, and
@@ -20,16 +23,20 @@ import { parseAppEnv } from "../schemas/env.schema";
  * allowed to import.
  */
 export const GeneratorView = () => {
-  const [client] = useState(() =>
-    createApiClient(parseAppEnv(import.meta.env).apiBaseUrl),
-  );
+  const [env] = useState(() => parseAppEnv(import.meta.env));
+  const [client] = useState(() => createApiClient(env.apiBaseUrl));
   const { entries, addEntry } = useHistory();
   const { state, currentResult, announcement, copyFeedback, generate, copy } =
     useGenerator(client, { onGenerated: addEntry });
 
+  useDocumentTitle(pageTitle());
+
   return (
     <>
-      <h1>{"Zipnami"}</h1>
+      {/* tabIndex: RootLayout focuses a screen's own h1 after a client-side
+          route change (Issue #16 AC-5), and a plain heading is not in the
+          focusable area without one. */}
+      <h1 tabIndex={-1}>{siteText.name}</h1>
       <p>{postalGeneratorText.explanation}</p>
       <GenerateAction
         onGenerate={generate}
@@ -50,6 +57,14 @@ export const GeneratorView = () => {
       </div>
       <GeneratorAnnouncer announcement={announcement} />
       <HistoryList entries={entries} />
+      {/* ui-design.md section 5.1: the reserved advertisement region sits
+          after the current result and before the footer, so it never
+          competes with the primary action for a visitor's attention. */}
+      <AdvertisingRegion
+        clientId={env.googleAdsenseClientId}
+        slotId={env.googleAdsenseSlotId}
+        testMode={env.useTestAds}
+      />
     </>
   );
 };

@@ -25,6 +25,7 @@
     "test:large": "bun run --filter '*' test:large",
     "test:storybook": "bun run --filter '*' test:storybook",
     "test:coverage:pr": "bun run --filter '*' test:coverage:pr",
+    "check:postal-data": "bun run packages/postal-data/scripts/check-dataset.ts packages/postal-data/data/ken-all.source.csv apps/web/backend/src/data/postal-codes.generated.json",
     "e2e": "bun run --filter @zipnami/web-frontend e2e",
     "e2e:small": "bun run --filter @zipnami/web-frontend e2e:small",
     "e2e:medium": "bun run --filter @zipnami/web-frontend e2e:medium",
@@ -33,6 +34,7 @@
     "mutation-test": "bun run --filter @zipnami/web-frontend mutation-test"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint-community/eslint-plugin-eslint-comments": "^4.7.2",
     "@eslint/js": "9.39.5",
     "@playwright/test": "^1.62.1",

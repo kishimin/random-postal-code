@@ -1,0 +1,21 @@
+# Response headers Cloudflare Pages attaches to the static site (Issue #38).
+#
+# Report-only, as decided on Issue #38 (2026-10-17): AdSense supports a
+# per-request nonce policy, which static hosting cannot mint, and warns that
+# stricter allowlists may break without notice. So this allowlist is
+# observed first and enforced later, once its violations are known.
+#
+# script-src: the site's own bundle, plus the AdSense family of hosts the
+# loader (pagead2.googlesyndication.com) and the ads it serves come from.
+# This is the same family acceptance/selectors/advertising-selectors.ts
+# treats as advertising traffic. A new script host must be added here, or
+# acceptance/web-content-security-policy.medium.test.ts fails.
+#
+# Violations are reported to the Worker (Issue #72): report-to, through the
+# Reporting-Endpoints group below, and report-uri as the fallback for
+# browsers without the Reporting API. The endpoint placeholder is replaced
+# at build time with the Worker's /api/csp-report URL (vite.config.ts), and
+# the build fails if it is missing.
+/*
+  Reporting-Endpoints: csp-endpoint="__CSP_REPORT_ENDPOINT__"
+  Content-Security-Policy-Report-Only: script-src 'self' https://*.googlesyndication.com https://*.doubleclick.net https://*.googletagservices.com https://www.googletagmanager.com https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; object-src 'none'; base-uri 'self'; report-uri __CSP_REPORT_ENDPOINT__; report-to csp-endpoint

@@ -28,6 +28,11 @@ playwright/.cache/
 !.env.example
 !.env.*.example
 
+# Cloudflare Workers local secrets (wrangler dev), same shape as .env above
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
 # User-specific IDE files
 .vscode/*
 !.vscode/settings.json
@@ -53,3 +58,9 @@ review/
 *.temp
 *.local
 *~
+
+# Japan Post downloads written by `fetch-ken-all` (about 12 MB, regenerable;
+# see packages/postal-data/README.md). The committed source is
+# data/ken-all.source.csv.
+packages/postal-data/data/ken-all.japan-post.csv
+packages/postal-data/data/*.partial
