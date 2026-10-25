@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -105,6 +112,78 @@ test("the documented API base URL reaches the port wrangler dev serves", () => {
     new URL(documentedValueOf("VITE_API_BASE_URL")).port,
     servedPort,
   );
+});
+
+// Symmetric to the check above: that one keeps the backend's dev.port in
+// sync with the port the frontend calls; this one keeps ALLOWED_ORIGINS in
+// sync with the origin the frontend actually runs on, so the two configs
+// cannot drift apart with nothing in CI to catch it (CR-001/TR-001).
+//
+// Read from .dev.vars.example rather than wrangler.jsonc's top-level `vars`:
+// a Codex review on this PR found that a top-level `vars` entry is the
+// Worker's DEFAULT deployment config, so `wrangler deploy` with no
+// environment selected would have shipped this local-only origin as
+// production's allowlist. `.dev.vars` is read only by `wrangler dev`, never
+// by `wrangler deploy`, so the real value lives in the gitignored
+// `.dev.vars` a developer copies from this example -- the same pattern
+// apps/web/frontend/.env.example already uses for VITE_API_BASE_URL.
+test("apps/web/backend/.dev.vars.example's ALLOWED_ORIGINS matches the origin Vite's dev server serves", () => {
+  const devVarsExample = readRepositoryFile(
+    "apps",
+    "web",
+    "backend",
+    ".dev.vars.example",
+  );
+  const allowedOrigins = /^ALLOWED_ORIGINS="([^"]*)"$/m.exec(
+    devVarsExample,
+  )?.[1];
+
+  assert.ok(
+    allowedOrigins !== undefined,
+    "apps/web/backend/.dev.vars.example must set ALLOWED_ORIGINS, or local development has no allowlist to authorize the frontend's own origin",
+  );
+
+  // vite.config.ts declares no server.port, so Vite serves its dev server on
+  // its own documented default (5173) rather than a value this repository
+  // chose and could restate in a config file. Guarded here: if vite.config.ts
+  // ever does pin a port, this assertion fails so the expected origin below
+  // gets updated to match instead of silently drifting from it.
+  const viteConfig = readRepositoryFile(
+    "apps",
+    "web",
+    "frontend",
+    "vite.config.ts",
+  );
+
+  assert.ok(
+    !/\bserver\s*:\s*\{[^}]*\bport\b/.test(viteConfig),
+    "vite.config.ts now pins a dev server port; update the expected origin in this test to match it",
+  );
+
+  assert.equal(allowedOrigins, "http://localhost:5173");
+});
+
+// TR-005: vitest.config.ts's own comment records that removing one of these
+// entries "breaks nothing that CI checks today" -- ADR-0067's diff guard
+// only watches the acceptance/ directory, which this file sits outside of.
+// This is the guard that comment says does not exist yet.
+test("apps/web/backend's vitest config still runs both acceptance tests", () => {
+  const vitestConfig = readRepositoryFile(
+    "apps",
+    "web",
+    "backend",
+    "vitest.config.ts",
+  );
+
+  for (const acceptanceTest of [
+    "random-postal-code-api.medium.test.ts",
+    "cors-and-secret-boundaries.medium.test.ts",
+  ]) {
+    assert.ok(
+      vitestConfig.includes(acceptanceTest),
+      `vitest.config.ts no longer lists acceptance/${acceptanceTest} in its include array, so that acceptance test would silently stop running`,
+    );
+  }
 });
 
 test("Pages serves index.html for a path no file matches", () => {
@@ -250,6 +329,10 @@ test("git ignores secrets, build output, dependencies and editor state", () => {
     "node_modules/anything",
     "apps/web/backend/.wrangler/state",
     ".idea/workspace.xml",
+    // TR-006: cors-middleware.ts documents `.dev.vars` as a supported
+    // location for ALLOWED_ORIGINS. Without this rule, following that
+    // guidance and running `git add -A` commits the local Workers secret file.
+    "apps/web/backend/.dev.vars",
   ];
 
   assert.deepEqual(
@@ -265,6 +348,12 @@ test("git keeps the example env file the README tells you to copy", () => {
   assert.equal(isIgnored("apps/web/frontend/.env.example"), false);
 });
 
+test("git keeps the example .dev.vars file a developer copies for ALLOWED_ORIGINS", () => {
+  // Symmetric to the check above: the .dev.vars.* rule (TR-006) is broad
+  // enough to swallow this one too, so it needs the same exemption.
+  assert.equal(isIgnored("apps/web/backend/.dev.vars.example"), false);
+});
+
 test("nothing that should be ignored is already tracked", () => {
   // check-ignore describes the rules; this describes what happened. A file
   // committed before a rule existed stays tracked and the rule never applies.
@@ -278,4 +367,144 @@ test("nothing that should be ignored is already tracked", () => {
   );
 
   assert.deepEqual(escaped, []);
+});
+
+/*
+ * The acceptance-test lock (ADR-0067) and its one sanctioned exception: a
+ * pull request labeled atdd-unlock-approved may modify an existing
+ * acceptance test, after a human approved it on the Issue. Exercised
+ * against a throwaway repository, because the check's input is git history.
+ */
+const lockScript = path.join(
+  repositoryRoot,
+  ".github",
+  "scripts",
+  "check-acceptance-lock.sh",
+);
+
+const git = (cwd, ...args) => {
+  const result = spawnSync("git", args, { cwd, encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+};
+
+/** A repository whose base commit holds one acceptance test. */
+const repositoryWithAcceptanceTest = () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "zipnami-lock-"));
+  git(directory, "init", "--quiet", "--initial-branch=main");
+  git(directory, "config", "user.email", "lock@test.invalid");
+  git(directory, "config", "user.name", "lock test");
+  git(directory, "config", "core.autocrlf", "false");
+  // A developer's global commit.gpgSign would make the fixture's commits try
+  // to sign with this throwaway identity and fail before any assertion.
+  git(directory, "config", "commit.gpgSign", "false");
+  mkdirSync(path.join(directory, "acceptance"));
+  writeFileSync(path.join(directory, "acceptance", "a.test.ts"), "original\n");
+  git(directory, "add", ".");
+  git(directory, "commit", "--quiet", "-m", "base");
+  return { directory, base: git(directory, "rev-parse", "HEAD") };
+};
+
+const commitAll = (directory) => {
+  git(directory, "add", "-A");
+  git(directory, "commit", "--quiet", "-m", "change");
+};
+
+const checkLock = (directory, base, approved) =>
+  spawnSync("bash", [lockScript, base], {
+    cwd: directory,
+    encoding: "utf8",
+    env: { ...process.env, ATDD_UNLOCK_APPROVED: approved ? "true" : "false" },
+  });
+
+test("the acceptance lock passes a change that leaves acceptance tests alone", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  writeFileSync(path.join(directory, "other.ts"), "x\n");
+  commitAll(directory);
+
+  assert.equal(checkLock(directory, base, false).status, 0);
+});
+
+test("the acceptance lock passes a newly added acceptance test", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  writeFileSync(path.join(directory, "acceptance", "b.test.ts"), "new\n");
+  commitAll(directory);
+
+  assert.equal(checkLock(directory, base, false).status, 0);
+});
+
+test("the acceptance lock refuses a modified acceptance test without approval", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  writeFileSync(path.join(directory, "acceptance", "a.test.ts"), "weaker\n");
+  commitAll(directory);
+
+  const result = checkLock(directory, base, false);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout, /acceptance\/a\.test\.ts/);
+});
+
+test("the acceptance lock passes an approved modification and names it", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  writeFileSync(path.join(directory, "acceptance", "a.test.ts"), "stronger\n");
+  commitAll(directory);
+
+  const result = checkLock(directory, base, true);
+  assert.equal(result.status, 0, result.stdout);
+  // Visible in the run, so the approval is never silent.
+  assert.match(result.stdout, /::notice::/);
+  assert.match(result.stdout, /acceptance\/a\.test\.ts/);
+});
+
+test("the acceptance lock refuses deleting an acceptance test even with approval", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  rmSync(path.join(directory, "acceptance", "a.test.ts"));
+  commitAll(directory);
+
+  const result = checkLock(directory, base, true);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stdout, /acceptance\/a\.test\.ts/);
+});
+
+test("the acceptance lock refuses renaming an acceptance test even with approval", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  git(directory, "mv", "acceptance/a.test.ts", "acceptance/c.test.ts");
+  commitAll(directory);
+
+  assert.notEqual(checkLock(directory, base, true).status, 0);
+});
+
+test("the acceptance lock refuses turning an acceptance test into a symlink, with or without approval", () => {
+  const { directory, base } = repositoryWithAcceptanceTest();
+  // Recorded straight into the index, so the test needs no filesystem
+  // symlink support (Windows checkouts often have none).
+  const target = spawnSync("git", ["hash-object", "-w", "--stdin"], {
+    cwd: directory,
+    input: "../elsewhere.test.ts",
+    encoding: "utf8",
+  }).stdout.trim();
+  git(
+    directory,
+    "update-index",
+    "--cacheinfo",
+    `120000,${target},acceptance/a.test.ts`,
+  );
+  git(directory, "commit", "--quiet", "-m", "redirect");
+
+  for (const approved of [false, true]) {
+    const result = checkLock(directory, base, approved);
+    assert.notEqual(result.status, 0, `approved=${approved}`);
+    assert.match(result.stdout, /acceptance\/a\.test\.ts/);
+  }
+});
+
+test("the pull request workflow runs the lock script and re-runs it when the label changes", () => {
+  const workflow = readFileSync(
+    path.join(repositoryRoot, ".github", "workflows", "ci-pull-request.yml"),
+    "utf8",
+  );
+
+  assert.match(workflow, /check-acceptance-lock\.sh/);
+  assert.match(workflow, /atdd-unlock-approved/);
+  assert.match(workflow, /\blabeled\b/);
+  assert.match(workflow, /\bunlabeled\b/);
 });

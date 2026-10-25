@@ -1,8 +1,8 @@
 /*
  * Regenerates the Zipnami postal-code dataset from a KEN_ALL.CSV-shaped file
  * that has already been decoded to UTF-8. Fetching the archive from Japan
- * Post and decoding it from Shift-JIS are a separate, later concern (see
- * README.md); this script starts from decoded text.
+ * Post and decoding it from Shift-JIS is scripts/fetch-ken-all.ts's job (see
+ * README.md); this script starts from the decoded text that one writes.
  *
  * Usage: bun run scripts/build-dataset.ts <input.csv> [output.json]
  * With no output path, the JSON is written to stdout.

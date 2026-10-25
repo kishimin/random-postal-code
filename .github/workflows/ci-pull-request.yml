@@ -2,6 +2,14 @@ name: CI (Pull Request)
 
 on:
   pull_request:
+    # labeled/unlabeled re-run the checks when atdd-unlock-approved is added
+    # or removed, so the acceptance lock below reflects the current label.
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
 
 # Read-only by default: no job here needs to write to the repository, and CI
 # must not hand deployment, Maps, or advertising credentials to a build step.
@@ -44,19 +52,13 @@ jobs:
         run: bun run test:config
 
       # An acceptance test is fixed before the implementation is written, so a
-      # pull request may add one and must not edit one. A local `git status`
-      # cannot see this: edit an acceptance test, commit it, and the working
-      # tree is clean again. Comparing against the merge base can.
+      # pull request may add one and must not edit one, unless a human
+      # approved the edit on its Issue and the pull request is labeled
+      # atdd-unlock-approved (see the script for what that still refuses).
       - name: Check that no acceptance test was modified
-        run: |
-          base=$(git merge-base origin/${{ github.base_ref }} HEAD)
-          modified=$(git diff --diff-filter=MDR --name-only "$base"..HEAD -- acceptance/)
-          if [ -n "$modified" ]; then
-            echo "::error::An acceptance test was modified or deleted:"
-            echo "$modified"
-            exit 1
-          fi
-          echo "No acceptance test was modified."
+        env:
+          ATDD_UNLOCK_APPROVED: ${{ contains(github.event.pull_request.labels.*.name, 'atdd-unlock-approved') }}
+        run: bash .github/scripts/check-acceptance-lock.sh "$(git merge-base origin/${{ github.base_ref }} HEAD)"
 
       - name: Check formatting
         run: bun run format:check
@@ -72,6 +74,9 @@ jobs:
 
       - name: Test custom ESLint rules
         run: bun run test:eslint
+
+      - name: Check postal data for drift
+        run: bun run check:postal-data
 
       - name: Build production bundle
         run: bun run build
@@ -119,7 +124,11 @@ jobs:
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Running Issue #18's CI quality gates acceptance test below re-runs
+    # test:coverage:pr, build, and check:postal-data inside itself (it judges
+    # the real gates, not a mock of them), roughly doubling this job's own
+    # work on top of checkout and setup.
+    timeout-minutes: 30
 
     steps:
       - name: Check out repository
@@ -134,6 +143,46 @@ jobs:
       # threshold is applied by the script through COVERAGE_THRESHOLD.
       - name: Vitest coverage (Small and Medium)
         run: bun run test:coverage:pr
+
+      # Issue #18's Medium acceptance test is registered here, in an
+      # existing required check, rather than in a new job: the main
+      # ruleset's required checks are fixed, and a job nobody requires would
+      # not block a merge on failure (ADR-0031, ADR-0042). This job needs no
+      # browser, matching the test's own Medium classification.
+      - name: Run Issue #18 CI quality gates acceptance test (Medium)
+        run: bun test ./acceptance/ci-quality-gates.medium.test.ts
+
+      # Issue #25's acceptance test exercises a repository document, not a
+      # workspace package, so no package's vitest.config.ts has a claim on
+      # it (ADR-0069). ADR-0077 binds such a non-package test to its runner
+      # by naming its path in a CI step directly, the same way Issue #18's
+      # own acceptance test above is bound.
+      - name: Run Issue #25 Figma UI source acceptance test (Medium)
+        run: bun test ./acceptance/figma-ui-source-and-screen-map.medium.test.ts
+
+      # Issue #19's acceptance test reads the deployment workflows and runs
+      # each workspace's deploy-settings verifier, so like the two above it
+      # belongs to no single package's vitest.config.ts (ADR-0077). It needs
+      # no Cloudflare credentials.
+      - name: Run Issue #19 Web deployment acceptance test (Medium)
+        run: bun test ./acceptance/web-deployment.medium.test.ts
+
+      # Issue #38's acceptance test runs the frontend production build and
+      # reads the _headers file Pages serves from it, so it belongs to no
+      # single package's vitest.config.ts either (ADR-0077).
+      - name: Run Issue #38 Content-Security-Policy acceptance test (Medium)
+        run: bun test ./acceptance/web-content-security-policy.medium.test.ts
+
+      # Issue #39's acceptance test also reads the production build and the
+      # deployment runbook, so it is bound here the same way (ADR-0077).
+      - name: Run Issue #39 consent management acceptance test (Medium)
+        run: bun test ./acceptance/web-consent-management.medium.test.ts
+
+      # Issue #72's policy-side acceptance test reads the production build's
+      # _headers, like Issue #38's (ADR-0077). Its Worker-side counterpart is
+      # registered in apps/web/backend/vitest.config.ts.
+      - name: Run Issue #72 CSP report policy acceptance test (Medium)
+        run: bun test ./acceptance/csp-report-policy.medium.test.ts
 
       - name: Upload coverage report
         if: ${{ !cancelled() }}

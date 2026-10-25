@@ -60,6 +60,54 @@ const parseRecords = (source: string): ParsedRecord[] =>
     .filter((line) => line.trim() !== "")
     .map(parseRecord);
 
+const countOf = (text: string, character: string): number =>
+  text.split(character).length - 1;
+
+// KEN_ALL.CSV has no flag column marking a continuation record. The only
+// usable signal is a town field whose full-width `（` is not yet closed by a
+// `）`: the town continues in the next record (see the package README).
+const hasUnclosedParenthesis = (town: string): boolean =>
+  countOf(town, "（") > countOf(town, "）");
+
+const continuesInto = (previous: ParsedRecord, next: ParsedRecord): boolean =>
+  hasUnclosedParenthesis(previous.address.town) &&
+  previous.postalCode === next.postalCode &&
+  previous.address.prefecture === next.address.prefecture &&
+  previous.address.city === next.address.city;
+
+/**
+ * Joins each run of records that Japan Post split from one over-long town
+ * name back into a single record. A record whose next record does not share
+ * its postal code, prefecture, and city is left as it is, even with an
+ * unclosed `（`: merging across those boundaries would invent an address.
+ */
+const reassembleSplitTowns = (
+  records: readonly ParsedRecord[],
+): ParsedRecord[] => {
+  // A loop over a mutable array rather than a spreading reduce: the real
+  // KEN_ALL.CSV has over a hundred thousand records, and copying the
+  // accumulator per record would make the build quadratic.
+  const reassembled: ParsedRecord[] = [];
+
+  for (const record of records) {
+    const previous = reassembled.at(-1);
+
+    if (previous !== undefined && continuesInto(previous, record)) {
+      reassembled[reassembled.length - 1] = {
+        ...previous,
+        address: {
+          ...previous.address,
+          town: previous.address.town + record.address.town,
+        },
+      };
+    } else {
+      reassembled.push(record);
+    }
+  }
+
+  return reassembled;
+};
+
 // Two records are the same address only when prefecture, city, and town all
 // match; JSON.stringify of the tuple gives each distinct combination a
 // distinct key without picking a delimiter that real address text could
@@ -101,8 +149,9 @@ const toDataset = (
 /* eslint-disable @typescript-eslint/require-await -- the `async` keyword itself is what converts a synchronous throw into a rejection; that guarantee does not depend on the body containing an `await`. */
 /**
  * Builds the Zipnami postal-code dataset from Japan Post's KEN_ALL.CSV-shaped
- * text, already decoded to UTF-8: converts each record, groups the results by
- * their seven-digit postal code, and deduplicates each group's addresses.
+ * text, already decoded to UTF-8: converts each record, rejoins town names
+ * Japan Post split across consecutive records, groups the results by their
+ * seven-digit postal code, and deduplicates each group's addresses.
  *
  * The function is `async` despite having no `await` in its body: the
  * contract is a Promise, so an idiomatic `buildPostalCodeDataset(source)
@@ -114,5 +163,7 @@ const toDataset = (
 export const buildPostalCodeDataset = async (
   source: string,
 ): Promise<PostalCode[]> =>
-  toDataset(groupAddressesByPostalCode(parseRecords(source)));
+  toDataset(
+    groupAddressesByPostalCode(reassembleSplitTowns(parseRecords(source))),
+  );
 /* eslint-enable @typescript-eslint/require-await -- scoped to this one intentionally await-less async function */

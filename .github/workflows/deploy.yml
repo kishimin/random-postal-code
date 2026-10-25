@@ -1,0 +1,137 @@
+name: Deploy (Production)
+
+# Manual only. A deploy is a decision a person makes, and running only on
+# workflow_dispatch also keeps the Cloudflare credentials away from any
+# pull-request code (Issue #18's "CI does not expose deployment secrets").
+#
+# Every production value comes from the `production` GitHub Environment
+# rather than this file: design.md section 12 fixes the Pages origin, Worker
+# URL, and project name "from the provisioned Cloudflare resources", and
+# docs/deployment.md lists what to set there.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which half to deploy
+        type: choice
+        options:
+          - both
+          - backend
+          - frontend
+        default: both
+
+permissions:
+  contents: read
+
+# Shared with the rollback workflow, so a deploy and a rollback never race.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  backend:
+    name: Deploy Worker
+    # Only main deploys: a dispatch from another branch would otherwise ship
+    # unreviewed code to production.
+    if: github.ref == 'refs/heads/main' && (inputs.target == 'both' || inputs.target == 'backend')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+
+      - name: Verify Worker deploy settings
+        env:
+          ALLOWED_ORIGINS: ${{ vars.ZIPNAMI_PAGES_ORIGIN }}
+        run: bun run --filter @zipnami/web-backend verify:deploy-env
+
+      # The allowlist is passed with --var rather than committed to
+      # wrangler.jsonc: it is the production Pages origin, which only exists
+      # once the project is provisioned. It is a public origin, not a secret;
+      # do not pass secrets with --var, use `wrangler secret` instead.
+      # Unquoted is safe: the step above has already proven the value is one
+      # https origin, so it holds no space or glob character.
+      - name: Deploy Worker
+        working-directory: apps/web/backend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PAGES_ORIGIN: ${{ vars.ZIPNAMI_PAGES_ORIGIN }}
+        run: bunx wrangler deploy --var ALLOWED_ORIGINS:$PAGES_ORIGIN
+
+  frontend:
+    name: Deploy Pages
+    # Deliberately not `needs: backend`: each half deploys on its own
+    # (design.md section 10). With target "both" they run side by side.
+    if: github.ref == 'refs/heads/main' && (inputs.target == 'both' || inputs.target == 'frontend')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+
+      - name: Verify Pages deploy settings
+        env:
+          VITE_API_BASE_URL: ${{ vars.ZIPNAMI_WORKER_URL }}
+          VITE_GOOGLE_ADSENSE_CLIENT_ID: ${{ vars.ZIPNAMI_ADSENSE_CLIENT_ID }}
+          VITE_GOOGLE_ADSENSE_SLOT_ID: ${{ vars.ZIPNAMI_ADSENSE_SLOT_ID }}
+          VITE_ADSENSE_TEST_MODE: "false"
+        run: bun run --filter @zipnami/web-frontend verify:deploy-env
+
+      # Vite bakes these into the bundle at build time, so the Worker URL
+      # the site calls is fixed here, not at request time.
+      - name: Build Pages assets
+        env:
+          VITE_API_BASE_URL: ${{ vars.ZIPNAMI_WORKER_URL }}
+          VITE_GOOGLE_ADSENSE_CLIENT_ID: ${{ vars.ZIPNAMI_ADSENSE_CLIENT_ID }}
+          VITE_GOOGLE_ADSENSE_SLOT_ID: ${{ vars.ZIPNAMI_ADSENSE_SLOT_ID }}
+          VITE_ADSENSE_TEST_MODE: "false"
+        run: bun run --filter @zipnami/web-frontend build
+
+      # --branch main makes this a production deployment, provided the
+      # project's production branch is main (docs/deployment.md creates it
+      # that way).
+      - name: Deploy Pages
+        working-directory: apps/web/frontend
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PAGES_PROJECT: ${{ vars.ZIPNAMI_PAGES_PROJECT }}
+        run: bunx wrangler pages deploy dist --project-name "$PAGES_PROJECT" --branch main --commit-hash "$GITHUB_SHA"
+
+  smoke:
+    name: Production smoke check
+    needs:
+      - backend
+      - frontend
+    # Runs after whichever halves this dispatch deployed. A skipped half is
+    # fine (it was not chosen); a failed one means there is nothing sound to
+    # check.
+    if: ${{ github.ref == 'refs/heads/main' && !cancelled() && !contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          playwright-browsers: chromium
+
+      - name: Smoke check from Pages through Workers
+        env:
+          SMOKE_BASE_URL: ${{ vars.ZIPNAMI_PAGES_ORIGIN }}
+        run: bun run --filter @zipnami/web-frontend smoke:production

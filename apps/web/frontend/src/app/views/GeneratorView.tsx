@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createApiClient } from "../../api/api-client";
+import { AdvertisingRegion } from "../../features/advertising/components/AdvertisingRegion";
 import { MapAddressActions } from "../../features/maps/components/MapAddressActions";
 import { MapSection } from "../../features/maps/components/MapSection";
 import { useMapSelection } from "../../features/maps/hooks/use-map-selection";
@@ -8,7 +9,9 @@ import { GenerateAction } from "../../features/postal-generator/components/Gener
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
 import { useGenerator } from "../../features/postal-generator/hooks/use-generator";
 import { postalGeneratorText } from "../../features/postal-generator/site-text";
+import { useDocumentTitle } from "../../hooks/use-document-title";
 import { parseAppEnv } from "../schemas/env.schema";
+import { pageTitle, siteText } from "../site-text";
 
 /**
  * Generator screen (Issue #6, extended by Issue #8's maps region): the
@@ -27,17 +30,20 @@ import { parseAppEnv } from "../schemas/env.schema";
  * CurrentResult and MapSection -- with no other shared ancestor to hold it.
  */
 export const GeneratorView = () => {
-  const [{ apiBaseUrl, mapsApiKey }] = useState(() =>
-    parseAppEnv(import.meta.env),
-  );
-  const [client] = useState(() => createApiClient(apiBaseUrl));
+  const [env] = useState(() => parseAppEnv(import.meta.env));
+  const [client] = useState(() => createApiClient(env.apiBaseUrl));
   const { state, currentResult, announcement, copyFeedback, generate, copy } =
     useGenerator(client);
   const { selectedAddress, selectAddress } = useMapSelection(currentResult);
 
+  useDocumentTitle(pageTitle());
+
   return (
     <>
-      <h1>{"Zipnami"}</h1>
+      {/* tabIndex: RootLayout focuses a screen's own h1 after a client-side
+          route change (Issue #16 AC-5), and a plain heading is not in the
+          focusable area without one. */}
+      <h1 tabIndex={-1}>{siteText.name}</h1>
       <p>{postalGeneratorText.explanation}</p>
       <GenerateAction
         onGenerate={generate}
@@ -66,9 +72,17 @@ export const GeneratorView = () => {
       <MapSection
         result={currentResult}
         selectedAddress={selectedAddress}
-        apiKey={mapsApiKey}
+        apiKey={env.mapsApiKey}
       />
       <GeneratorAnnouncer announcement={announcement} />
+      {/* ui-design.md section 5.1: the reserved advertisement region sits
+          after the current result and before the footer, so it never
+          competes with the primary action for a visitor's attention. */}
+      <AdvertisingRegion
+        clientId={env.googleAdsenseClientId}
+        slotId={env.googleAdsenseSlotId}
+        testMode={env.useTestAds}
+      />
     </>
   );
 };

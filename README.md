@@ -36,21 +36,22 @@ agreement.
 Every command runs from the repository root and delegates through the workspace, so a
 package added later is picked up without changing them.
 
-| Command                    | Purpose                                                              |
-| -------------------------- | -------------------------------------------------------------------- |
-| `bun run format`           | Rewrite every file to the Prettier style                             |
-| `bun run format:check`     | Fail instead of rewriting, for CI                                    |
-| `bun run typecheck`        | `tsc -b --noEmit` across every package                               |
-| `bun run lint`             | oxlint, then ESLint, then the acceptance tests                       |
-| `bun run lint:markup`      | markuplint over JSX, for HTML semantics                              |
-| `bun run test`             | Every package's default test run                                     |
-| `bun run test:small`       | One size at a time; also `bun run test:medium`, `bun run test:large` |
-| `bun run test:coverage:pr` | Small and medium tests against the coverage threshold                |
-| `bun run test:eslint`      | The repository's own ESLint rules                                    |
-| `bun run test:config`      | Contracts between packages and the platforms they deploy to          |
-| `bun run build`            | Build every package for deployment                                   |
-| `bun run e2e:medium`       | Acceptance tests in five browser projects                            |
-| `bun run storybook`        | Storybook on port 6006                                               |
+| Command                     | Purpose                                                                          |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| `bun run format`            | Rewrite every file to the Prettier style                                         |
+| `bun run format:check`      | Fail instead of rewriting, for CI                                                |
+| `bun run typecheck`         | `tsc -b --noEmit` across every package                                           |
+| `bun run lint`              | oxlint, then ESLint, then the acceptance tests                                   |
+| `bun run lint:markup`       | markuplint over JSX, for HTML semantics                                          |
+| `bun run test`              | Every package's default test run                                                 |
+| `bun run test:small`        | One size at a time; also `bun run test:medium`, `bun run test:large`             |
+| `bun run test:coverage:pr`  | Small and medium tests against the coverage threshold                            |
+| `bun run test:eslint`       | The repository's own ESLint rules                                                |
+| `bun run test:config`       | Contracts between packages and the platforms they deploy to                      |
+| `bun run check:postal-data` | Fail if the generated postal-code artifact has drifted from its committed source |
+| `bun run build`             | Build every package for deployment                                               |
+| `bun run e2e:medium`        | Acceptance tests in five browser projects                                        |
+| `bun run storybook`         | Storybook on port 6006                                                           |
 
 `bun run test:config` and `bun run test:eslint` run at the root rather than in a
 package, because what they hold spans packages or has no package at all.
