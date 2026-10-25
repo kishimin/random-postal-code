@@ -105,7 +105,8 @@ export const createAddressMapPage = (page: Page) => {
   // The map sits after the result (ui-design.md section 7), so on a short
   // viewport it can start below the fold and a deferred frame would not load.
   // Scrolling toward it is what a visitor does to look at it.
-  const revealMap = () => page.mouse.wheel(0, 2000);
+  const revealMap = () =>
+    page.getByRole("region", { name: /地図/ }).scrollIntoViewIfNeeded();
 
   const mapSelectionAction = (address: Address) =>
     generator
