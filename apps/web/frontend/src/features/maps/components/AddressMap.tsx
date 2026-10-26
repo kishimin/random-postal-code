@@ -58,14 +58,19 @@ export const AddressMap = ({ address, apiKey }: AddressMapProps) => {
   const [hasFailed, setHasFailed] = useState(false);
 
   // A newly selected address deserves a fresh load attempt rather than
-  // inheriting the previous address's failure. Adjusted during render
+  // inheriting the previous address's failure. Keyed on the URL the frame
+  // loads, not on the address object: regenerating can return the same postal
+  // code as a new but equal object, and since the frame's src then stays the
+  // same, the browser fires no new load event -- resetting on identity would
+  // time out a map that already loaded. Adjusted during render
   // (React's own pattern for resetting state when a prop changes) instead of
   // an effect, so the timeout effect below only ever sets `hasFailed` to
   // true -- the one state change that really is synchronizing with an
   // external system, the browser's own timer.
-  const [trackedAddress, setTrackedAddress] = useState(address);
-  if (trackedAddress !== address) {
-    setTrackedAddress(address);
+  const embedSrc = buildEmbedSrc(address, apiKey);
+  const [trackedSrc, setTrackedSrc] = useState(embedSrc);
+  if (trackedSrc !== embedSrc) {
+    setTrackedSrc(embedSrc);
     setHasFailed(false);
   }
 
@@ -93,7 +98,7 @@ export const AddressMap = ({ address, apiKey }: AddressMapProps) => {
     }, MAP_LOAD_TIMEOUT_MS);
 
     return () => clearTimeout(timer);
-  }, [isVisible, address]);
+  }, [isVisible, embedSrc]);
 
   if (!apiKey || hasFailed) {
     return (
@@ -109,7 +114,7 @@ export const AddressMap = ({ address, apiKey }: AddressMapProps) => {
         <iframe
           className={"h-full w-full"}
           title={mapsText.embedTitle(address)}
-          src={buildEmbedSrc(address, apiKey)}
+          src={embedSrc}
           onLoad={() => {
             hasLoadedRef.current = true;
           }}
