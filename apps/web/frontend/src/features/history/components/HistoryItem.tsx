@@ -1,6 +1,7 @@
 import type { Address, PostalCode } from "@zipnami/shared";
 import { useState } from "react";
 import { historyText } from "../site-text";
+import { tapTargetClass } from "../styles";
 
 type HistoryItemProps = {
   entry: PostalCode;
@@ -46,6 +47,7 @@ export const HistoryItem = ({ entry }: HistoryItemProps) => {
       )}
       <button
         type={"button"}
+        className={tapTargetClass}
         aria-expanded={expanded}
         onClick={() => setExpanded((current) => !current)}
       >

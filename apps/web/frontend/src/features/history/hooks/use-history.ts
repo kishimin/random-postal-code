@@ -1,5 +1,5 @@
 import type { PostalCode } from "@zipnami/shared";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { HistoryEntry } from "../components/HistoryList";
 import { prependHistoryEntry } from "../history-state";
 import {
@@ -39,13 +39,22 @@ export const useHistory = (): UseHistoryResult => {
   const [entries, setEntries] = useState<readonly HistoryEntry[]>(() =>
     readHistoryEntries().map(withId),
   );
+  const restored = useRef(entries);
+
+  // Persisted after the render that shows the change, not inside the
+  // setEntries updater: React requires updaters to be pure and runs them
+  // twice under StrictMode. The history just read back is skipped, so a mount
+  // never rewrites the storage it only read.
+  useEffect(() => {
+    if (entries === restored.current) return;
+    writeHistoryEntries(entries.map(withoutId));
+  }, [entries]);
 
   const addEntry = useCallback((entry: PostalCode) => {
-    setEntries((current) => {
-      const next = prependHistoryEntry(current, withId(entry));
-      writeHistoryEntries(next.map(withoutId));
-      return next;
-    });
+    // Drawn once per generation, outside the updater for the same reason the
+    // write is: a doubled updater would otherwise give one entry two ids.
+    const identified = withId(entry);
+    setEntries((current) => prependHistoryEntry(current, identified));
   }, []);
 
   return { entries, addEntry };
