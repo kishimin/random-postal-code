@@ -104,7 +104,9 @@ jobs:
 
   frontend-e2e-small:
     name: Frontend E2E (Small)
-    runs-on: ubuntu-latest
+    # Pinned for WebKit's ICU 74 dependency; see the same job in
+    # ci-pull-request.yml (Issue #79).
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     defaults:
       run:

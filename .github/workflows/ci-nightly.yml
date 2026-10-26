@@ -122,7 +122,9 @@ jobs:
 
   frontend-e2e-large:
     name: Frontend E2E (Large)
-    runs-on: ubuntu-latest
+    # Pinned for WebKit's ICU 74 dependency; see the Frontend E2E (Medium) job
+    # in ci-pull-request.yml (Issue #79).
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:
       run:
