@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { createApiClient } from "../../api/api-client";
 import { AdvertisingRegion } from "../../features/advertising/components/AdvertisingRegion";
+import { HistoryList } from "../../features/history/components/HistoryList";
+import { useHistory } from "../../features/history/hooks/use-history";
 import { CurrentResult } from "../../features/postal-generator/components/CurrentResult";
 import { GenerateAction } from "../../features/postal-generator/components/GenerateAction";
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
@@ -23,8 +25,9 @@ import { pageTitle, siteText } from "../site-text";
 export const GeneratorView = () => {
   const [env] = useState(() => parseAppEnv(import.meta.env));
   const [client] = useState(() => createApiClient(env.apiBaseUrl));
+  const { entries, addEntry } = useHistory();
   const { state, currentResult, announcement, copyFeedback, generate, copy } =
-    useGenerator(client);
+    useGenerator(client, { onGenerated: addEntry });
 
   useDocumentTitle(pageTitle());
 
@@ -53,6 +56,7 @@ export const GeneratorView = () => {
         )}
       </div>
       <GeneratorAnnouncer announcement={announcement} />
+      <HistoryList entries={entries} />
       {/* ui-design.md section 5.1: the reserved advertisement region sits
           after the current result and before the footer, so it never
           competes with the primary action for a visitor's attention. */}

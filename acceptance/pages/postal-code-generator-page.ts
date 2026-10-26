@@ -200,16 +200,24 @@ export const createPostalCodeGeneratorPage = (page: Page) => {
     page.getByRole("link", { name: generatorSelectors.navigationLink });
 
   /*
-   * Resolves to the main landmark when it shows this postal code, and to
-   * nothing when it does not.
+   * Resolves to the current-result region when it shows this postal code, and
+   * to nothing when it does not.
    *
-   * Filtering the landmark rather than locating the text itself keeps the
+   * Filtering the region rather than locating the text itself keeps the
    * assertion away from how the result is marked up: a text locator matches
    * every ancestor that contains it as well, which would make the test fail on
    * an extra wrapper rather than on a missing result.
+   *
+   * Not the whole main landmark: the generation history (Issue #7) keeps
+   * earlier postal codes inside main by design, so "main no longer shows the
+   * old code" would forbid the history rather than check that the current
+   * result was replaced. Narrowed with human approval on Issue #7
+   * (ADR-0080).
    */
   const postalCodeDisplay = (postalCode: string) =>
-    main().filter({ hasText: displayedPostalCode(postalCode) });
+    main()
+      .getByTestId("result-region")
+      .filter({ hasText: displayedPostalCode(postalCode) });
 
   const anyPostalCodeDisplay = () =>
     main().filter({ hasText: anyDisplayedPostalCode });
