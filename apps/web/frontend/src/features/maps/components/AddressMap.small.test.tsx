@@ -147,11 +147,17 @@ describe("AddressMap", () => {
   // under the tap and the map takes it instead.
   test("keeps the same height before the frame mounts, once it mounts, and once it falls back", () => {
     vi.useFakeTimers();
-    const { container } = render(
-      <AddressMap address={address} apiKey={"test-key"} />,
+    // Wrapped in a region of its own so the map's box can be measured by role:
+    // before the frame mounts it holds nothing a query could find.
+    render(
+      <section aria-label={"map under test"}>
+        <AddressMap address={address} apiKey={"test-key"} />
+      </section>,
     );
     const regionHeight = () =>
-      container.firstElementChild?.getBoundingClientRect().height ?? 0;
+      screen
+        .getByRole("region", { name: "map under test" })
+        .getBoundingClientRect().height;
 
     const reserved = regionHeight();
     expect(reserved).toBeGreaterThan(0);

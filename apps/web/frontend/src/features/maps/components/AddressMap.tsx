@@ -23,14 +23,17 @@ type AddressMapProps = {
 export const MAP_LOAD_TIMEOUT_MS = 8000;
 
 // ui-design.md section 7: "Loading and failure states reserve enough space to
-// avoid disruptive layout shifts." Every state renders in this one fixed-height
-// box rather than sizing to its content: the frame mounts only on scroll,
-// which is exactly when a visitor is reaching for the history below, and an
-// empty box that grew by the frame's height at that moment moved the history
-// out from under the tap so the map took it instead. A fixed height rather
-// than a minimum, so the fallback does not resize the box either; 18rem holds
-// the fallback's message, address, and link at a 320px viewport.
+// avoid disruptive layout shifts." The frame's box is a fixed height rather
+// than sized to its content: the frame mounts only on scroll, which is exactly
+// when a visitor is reaching for the history below, and an empty box that grew
+// by the frame's height at that moment moved the history out from under the
+// tap so the map took it instead.
 const mapFrameClass = "h-72 w-full";
+
+// The same height as a minimum, not a fixed one: the fallback's link repeats
+// the full address, and an unusually long one must push the history down
+// rather than spill over it, where it would take taps the same way.
+const mapFallbackClass = "min-h-72 w-full";
 
 /**
  * The embedded map for the selected address (ui-design.md section 7).
@@ -94,7 +97,7 @@ export const AddressMap = ({ address, apiKey }: AddressMapProps) => {
 
   if (!apiKey || hasFailed) {
     return (
-      <div className={mapFrameClass}>
+      <div className={mapFallbackClass}>
         <MapFallback address={address} />
       </div>
     );
