@@ -1,6 +1,10 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { Address } from "@zipnami/shared";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+// The shared test setup loads no stylesheet, and the reserved height below is
+// a Tailwind utility: without it every state would measure the same 0px and
+// the layout-shift test could not fail.
+import "../../../theme/globals.css";
 import { mapsText } from "../site-text";
 import { AddressMap, MAP_LOAD_TIMEOUT_MS } from "./AddressMap";
 
@@ -134,5 +138,30 @@ describe("AddressMap", () => {
     });
 
     expect(screen.getByTitle(mapsText.embedTitle(address))).toBeInTheDocument();
+  });
+
+  // ui-design.md section 7: "Loading and failure states reserve enough space
+  // to avoid disruptive layout shifts." The history sits below the map, so a
+  // region that grows when its frame mounts (it mounts on scroll, exactly
+  // when a visitor is reaching for what is below) moves that content out from
+  // under the tap and the map takes it instead.
+  test("keeps the same height before the frame mounts, once it mounts, and once it falls back", () => {
+    vi.useFakeTimers();
+    const { container } = render(
+      <AddressMap address={address} apiKey={"test-key"} />,
+    );
+    const regionHeight = () =>
+      container.firstElementChild?.getBoundingClientRect().height ?? 0;
+
+    const reserved = regionHeight();
+    expect(reserved).toBeGreaterThan(0);
+
+    revealLatestObserver();
+    expect(regionHeight()).toBe(reserved);
+
+    act(() => {
+      vi.advanceTimersByTime(MAP_LOAD_TIMEOUT_MS);
+    });
+    expect(regionHeight()).toBe(reserved);
   });
 });
