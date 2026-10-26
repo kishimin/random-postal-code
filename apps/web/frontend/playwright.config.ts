@@ -25,6 +25,7 @@ export default defineConfig({
     "acceptance/web-responsive-accessibility.medium.test.ts",
     "acceptance/dependency-failure-isolation.medium.test.ts",
     "acceptance/web-address-maps.medium.test.ts",
+    "acceptance/web-generation-history.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,

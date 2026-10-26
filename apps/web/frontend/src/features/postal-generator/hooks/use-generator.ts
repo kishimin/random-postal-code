@@ -11,6 +11,17 @@ import {
   type GeneratorState,
 } from "./generator-state";
 
+export type UseGeneratorOptions = {
+  /**
+   * Called once for every successful generation, with the result that just
+   * arrived. Request-lifecycle orchestration and the Web generation history
+   * (Issue #7) are separate concerns; this is the seam that lets a caller
+   * (GeneratorView) feed one into the other without this hook knowing history
+   * exists.
+   */
+  onGenerated?: (result: PostalCode) => void;
+};
+
 export type UseGeneratorResult = {
   state: GeneratorState;
   currentResult: PostalCode | undefined;
@@ -33,7 +44,10 @@ export type UseGeneratorResult = {
  * call may already have started its own fetch (ui-design.md section 4:
  * "Loading disables only duplicate generation.").
  */
-export const useGenerator = (client: ApiClient): UseGeneratorResult => {
+export const useGenerator = (
+  client: ApiClient,
+  { onGenerated }: UseGeneratorOptions = {},
+): UseGeneratorResult => {
   const [state, dispatch] = useReducer(generatorReducer, initialGeneratorState);
   const statusRef = useRef<GeneratorState["status"]>("idle");
   const currentResult = currentResultOf(state);
@@ -72,6 +86,7 @@ export const useGenerator = (client: ApiClient): UseGeneratorResult => {
       .then((result) => {
         statusRef.current = "success";
         dispatch({ type: "generate/succeeded", result });
+        onGenerated?.(result);
       })
       .catch((error: unknown) => {
         statusRef.current = "error";
@@ -80,7 +95,7 @@ export const useGenerator = (client: ApiClient): UseGeneratorResult => {
           error: classifyGeneratorError(error),
         });
       });
-  }, [client]);
+  }, [client, onGenerated]);
 
   const copy = useCallback(() => {
     if (!currentResult) return;
