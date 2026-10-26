@@ -14,8 +14,9 @@ import { createAppRouter } from "../routes/app-router";
  * list's own action and the map region, so that connection needs its own
  * test.
  *
- * This suite never configures VITE_GOOGLE_MAPS_API_KEY (vite.config.ts's
- * test env only sets VITE_API_BASE_URL), so AddressMap always renders its
+ * This suite never has a VITE_GOOGLE_MAPS_API_KEY (vite.config.ts's test env
+ * pins it empty, even where the shell exports one), so AddressMap always
+ * renders its
  * fallback rather than a real `<iframe>` -- design.md section 7 treats a
  * missing key as a map failure like any other, and that is what keeps this
  * Vitest suite from ever making a real request to Google, unlike the
