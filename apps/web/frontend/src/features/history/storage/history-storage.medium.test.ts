@@ -1,5 +1,5 @@
 import type { PostalCode } from "@zipnami/shared";
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   HISTORY_STORAGE_KEY,
   readHistoryEntries,
@@ -60,5 +60,28 @@ describe("history storage", () => {
     writeHistoryEntries([secondResult]);
 
     expect(readHistoryEntries()).toEqual([secondResult]);
+  });
+
+  // A browser that blocks site data throws SecurityError on every access, and
+  // a full origin throws QuotaExceededError on write. Issue #7 forbids either
+  // from preventing a new generation, so both read as storage being absent.
+  describe("when the browser refuses storage access", () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    test("reads an empty history when reading throws", () => {
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new DOMException("blocked", "SecurityError");
+      });
+
+      expect(readHistoryEntries()).toEqual([]);
+    });
+
+    test("does not throw when writing throws", () => {
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new DOMException("full", "QuotaExceededError");
+      });
+
+      expect(() => writeHistoryEntries([firstResult])).not.toThrow();
+    });
   });
 });

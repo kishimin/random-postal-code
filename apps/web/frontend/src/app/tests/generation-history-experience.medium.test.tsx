@@ -1,10 +1,12 @@
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import type { PostalCode } from "@zipnami/shared";
 import { HttpResponse, http } from "msw";
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { worker } from "../../api/mocks/browser";
+import { HISTORY_STORAGE_KEY } from "../../features/history/storage/history-storage";
+import { postalGeneratorText } from "../../features/postal-generator/site-text";
 import { createAppRouter } from "../routes/app-router";
 
 /*
@@ -124,5 +126,74 @@ describe("the generation history experience", () => {
     await expect
       .poll(() => historyPostalCodes())
       .toEqual(["530-0001", "100-0001"]);
+  });
+
+  // design.md section 6.2 and ui-design.md section 4: only a successful
+  // generation enters history, so a failure after a success leaves the one
+  // entry the success created and adds nothing for itself.
+  test("does not add an entry for a failed generation", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([firstResult]);
+    renderAt("/");
+
+    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    await currentResultText("100-0001");
+
+    worker.use(
+      http.get(RANDOM_ENDPOINT, () =>
+        HttpResponse.json(
+          { error: { code: "DATA_UNAVAILABLE", message: "", requestId: "" } },
+          { status: 503 },
+        ),
+      ),
+    );
+    await user.click(screen.getByRole("button", { name: /生成/ }));
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("generation-announcer").textContent?.trim(),
+      ).toBe(postalGeneratorText.failureAnnouncement["service-unavailable"]);
+    });
+
+    expect(historyPostalCodes()).toEqual(["100-0001"]);
+  });
+
+  // Issue #7: corrupt stored data must not prevent new generation. The
+  // storage layer's own tests prove it is discarded; this proves the page
+  // built on top of it still generates and records the new result.
+  test("generates and records a result over corrupt stored history", async () => {
+    localStorage.setItem(HISTORY_STORAGE_KEY, "{not json");
+    const user = userEvent.setup();
+    queueRandomResponses([firstResult]);
+    renderAt("/");
+
+    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    await currentResultText("100-0001");
+
+    expect(historyPostalCodes()).toEqual(["100-0001"]);
+  });
+
+  // Issue #7: unusable storage must not prevent new generation either. A
+  // browser that blocks site data throws on every access, so history then
+  // lives only as long as the page instead of taking the generator down.
+  describe("when the browser refuses storage access", () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    test("still generates and keeps this page's history", async () => {
+      const refuse = () => {
+        throw new DOMException("blocked", "SecurityError");
+      };
+      vi.spyOn(Storage.prototype, "getItem").mockImplementation(refuse);
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(refuse);
+      const user = userEvent.setup();
+      queueRandomResponses([firstResult, secondResult]);
+      renderAt("/");
+
+      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await currentResultText("100-0001");
+      await user.click(screen.getByRole("button", { name: /生成/ }));
+      await currentResultText("530-0001");
+
+      expect(historyPostalCodes()).toEqual(["530-0001", "100-0001"]);
+    });
   });
 });

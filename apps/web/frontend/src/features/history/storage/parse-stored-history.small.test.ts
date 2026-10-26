@@ -1,5 +1,6 @@
 import type { PostalCode } from "@zipnami/shared";
 import { describe, expect, test } from "vitest";
+import { HISTORY_LIMIT } from "../history-state";
 import { parseStoredHistory } from "./parse-stored-history";
 
 const storedResult: PostalCode = {
@@ -39,5 +40,18 @@ describe("parseStoredHistory", () => {
     });
 
     expect(parseStoredHistory(raw)).toEqual([]);
+  });
+
+  // design.md section 6.2's limit applies to what a visitor sees, so a value
+  // holding more than the limit (an older build's, or one edited by hand) is
+  // trimmed on read instead of rendering in full until the next generation.
+  test("returns at most the history limit, keeping the newest entries", () => {
+    const entries = Array.from({ length: HISTORY_LIMIT + 1 }, (_, index) => ({
+      ...storedResult,
+      postalCode: String(1000000 + index),
+    }));
+    const raw = JSON.stringify({ version: 1, entries });
+
+    expect(parseStoredHistory(raw)).toEqual(entries.slice(0, HISTORY_LIMIT));
   });
 });
