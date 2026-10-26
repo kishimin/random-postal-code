@@ -140,6 +140,26 @@ describe("AddressMap", () => {
     expect(screen.getByTitle(mapsText.embedTitle(address))).toBeInTheDocument();
   });
 
+  // Regenerating can return the same postal code (docs/api-design.md allows
+  // consecutive identical results), which hands this component an equal
+  // address as a new object. The frame's src does not change, so no new load
+  // event arrives, and a map that already loaded must not time out over it.
+  test("keeps a loaded frame when an equal address arrives as a new object", () => {
+    vi.useFakeTimers();
+    const { rerender } = render(
+      <AddressMap address={address} apiKey={"test-key"} />,
+    );
+    revealLatestObserver();
+    fireEvent.load(screen.getByTitle(mapsText.embedTitle(address)));
+
+    rerender(<AddressMap address={{ ...address }} apiKey={"test-key"} />);
+    act(() => {
+      vi.advanceTimersByTime(MAP_LOAD_TIMEOUT_MS);
+    });
+
+    expect(screen.getByTitle(mapsText.embedTitle(address))).toBeInTheDocument();
+  });
+
   // ui-design.md section 7: "Loading and failure states reserve enough space
   // to avoid disruptive layout shifts." The history sits below the map, so a
   // region that grows when its frame mounts (it mounts on scroll, exactly
