@@ -62,17 +62,20 @@ export const documentTitleSelectors = {
  * empty or generic name ("ボタン", an icon with no label) leaves the two counts
  * different. Each alternative is the word a visitor recognises the action by,
  * not its full label. 住所 is the history's expand control, which ui-design.md
- * requires so every stored address stays reachable (Issue #7).
+ * requires so every stored address stays reachable (Issue #7). 地図 is the
+ * address-to-map selection that ui-design.md sections 7 and 8 require
+ * (Issue #8).
  */
-export const generatorButtonNames = /生成|コピー|住所/;
+export const generatorButtonNames = /生成|コピー|住所|地図/;
 
 /*
  * Every accessible name a link on any Web screen is allowed to have: the
  * header's way home, the footer's privacy link, the privacy page's contact
- * method, and the not-found screen's way back.
+ * method, the not-found screen's way back, and the result's links that open
+ * an address in Google Maps (Issue #8).
  */
 export const applicationLinkNames =
-  /Zipnami|プライバシー|(?:お)?問(?:い)?合(?:わ)?せ|連絡先|Contact|トップへ戻る/i;
+  /Zipnami|プライバシー|(?:お)?問(?:い)?合(?:わ)?せ|連絡先|Contact|トップへ戻る|Google\s*マップ/i;
 
 /*
  * Visible words that say a generation is in progress.
