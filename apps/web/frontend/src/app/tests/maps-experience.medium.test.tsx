@@ -107,4 +107,24 @@ describe("the maps experience", () => {
       within(addressList).getByText("東京都千代田区丸の内"),
     ).toBeInTheDocument();
   });
+
+  // Issue #8: map failures leave "postal code, addresses, and history
+  // usable". The history is Issue #7's, so this is the first branch where
+  // both exist to check together. No key is configured here, which design.md
+  // section 7 treats as a map failure like any other.
+  test("a map that cannot load leaves the history usable", async () => {
+    localStorage.clear();
+    const user = await generate();
+
+    const history = screen.getByRole("region", { name: "生成履歴" });
+    expect(within(history).getByText("100-0001")).toBeInTheDocument();
+
+    await user.click(
+      within(history).getByRole("button", { name: /住所/, expanded: false }),
+    );
+
+    expect(
+      within(history).getByText("東京都千代田区丸の内"),
+    ).toBeInTheDocument();
+  });
 });
