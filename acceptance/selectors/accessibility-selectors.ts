@@ -61,9 +61,10 @@ export const documentTitleSelectors = {
  * every button on the screen has to be one of these, so a button with an
  * empty or generic name ("ボタン", an icon with no label) leaves the two counts
  * different. Each alternative is the word a visitor recognises the action by,
- * not its full label.
+ * not its full label. 住所 is the history's expand control, which ui-design.md
+ * requires so every stored address stays reachable (Issue #7).
  */
-export const generatorButtonNames = /生成|コピー/;
+export const generatorButtonNames = /生成|コピー|住所/;
 
 /*
  * Every accessible name a link on any Web screen is allowed to have: the
