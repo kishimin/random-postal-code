@@ -94,8 +94,12 @@ describe("the maps experience", () => {
     // addresses, unaffected by which one the map is showing. Scoped to the
     // address list itself: the map region's own fallback repeats the
     // selected address's text, which would otherwise make either query match
-    // two elements.
-    const addressList = screen.getByRole("list");
+    // two elements. Found inside the current-result region rather than the
+    // whole page, because the generation history (Issue #7) renders a list of
+    // its own.
+    const addressList = within(screen.getByTestId("result-region")).getByRole(
+      "list",
+    );
     expect(
       within(addressList).getByText("東京都千代田区千代田"),
     ).toBeInTheDocument();
