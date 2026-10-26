@@ -40,11 +40,11 @@ export const privacyText = {
    *
    * `googleMaps`, `googleAdSense`, and `consent` are worded to match what
    * this codebase actually does today rather than the finished product.
-   * `googleMaps` states that the feature is not yet implemented: Issue #8
-   * is still open and no Maps component, SDK, or request path exists on
-   * this branch, so a present-tense "Zipnami uses Google Maps" would
-   * misstate current third-party processing (flagged by Codex review on
-   * this PR, the same class of finding as CR-001/the history claim above).
+   * `googleMaps` names what reaches Google and when: the embed requests the
+   * selected address only once the map region scrolls into view
+   * (`AddressMap.tsx`), and the external link hands the address to Google
+   * Maps itself. It said "not yet implemented" until Issue #8 shipped the
+   * embed, which Codex review on that PR flagged as understating it.
    * `consent` describes what Google's own AdSense tag does once the
    * "European regulations" message is published in the AdSense account,
    * which docs/deployment.md makes part of production setup. Nothing in
@@ -60,7 +60,7 @@ export const privacyText = {
   thirdParty: {
     heading: "第三者サービスが処理する情報",
     googleMaps:
-      "選択した住所の地図表示にGoogle Mapsを利用する機能は、本サービスでは現時点で未実装です。一般公開までに導入します。",
+      "選択した住所を地図に表示するため、Google Maps（Maps Embed API）を利用しています。地図の領域が画面に表示されると、選択した住所がGoogleへ送信され、Googleのサーバーから地図が読み込まれます。Google側の設定により、お使いのブラウザにCookieが保存される場合があります。「Googleマップで開く」を選ぶと、その住所でGoogleマップのサイトを開きます。",
     googleAdSense:
       "広告の配信にはGoogle AdSenseを利用しています。AdSense側の設定により、お使いのブラウザに広告用の識別子やCookieが保存される場合があります。",
     consent:
