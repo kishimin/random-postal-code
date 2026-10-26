@@ -225,7 +225,12 @@ jobs:
 
   frontend-e2e-medium:
     name: Frontend E2E (Medium)
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: Playwright 1.63's WebKit is built for Ubuntu
+    # 24.04 and links ICU 74. ubuntu-latest moved to 26.04, where install-deps
+    # cannot provide that library and every WebKit launch fails with
+    # "libicudata.so.74: cannot open shared object file" (Issue #79). Lift this
+    # once a Playwright upgrade ships a WebKit build for 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     defaults:
       run:
