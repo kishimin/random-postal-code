@@ -18,6 +18,10 @@ env:
   # A placeholder origin keeps the production build representative without
   # exposing a real endpoint. Nothing in CI calls it.
   VITE_API_BASE_URL: http://127.0.0.1:8787
+  # A placeholder, not a credential. Issue #21 refuses every non-local host, so Google is
+  # never reached; the key only has to be non-empty so the build takes the path a
+  # deployment takes instead of the no-key fallback.
+  VITE_GOOGLE_MAPS_API_KEY: ci-placeholder-maps-key
 
 jobs:
   package-tests:
@@ -142,12 +146,13 @@ jobs:
       - name: Build frontend
         run: bun run build
 
-      # Acceptance tests live at the repository root, but playwright.config.ts
-      # names each one explicitly in testMatch rather than discovering them by
-      # directory glob. A Large acceptance test must be added there by name
-      # (alongside the two existing Medium ones) for nightly CI to run it here.
+      # Issue #21 runs against a real Worker, so it has its own config
+      # (playwright.large.config.ts) that starts wrangler dev and the preview of
+      # a production build. The test is named here so that the Issue #18 check
+      # that every acceptance test is registered with a runner CI executes finds
+      # it in a command a workflow runs; the config is not one that check reads.
       - name: Run Large browser tests
-        run: bun run e2e:large
+        run: bun run e2e:large acceptance/web-mvp-end-to-end.large.test.ts
 
       - name: Upload browser test artifacts
         if: ${{ !cancelled() }}
