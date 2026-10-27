@@ -184,6 +184,13 @@ jobs:
       - name: Run Issue #72 CSP report policy acceptance test (Medium)
         run: bun test ./acceptance/csp-report-policy.medium.test.ts
 
+      # Issue #21 records its release checks in docs/release-checklist.md. The
+      # test only reads that file, so it needs no browser and no Worker, and is
+      # bound here the same way (ADR-0077). The journeys the checklist cites run
+      # nightly, not here (ci-nightly.yml).
+      - name: Run Issue #21 release checklist acceptance test (Medium)
+        run: bun test ./acceptance/web-mvp-release-checklist.medium.test.ts
+
       - name: Upload coverage report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
