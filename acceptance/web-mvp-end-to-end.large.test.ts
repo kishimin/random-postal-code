@@ -8,7 +8,10 @@ import {
   createWebMvpJourneyPage,
   type WebMvpJourneyPage,
 } from "./pages/web-mvp-journey-page.ts";
-import { representativeViewports } from "./selectors/accessibility-selectors.ts";
+import {
+  loadingText,
+  representativeViewports,
+} from "./selectors/accessibility-selectors.ts";
 
 /*
  * Acceptance test for Issue #21: Verify the Zipnami Web MVP end to end.
@@ -202,8 +205,10 @@ test.describe("Issue #21: the Web MVP end to end on a local production stack", (
 
     // Several draws, so a screen that showed one fixed code, or a Worker that
     // answered one, would not pass on the first by luck.
+    const drawn: string[] = [];
     for (let draw = 0; draw < 5; draw += 1) {
       const generated = await generateFromWorker(journeyPage);
+      drawn.push(generated.postalCode);
 
       expect(generated.postalCode).toMatch(/^\d{7}$/);
 
@@ -221,6 +226,17 @@ test.describe("Issue #21: the Web MVP end to end on a local production stack", (
         await expect(journeyPage.resultAddressEntry(address)).toBeVisible();
       }
     }
+
+    /*
+     * The draws vary (Issue #82). Without this, a Worker that always returned
+     * the same code would pass: each check above would be met by the result
+     * the previous draw already put on screen. Uniformity itself stays with
+     * the Worker's tests and the Issue #4 acceptance test. With the five-entry
+     * placeholder dataset, five uniform draws are all the same code about
+     * once in 625 runs, which CI's retries absorb; with Issue #34's full
+     * dataset that chance is negligible.
+     */
+    expect(new Set(drawn).size).toBeGreaterThan(1);
 
     // Production build: everything the page loaded from its own origin came
     // out of `vite build`. A dev server would have served module sources.
@@ -306,12 +322,25 @@ test.describe("Issue #21: the Web MVP end to end on a local production stack", (
   test("with Maps, advertising, and consent all refused, the Worker still generates, the addresses still show, and copying still works", async ({
     journeyPage,
   }) => {
-    // No map substitute: the Maps embed meets the third-party guard and is
-    // refused, like every advertising and consent request.
+    // Every Maps, advertising, and consent request is refused, and counted:
+    // the third-party guard would refuse them too, but without counting, a
+    // build that never asked for them would pass as well (Issue #82).
+    await journeyPage.stubMapEmbed("unreachable");
+    await journeyPage.refuseEveryAdvertisingRequest();
     await journeyPage.recordClipboardWrites();
     await journeyPage.navigate();
 
     const generated = await generateFromWorker(journeyPage);
+
+    // The dependencies were really asked for, and really refused. The map
+    // loads only once it is in view, so it is brought into view first.
+    // Consent is part of the advertising tag (design.md section 12), so the
+    // advertising boundary is where a consent request would appear.
+    await journeyPage.revealMap();
+    await expect.poll(() => journeyPage.mapRequestCount()).toBeGreaterThan(0);
+    await expect
+      .poll(() => journeyPage.refusedAdvertisingRequestCount())
+      .toBeGreaterThan(0);
 
     for (const address of generated.addresses) {
       await expect(journeyPage.resultAddressEntry(address)).toBeVisible();
@@ -350,6 +379,15 @@ test.describe("Issue #21: the Web MVP end to end on a local production stack", (
       await expect(journeyPage.resultAddressEntry(address)).toBeVisible();
     }
     await expect(journeyPage.generateAction()).toBeEnabled();
+
+    // The requests that never answer were really made, so the result above
+    // rendered while they were open rather than because nothing was asked
+    // for (Issue #82).
+    await journeyPage.revealMap();
+    await expect.poll(() => journeyPage.mapRequestCount()).toBeGreaterThan(0);
+    await expect
+      .poll(() => journeyPage.advertisingRequestCount())
+      .toBeGreaterThan(0);
   });
 
   test("the Worker authorizes the site's own origin and no other, and a browser on another origin cannot read it", async ({
@@ -422,12 +460,21 @@ test.describe("Issue #21: the Web MVP end to end on a local production stack", (
     await journeyPage.generate();
     await expect(journeyPage.generateAction()).toBeEnabled();
 
-    // The visitor is told, and told something other than the success they
-    // were last told (design.md section 6.1).
+    /*
+     * The visitor is told about the failure (design.md section 6.1): the
+     * announcement settles on something that is neither empty, nor the
+     * success they were last told, nor the loading message. Without the last
+     * part, "still loading" would pass for "failed" (Issue #82). The Issue
+     * #17 acceptance test holds the offline message apart from the API's own
+     * failures on a stub.
+     */
+    const isFailureAnnouncement = (text: string) =>
+      text !== "" && text !== announcedOnSuccess && !loadingText.test(text);
     await expect
-      .poll(() => journeyPage.announcementText())
-      .not.toBe(announcedOnSuccess);
-    expect(await journeyPage.announcementText()).not.toBe("");
+      .poll(async () =>
+        isFailureAnnouncement(await journeyPage.announcementText()),
+      )
+      .toBe(true);
 
     // A failure must not discard the last result or the history.
     await expect(

@@ -71,11 +71,18 @@ type ChecklistItem = {
 
 /**
  * The Markdown task-list items of a document, each with the headings above it.
+ *
+ * An item's text includes its continuation lines, not only its first line
+ * (Issue #82): a claim wrapped onto a second line is still part of the item
+ * that ticks it. A continuation is any following line that is not blank, not
+ * a heading, and not the start of another list item, which covers both
+ * indented and lazy continuations. A blank line ends the item.
  * @param markdown - The document text.
  */
 const checklistItems = (markdown: string): ChecklistItem[] => {
-  const items: ChecklistItem[] = [];
+  const items: { checked: boolean; text: string; headings: string[] }[] = [];
   const headingTrail: string[] = [];
+  let current: (typeof items)[number] | undefined;
 
   for (const line of markdown.split(/\r?\n/)) {
     const heading = /^(#{1,6})\s+(.*)$/.exec(line);
@@ -83,22 +90,49 @@ const checklistItems = (markdown: string): ChecklistItem[] => {
       const [, hashes = "#", title = ""] = heading;
       headingTrail.length = hashes.length - 1;
       headingTrail.push(title);
+      current = undefined;
       continue;
     }
 
     const item = /^\s*[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(line);
     if (item !== null) {
       const [, mark = " ", text = ""] = item;
-      items.push({
+      current = {
         checked: mark !== " ",
         text,
         headings: headingTrail.filter((entry) => entry !== undefined),
-      });
+      };
+      items.push(current);
+      continue;
+    }
+
+    if (line.trim() === "" || /^\s*[-*+]\s/.test(line)) {
+      current = undefined;
+      continue;
+    }
+
+    if (current !== undefined) {
+      current.text = `${current.text} ${line.trim()}`;
     }
   }
 
   return items;
 };
+
+/*
+ * A claim only the deployed site can confirm: it names one of the
+ * deployment-dependent checks and says it holds publicly or once deployed.
+ * Matched without regard to whether the item mentions Issue #19, so a ticked
+ * claim that drops the reference is still caught (Issue #82). "本番" alone is
+ * not enough: 本番ビルド, the production build, is checked locally.
+ */
+const deploymentOnlySubject = /\/privacy|Japan Post|日本郵便|SDK/i;
+const deploymentOnlyQualifier =
+  /deployed|deployment|publicly|public\b|公開|デプロイ/i;
+
+const isDeploymentOnlyClaim = (item: ChecklistItem) =>
+  deploymentOnlySubject.test(item.text) &&
+  deploymentOnlyQualifier.test(item.text);
 
 const readChecklist = () => readFileSync(checklistPath, "utf8");
 
@@ -164,5 +198,14 @@ describe("Issue #21: the Web MVP release checks are recorded", () => {
         ticked: false,
       });
     }
+  });
+
+  test("no deployment-only claim is ticked, whether or not it mentions Issue #19", () => {
+    const tickedClaims = checklistItems(readChecklist())
+      .filter((item) => item.checked && isDeploymentOnlyClaim(item))
+      .map((item) => item.text);
+
+    // Nothing can have checked a site that is not deployed yet.
+    expect(tickedClaims).toEqual([]);
   });
 });
