@@ -34,6 +34,26 @@ describe("parseAppEnv", () => {
     );
   });
 
+  // design.md section 7: Google Maps is an optional dependency of the Web
+  // experience, so a build that never configured a key must still succeed --
+  // unlike VITE_API_BASE_URL, this is not fatal.
+  test("returns an empty Maps API key when it is not configured", () => {
+    const env = parseAppEnv({
+      VITE_API_BASE_URL: "https://api.example.com",
+    });
+
+    expect(env.mapsApiKey).toBe("");
+  });
+
+  test("returns the configured Maps API key", () => {
+    const env = parseAppEnv({
+      VITE_API_BASE_URL: "https://api.example.com",
+      VITE_GOOGLE_MAPS_API_KEY: "test-maps-key",
+    });
+
+    expect(env.mapsApiKey).toBe("test-maps-key");
+  });
+
   // Issue #9: Google Maps, AdSense, and consent are optional dependencies
   // (design.md section 7), so an unset or malformed advertising variable must
   // never throw the way a missing VITE_API_BASE_URL does above -- that would

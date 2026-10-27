@@ -138,6 +138,12 @@ export default defineConfig({
   test: {
     env: {
       VITE_API_BASE_URL: "http://localhost:8787",
+      // Pinned empty rather than inherited: the PR workflow exports a
+      // placeholder key to every job for the production build, and a unit
+      // suite that picked it up would mount an iframe pointed at Google
+      // instead of the fallback its tests are written against. A suite that
+      // needs the keyed path passes a key to the component directly.
+      VITE_GOOGLE_MAPS_API_KEY: "",
     },
     reporters: process.env.GITHUB_ACTIONS
       ? ["dot", "github-actions", "json"]

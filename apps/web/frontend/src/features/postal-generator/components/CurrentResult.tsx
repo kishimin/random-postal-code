@@ -1,4 +1,5 @@
-import type { PostalCode } from "@zipnami/shared";
+import type { Address, PostalCode } from "@zipnami/shared";
+import type { ReactNode } from "react";
 import { formatPostalCode } from "../format-postal-code";
 import { postalGeneratorText } from "../site-text";
 import { tapTargetClass } from "../styles";
@@ -8,6 +9,8 @@ type CurrentResultProps = {
   result: PostalCode;
   onCopy: () => void;
   copyFeedback: string;
+  /** Forwarded to AddressList -- see that component for why this exists. */
+  renderAddressExtra?: (address: Address) => ReactNode;
 };
 
 const RESULT_HEADING_ID = "current-result-heading";
@@ -31,6 +34,7 @@ export const CurrentResult = ({
   result,
   onCopy,
   copyFeedback,
+  renderAddressExtra,
 }: CurrentResultProps) => (
   <section aria-labelledby={RESULT_HEADING_ID}>
     <h2 id={RESULT_HEADING_ID}>{postalGeneratorText.resultHeading}</h2>
@@ -41,6 +45,9 @@ export const CurrentResult = ({
     <p role={"status"} data-testid={"copy-feedback"}>
       {copyFeedback}
     </p>
-    <AddressList addresses={result.addresses} />
+    <AddressList
+      addresses={result.addresses}
+      renderAddressExtra={renderAddressExtra}
+    />
   </section>
 );

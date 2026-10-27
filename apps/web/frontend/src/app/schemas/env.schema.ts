@@ -2,6 +2,11 @@ import { z } from "zod";
 
 export type AppEnv = {
   apiBaseUrl: string;
+  /**
+   * design.md section 7: Google Maps is an optional dependency, so an
+   * unconfigured key resolves to "" rather than failing the build.
+   */
+  mapsApiKey: string;
   googleAdsenseClientId: string;
   googleAdsenseSlotId: string;
   useTestAds: boolean;
@@ -33,6 +38,7 @@ const isAbsoluteHttpUrl = (value: string) => {
 
 const envSchema = z.object({
   VITE_API_BASE_URL: z.string().refine(isAbsoluteHttpUrl),
+  VITE_GOOGLE_MAPS_API_KEY: z.string().optional(),
   // Both optional and left as plain strings rather than z.enum: unlike
   // VITE_API_BASE_URL, an advertising variable failing here must not throw
   // and take an otherwise valid build down with it (design.md section 7).
@@ -62,6 +68,7 @@ export const parseAppEnv = (env: Record<string, unknown>): AppEnv => {
 
   return {
     apiBaseUrl: result.data.VITE_API_BASE_URL,
+    mapsApiKey: result.data.VITE_GOOGLE_MAPS_API_KEY ?? "",
     googleAdsenseClientId:
       result.data.VITE_GOOGLE_ADSENSE_CLIENT_ID ??
       DEV_ADSENSE_CLIENT_ID_PLACEHOLDER,

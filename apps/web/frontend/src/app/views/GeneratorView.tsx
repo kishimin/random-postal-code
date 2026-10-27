@@ -3,6 +3,9 @@ import { createApiClient } from "../../api/api-client";
 import { AdvertisingRegion } from "../../features/advertising/components/AdvertisingRegion";
 import { HistoryList } from "../../features/history/components/HistoryList";
 import { useHistory } from "../../features/history/hooks/use-history";
+import { MapAddressActions } from "../../features/maps/components/MapAddressActions";
+import { MapSection } from "../../features/maps/components/MapSection";
+import { useMapSelection } from "../../features/maps/hooks/use-map-selection";
 import { CurrentResult } from "../../features/postal-generator/components/CurrentResult";
 import { GenerateAction } from "../../features/postal-generator/components/GenerateAction";
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
@@ -13,14 +16,20 @@ import { parseAppEnv } from "../schemas/env.schema";
 import { pageTitle, siteText } from "../site-text";
 
 /**
- * Generator screen (Issue #6): the generate action, its current result, and
- * the live region that announces a new result or a failure.
+ * Generator screen (Issue #6, extended by Issue #8's maps region): the
+ * generate action, its current result, the embedded map for whichever
+ * address is currently selected, and the live region that announces a new
+ * result or a failure.
  *
- * The API client is built here, in the application layer, rather than inside
- * the feature hook: api-client.ts stays free of environment access so it can
- * be configured without a build (see that module's own docstring), and
- * env.schema.ts is an app/-owned module the features/ boundary is not
- * allowed to import.
+ * The API client and the environment are built here, in the application
+ * layer, rather than inside a feature hook: api-client.ts and the maps
+ * feature stay free of environment access so they can be configured without
+ * a build, and env.schema.ts is an app/-owned module the features/ boundary
+ * is not allowed to import.
+ *
+ * "Which address is selected" is lifted to this level because AddressList's
+ * per-address action and the map region are siblings in the tree below --
+ * CurrentResult and MapSection -- with no other shared ancestor to hold it.
  */
 export const GeneratorView = () => {
   const [env] = useState(() => parseAppEnv(import.meta.env));
@@ -28,6 +37,7 @@ export const GeneratorView = () => {
   const { entries, addEntry } = useHistory();
   const { state, currentResult, announcement, copyFeedback, generate, copy } =
     useGenerator(client, { onGenerated: addEntry });
+  const { selectedAddress, selectAddress } = useMapSelection(currentResult);
 
   useDocumentTitle(pageTitle());
 
@@ -52,9 +62,21 @@ export const GeneratorView = () => {
             result={currentResult}
             onCopy={copy}
             copyFeedback={copyFeedback}
+            renderAddressExtra={(address) => (
+              <MapAddressActions
+                address={address}
+                isSelected={address === selectedAddress}
+                onSelect={() => selectAddress(address)}
+              />
+            )}
           />
         )}
       </div>
+      <MapSection
+        result={currentResult}
+        selectedAddress={selectedAddress}
+        apiKey={env.mapsApiKey}
+      />
       <GeneratorAnnouncer announcement={announcement} />
       <HistoryList entries={entries} />
       {/* ui-design.md section 5.1: the reserved advertisement region sits

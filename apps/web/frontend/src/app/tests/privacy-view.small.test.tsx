@@ -67,6 +67,11 @@ describe("PrivacyView", () => {
     expect(thirdPartySection).toHaveTextContent(/Google\s*(?:Maps|マップ)/i);
     expect(thirdPartySection).toHaveTextContent(/AdSense|アドセンス/i);
     expect(thirdPartySection).toHaveTextContent(/同意|コンセント|Consent/i);
+    // Issue #8 embeds the map, so the disclosure must describe it as in use.
+    // It said "not yet implemented" until then, which would understate what
+    // reaches Google from the moment a deployment supplies a key.
+    expect(thirdPartySection).not.toHaveTextContent(/未実装|導入します/);
+    expect(thirdPartySection).toHaveTextContent(/住所[^。]*Google[^。]*送信/);
   });
 
   test("the Zipnami section documents the browser-local history and that no location is collected", () => {
