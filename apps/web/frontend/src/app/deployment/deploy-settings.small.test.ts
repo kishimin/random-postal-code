@@ -15,6 +15,20 @@ describe("problemsWithFrontendDeploySettings", () => {
   });
 
   test.each([
+    // Real keys can contain "-" and "_".
+    `AIza${"-".repeat(35)}`,
+    `AIza${"_".repeat(35)}`,
+    "AIza-_0123456789abcdefghijklmnopqrstuvw",
+  ])("accepts the Maps key %s", (key) => {
+    expect(
+      problemsWithFrontendDeploySettings({
+        ...valid,
+        VITE_GOOGLE_MAPS_API_KEY: key,
+      }),
+    ).toEqual([]);
+  });
+
+  test.each([
     // GitHub Actions passes an unset `vars.X` as "", not as undefined.
     ["VITE_API_BASE_URL", undefined],
     ["VITE_API_BASE_URL", ""],
@@ -43,6 +57,13 @@ describe("problemsWithFrontendDeploySettings", () => {
     ["VITE_GOOGLE_MAPS_API_KEY", "AIzaSy0123456789abcdefghijklmnopqrstu"],
     ["VITE_GOOGLE_MAPS_API_KEY", "AIzaSy0123456789abcdefghijklmnopqrstuvwx"],
     ["VITE_GOOGLE_MAPS_API_KEY", "AIzaSy0123456789abcdefghijklmnopqrstu v"],
+    // Boundaries of the 35-character body, and where the match is anchored.
+    ["VITE_GOOGLE_MAPS_API_KEY", `AIza${"a".repeat(34)}`],
+    ["VITE_GOOGLE_MAPS_API_KEY", `AIza${"a".repeat(36)}`],
+    ["VITE_GOOGLE_MAPS_API_KEY", "a".repeat(39)],
+    ["VITE_GOOGLE_MAPS_API_KEY", ` AIza${"a".repeat(35)}`],
+    ["VITE_GOOGLE_MAPS_API_KEY", `aiza${"a".repeat(35)}`],
+    ["VITE_GOOGLE_MAPS_API_KEY", `AIza${"a".repeat(35)}\n`],
   ])("refuses %s set to %s", (name, value) => {
     const problems = problemsWithFrontendDeploySettings({
       ...valid,
