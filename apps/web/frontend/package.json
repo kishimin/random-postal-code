@@ -21,7 +21,7 @@
     "e2e": "playwright test --pass-with-no-tests",
     "e2e:small": "playwright test --pass-with-no-tests small.test",
     "e2e:medium": "playwright test medium.test",
-    "e2e:large": "playwright test --pass-with-no-tests large.test",
+    "e2e:large": "playwright test --config playwright.large.config.ts",
     "mutation-test": "stryker run",
     "verify:deploy-env": "bun run scripts/verify-deploy-env.ts",
     "smoke:production": "playwright test --config playwright.smoke.config.ts"

@@ -139,15 +139,14 @@ jobs:
         with:
           playwright-browsers: chromium webkit
 
-      - name: Build frontend
-        run: bun run build
-
-      # Acceptance tests live at the repository root, but playwright.config.ts
-      # names each one explicitly in testMatch rather than discovering them by
-      # directory glob. A Large acceptance test must be added there by name
-      # (alongside the two existing Medium ones) for nightly CI to run it here.
+      # Issue #21 runs against a real Worker, so it has its own config
+      # (playwright.large.config.ts) that starts wrangler dev and builds and
+      # previews the site itself with the values it needs, which is why no
+      # separate build step precedes it. The test is named here so that the Issue #18 check
+      # that every acceptance test is registered with a runner CI executes finds
+      # it in a command a workflow runs; the config is not one that check reads.
       - name: Run Large browser tests
-        run: bun run e2e:large
+        run: bun run e2e:large acceptance/web-mvp-end-to-end.large.test.ts
 
       - name: Upload browser test artifacts
         if: ${{ !cancelled() }}
