@@ -167,6 +167,11 @@ jobs:
       - name: Run Issue #19 Web deployment acceptance test (Medium)
         run: bun test ./acceptance/web-deployment.medium.test.ts
 
+      # Issue #58's last criterion extends the same deploy verification to the
+      # Maps key, and is bound here the same way (ADR-0077).
+      - name: Run Issue #58 Maps deploy settings acceptance test (Medium)
+        run: bun test ./acceptance/web-deployment-maps-settings.medium.test.ts
+
       # Issue #38's acceptance test runs the frontend production build and
       # reads the _headers file Pages serves from it, so it belongs to no
       # single package's vitest.config.ts either (ADR-0077).

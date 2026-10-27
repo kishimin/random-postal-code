@@ -44,15 +44,21 @@ creates it. The workflows read every production value from the
    credentials can't be used from any other branch even if a workflow
    changes. Then set:
 
-   | Kind     | Name                        | Value                                                       |
-   | -------- | --------------------------- | ----------------------------------------------------------- |
-   | Secret   | `CLOUDFLARE_API_TOKEN`      | The token from step 2                                       |
-   | Secret   | `CLOUDFLARE_ACCOUNT_ID`     | The Cloudflare account ID                                   |
-   | Variable | `ZIPNAMI_PAGES_PROJECT`     | `<project>` from step 1                                     |
-   | Variable | `ZIPNAMI_PAGES_ORIGIN`      | `https://<project>.pages.dev`, no trailing slash            |
-   | Variable | `ZIPNAMI_WORKER_URL`        | The Worker URL from step 3                                  |
-   | Variable | `ZIPNAMI_ADSENSE_CLIENT_ID` | The production AdSense publisher ID (`ca-pub-` + 16 digits) |
-   | Variable | `ZIPNAMI_ADSENSE_SLOT_ID`   | The production ad unit's numeric slot ID                    |
+   | Kind     | Name                        | Value                                                               |
+   | -------- | --------------------------- | ------------------------------------------------------------------- |
+   | Secret   | `CLOUDFLARE_API_TOKEN`      | The token from step 2                                               |
+   | Secret   | `CLOUDFLARE_ACCOUNT_ID`     | The Cloudflare account ID                                           |
+   | Variable | `ZIPNAMI_PAGES_PROJECT`     | `<project>` from step 1                                             |
+   | Variable | `ZIPNAMI_PAGES_ORIGIN`      | `https://<project>.pages.dev`, no trailing slash                    |
+   | Variable | `ZIPNAMI_WORKER_URL`        | The Worker URL from step 3                                          |
+   | Variable | `ZIPNAMI_ADSENSE_CLIENT_ID` | The production AdSense publisher ID (`ca-pub-` + 16 digits)         |
+   | Variable | `ZIPNAMI_ADSENSE_SLOT_ID`   | The production ad unit's numeric slot ID                            |
+   | Variable | `ZIPNAMI_MAPS_API_KEY`      | The production Google Maps browser API key (`AIza` + 35 characters) |
+
+`ZIPNAMI_MAPS_API_KEY` must be a production-only browser key, separate
+from the development key. Restrict it by HTTP referrer to
+`https://<project>.pages.dev/*` and the production domain, and by API to
+the Maps Embed API only (design.md section 7).
 
 `ZIPNAMI_PAGES_ORIGIN` is used twice on purpose: it becomes the Worker's
 CORS allowlist (`ALLOWED_ORIGINS`), and it is the site the smoke check
@@ -105,8 +111,13 @@ workflow:
    - Pages (`bun run --filter @zipnami/web-frontend verify:deploy-env`):
      `VITE_API_BASE_URL` must be the Worker's `https` URL. The AdSense IDs
      must be real rather than the development placeholders. Test ads must be
-     off (`VITE_ADSENSE_TEST_MODE=false`). Maps settings are not checked
-     yet, because the Maps integration (Issue #8) has not merged.
+     off (`VITE_ADSENSE_TEST_MODE=false`). `VITE_GOOGLE_MAPS_API_KEY` must be a real
+     Google Maps browser key, not empty or one of the placeholders CI and the
+     Large E2E run use. Without it every map would quietly fall back to the
+     external link. Until `ZIPNAMI_MAPS_API_KEY` is set in the `production`
+     environment, the Pages deploy is refused at "Verify Pages deploy
+     settings" before building; this also applies to environments created
+     before #58.
 2. **Deploys.**
    - Worker: `bunx wrangler deploy --var ALLOWED_ORIGINS:$PAGES_ORIGIN`.
    - Pages: builds with the Worker URL baked in, then runs

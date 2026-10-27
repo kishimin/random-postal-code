@@ -13,6 +13,7 @@ const problems = problemsWithFrontendDeploySettings({
   VITE_GOOGLE_ADSENSE_CLIENT_ID: process.env.VITE_GOOGLE_ADSENSE_CLIENT_ID,
   VITE_GOOGLE_ADSENSE_SLOT_ID: process.env.VITE_GOOGLE_ADSENSE_SLOT_ID,
   VITE_ADSENSE_TEST_MODE: process.env.VITE_ADSENSE_TEST_MODE,
+  VITE_GOOGLE_MAPS_API_KEY: process.env.VITE_GOOGLE_MAPS_API_KEY,
 });
 
 for (const problem of problems) {
@@ -24,5 +25,5 @@ if (problems.length > 0) {
 }
 
 console.error(
-  "Pages deploy settings: API base URL and advertising settings verified.",
+  "Pages deploy settings: API base URL, advertising, and Maps settings verified.",
 );

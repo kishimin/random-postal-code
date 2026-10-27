@@ -6,11 +6,26 @@ const valid = {
   VITE_GOOGLE_ADSENSE_CLIENT_ID: "ca-pub-1234567890123456",
   VITE_GOOGLE_ADSENSE_SLOT_ID: "9876543210",
   VITE_ADSENSE_TEST_MODE: "false",
+  VITE_GOOGLE_MAPS_API_KEY: "AIzaSy0123456789abcdefghijklmnopqrstuvw",
 };
 
 describe("problemsWithFrontendDeploySettings", () => {
   test("accepts complete production settings", () => {
     expect(problemsWithFrontendDeploySettings(valid)).toEqual([]);
+  });
+
+  test.each([
+    // Real keys can contain "-" and "_".
+    `AIza${"-".repeat(35)}`,
+    `AIza${"_".repeat(35)}`,
+    "AIza-_0123456789abcdefghijklmnopqrstuvw",
+  ])("accepts the Maps key %s", (key) => {
+    expect(
+      problemsWithFrontendDeploySettings({
+        ...valid,
+        VITE_GOOGLE_MAPS_API_KEY: key,
+      }),
+    ).toEqual([]);
   });
 
   test.each([
@@ -32,6 +47,23 @@ describe("problemsWithFrontendDeploySettings", () => {
     ["VITE_ADSENSE_TEST_MODE", undefined],
     ["VITE_ADSENSE_TEST_MODE", ""],
     ["VITE_ADSENSE_TEST_MODE", "true"],
+    ["VITE_GOOGLE_MAPS_API_KEY", undefined],
+    ["VITE_GOOGLE_MAPS_API_KEY", ""],
+    ["VITE_GOOGLE_MAPS_API_KEY", "   "],
+    // The values CI and the Large E2E run use in place of a real key.
+    ["VITE_GOOGLE_MAPS_API_KEY", "ci-placeholder-maps-key"],
+    ["VITE_GOOGLE_MAPS_API_KEY", "large-test-placeholder-maps-key"],
+    // A Google browser key is "AIza" followed by 35 characters.
+    ["VITE_GOOGLE_MAPS_API_KEY", "AIzaSy0123456789abcdefghijklmnopqrstu"],
+    ["VITE_GOOGLE_MAPS_API_KEY", "AIzaSy0123456789abcdefghijklmnopqrstuvwx"],
+    ["VITE_GOOGLE_MAPS_API_KEY", "AIzaSy0123456789abcdefghijklmnopqrstu v"],
+    // Boundaries of the 35-character body, and where the match is anchored.
+    ["VITE_GOOGLE_MAPS_API_KEY", `AIza${"a".repeat(34)}`],
+    ["VITE_GOOGLE_MAPS_API_KEY", `AIza${"a".repeat(36)}`],
+    ["VITE_GOOGLE_MAPS_API_KEY", "a".repeat(39)],
+    ["VITE_GOOGLE_MAPS_API_KEY", ` AIza${"a".repeat(35)}`],
+    ["VITE_GOOGLE_MAPS_API_KEY", `aiza${"a".repeat(35)}`],
+    ["VITE_GOOGLE_MAPS_API_KEY", `AIza${"a".repeat(35)}\n`],
   ])("refuses %s set to %s", (name, value) => {
     const problems = problemsWithFrontendDeploySettings({
       ...valid,
@@ -50,6 +82,7 @@ describe("problemsWithFrontendDeploySettings", () => {
       "VITE_GOOGLE_ADSENSE_CLIENT_ID",
       "VITE_GOOGLE_ADSENSE_SLOT_ID",
       "VITE_ADSENSE_TEST_MODE",
+      "VITE_GOOGLE_MAPS_API_KEY",
     ]) {
       expect(problems.filter((problem) => problem.includes(name))).toHaveLength(
         1,
@@ -62,11 +95,13 @@ describe("problemsWithFrontendDeploySettings", () => {
       ...valid,
       VITE_API_BASE_URL: "http://internal-looking-host.example",
       VITE_GOOGLE_ADSENSE_CLIENT_ID: "ca-pub-0000000000000000",
+      VITE_GOOGLE_MAPS_API_KEY: "ci-placeholder-maps-key",
     };
 
     const reported = problemsWithFrontendDeploySettings(settings).join(" ");
 
     expect(reported).not.toContain(settings.VITE_API_BASE_URL);
     expect(reported).not.toContain(settings.VITE_GOOGLE_ADSENSE_CLIENT_ID);
+    expect(reported).not.toContain(settings.VITE_GOOGLE_MAPS_API_KEY);
   });
 });
