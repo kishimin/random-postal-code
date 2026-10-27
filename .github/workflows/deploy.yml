@@ -86,6 +86,7 @@ jobs:
           VITE_GOOGLE_ADSENSE_CLIENT_ID: ${{ vars.ZIPNAMI_ADSENSE_CLIENT_ID }}
           VITE_GOOGLE_ADSENSE_SLOT_ID: ${{ vars.ZIPNAMI_ADSENSE_SLOT_ID }}
           VITE_ADSENSE_TEST_MODE: "false"
+          VITE_GOOGLE_MAPS_API_KEY: ${{ vars.ZIPNAMI_MAPS_API_KEY }}
         run: bun run --filter @zipnami/web-frontend verify:deploy-env
 
       # Vite bakes these into the bundle at build time, so the Worker URL
@@ -96,6 +97,7 @@ jobs:
           VITE_GOOGLE_ADSENSE_CLIENT_ID: ${{ vars.ZIPNAMI_ADSENSE_CLIENT_ID }}
           VITE_GOOGLE_ADSENSE_SLOT_ID: ${{ vars.ZIPNAMI_ADSENSE_SLOT_ID }}
           VITE_ADSENSE_TEST_MODE: "false"
+          VITE_GOOGLE_MAPS_API_KEY: ${{ vars.ZIPNAMI_MAPS_API_KEY }}
         run: bun run --filter @zipnami/web-frontend build
 
       # --branch main makes this a production deployment, provided the
