@@ -161,6 +161,9 @@ const validFrontendSettings = {
   VITE_GOOGLE_ADSENSE_CLIENT_ID: "ca-pub-1234567890123456",
   VITE_GOOGLE_ADSENSE_SLOT_ID: "9876543210",
   VITE_ADSENSE_TEST_MODE: "false",
+  // Well-formed but not a real key (AIza + 35 characters), so a production
+  // deploy can require one (Issue #58).
+  VITE_GOOGLE_MAPS_API_KEY: "AIzaSy0123456789abcdefghijklmnopqrstuvw",
 };
 
 const verifyFrontend = (env: Record<string, string | undefined>) =>
