@@ -74,4 +74,7 @@ The ticks above rest on these runs of the Large test and the Medium suite.
 - Local run, Windows, 2026-10-28, infrastructure commit c13594c: local wrangler
   dev and vite preview. The Large test passed 10 of 10 on Chromium and 10 of 10
   on WebKit, and the e2e:medium script passed 485 tests.
-- Nightly CI run on this branch: pending
+- Nightly CI run, ubuntu-24.04, 2026-10-27 UTC, commit fe2f11e: the Large
+  test passed 20 of 20 (10 on Chromium, 10 on WebKit) in the Frontend E2E
+  (Large) job,
+  https://github.com/kishimin/random-postal-code/actions/runs/40538230977
