@@ -57,7 +57,8 @@ export default defineConfig({
       // ALLOWED_ORIGINS names exactly the page origin, so the test can show
       // that the next port over is refused.
       command:
-        "bunx wrangler dev --port 8787 --var ALLOWED_ORIGINS:" + siteOrigin,
+        "bunx wrangler dev --ip 127.0.0.1 --port 8787 --var ALLOWED_ORIGINS:" +
+        siteOrigin,
       cwd: "../backend",
       url: workerOrigin + "/api/random",
       // Never reuse: a Worker left running with another allowlist would make

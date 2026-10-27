@@ -10,7 +10,10 @@ it instead of repeating it by hand. The journeys run a production build served
 by vite preview, calling a real Worker under wrangler dev, with nothing on
 GET /api/random stubbed. To rerun them, run the e2e:large script in
 apps/web/frontend and give it the path of the test below. The earlier
-per-feature checks run against a stubbed API with the e2e:medium script.
+per-feature checks run against a stubbed API: the Playwright ones with the
+e2e:medium script in apps/web/frontend, and Issue #11 (the Worker's CORS
+boundary, which has no browser) with the test:medium script of
+apps/web/backend.
 
 The Large test is the reproducible check for every category in this document:
 acceptance/web-mvp-end-to-end.large.test.ts. It runs nightly in the Frontend
@@ -50,10 +53,11 @@ under the category they support.
       development-server path (Large test, first journey).
 - [x] Generation, copying, address maps, history, and the Maps, advertising,
       and consent failure cases work against the real Worker (Large test, and
-      Medium Issues #6, #7, #8, #10, and #11).
-- [x] The Worker authorizes the site origin and no other, for a plain read and
-      for a preflight, and a browser on another origin cannot read it (Large
-      test).
+      Medium Issues #6, #7, #8, #9, #17, and #39).
+- [x] The Worker authorizes the site origin for a plain read, refuses a plain
+      read and a preflight from other origins, and a browser on another origin
+      cannot read it (Large test; the CORS rules themselves are held by Medium
+      Issue #11).
 
 ## Pending deployment
 
@@ -62,3 +66,12 @@ These need the deployed site, so they stay open until Issue #19 is deployed.
 - [ ] #19: /privacy is publicly accessible on the deployed site.
 - [ ] #19: The Japan Post attribution is publicly accessible on the deployed site.
 - [ ] #19: The deployed Web SDKs match what /privacy discloses.
+
+## Evidence
+
+The ticks above rest on these runs of the Large test and the Medium suite.
+
+- Local run, Windows, 2026-10-28, infrastructure commit c13594c: local wrangler
+  dev and vite preview. The Large test passed 10 of 10 on Chromium and 10 of 10
+  on WebKit, and the e2e:medium script passed 485 tests.
+- Nightly CI run on this branch: pending
