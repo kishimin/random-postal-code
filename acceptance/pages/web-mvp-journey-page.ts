@@ -1,5 +1,6 @@
 import type { Page, Request, Response } from "@playwright/test";
 import type { Address } from "@zipnami/shared";
+import { advertisingRequestPattern } from "../selectors/advertising-selectors.ts";
 import { randomEndpointPattern } from "../selectors/generator-selectors.ts";
 import {
   externalMapLinkSelector,
@@ -64,6 +65,7 @@ export const createWebMvpJourneyPage = (page: Page) => {
   const dependencies = createDependencyFailurePage(page);
   const requestedPaths: string[] = [];
   let apiOrigin: string | undefined;
+  let refusedAdvertisingRequests = 0;
 
   const isWorkerGeneration = (response: Response) =>
     randomEndpointPattern.test(new URL(response.url()).pathname) &&
@@ -273,6 +275,25 @@ export const createWebMvpJourneyPage = (page: Page) => {
     page.on("request", rememberRequestedPath);
   };
 
+  /**
+   * Refuses every advertising and consent request, counting each one.
+   *
+   * The third-party guard already refuses them, but silently: a build that
+   * never asked for advertising at all would look the same as one whose
+   * requests were all refused. Counting is what tells the two apart (Issue
+   * #82). Installed after the guard, so Playwright consults it first.
+   * Call before navigating.
+   */
+  const refuseEveryAdvertisingRequest = async () => {
+    refusedAdvertisingRequests = 0;
+    await page.route(advertisingRequestPattern, (route) => {
+      refusedAdvertisingRequests += 1;
+      return route.abort("blockedbyclient");
+    });
+  };
+
+  const refusedAdvertisingRequestCount = () => refusedAdvertisingRequests;
+
   const developmentServerRequests = () =>
     requestedPaths.filter((path) => developmentServerPathPattern.test(path));
 
@@ -289,6 +310,8 @@ export const createWebMvpJourneyPage = (page: Page) => {
     holdEveryAdvertisingRequest: dependencies.holdEveryAdvertisingRequest,
     advertisingRequestCount: dependencies.advertisingRequestCount,
     releaseHeldAdvertisingRequests: dependencies.releaseHeldAdvertisingRequests,
+    refuseEveryAdvertisingRequest,
+    refusedAdvertisingRequestCount,
     generateThroughWorker,
     generateTimes,
     resultAddressEntry,
