@@ -16,13 +16,9 @@ import type { PostalCodeRepository } from "../repositories/postal-code-repositor
  * once and stays immutable, with no per-request cost or network dependency
  * (api-design.md section 5).
  *
- * The real Japan Post archive is not retrievable in this repository yet --
- * Issue #34 owns fetching and Shift-JIS-decoding it -- so this file is a
- * small placeholder of real Japan Post postal codes and addresses, produced
- * by running `@zipnami/postal-data`'s own `buildPostalCodeDataset` (the
- * function `bun run --filter @zipnami/postal-data regenerate` calls) over a
- * small KEN_ALL.CSV-shaped input, not hand-typed JSON. Replacing it with the
- * full dataset once Issue #34 lands changes only this file.
+ * The artifact is the full Japan Post dataset (Issue #88), produced by
+ * `bun run --filter @zipnami/postal-data regenerate` from the committed
+ * KEN_ALL.CSV, not hand-typed JSON.
  */
 /**
  * Validates raw data against the shared `PostalCode` contract, falling back

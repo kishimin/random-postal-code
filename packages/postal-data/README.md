@@ -13,17 +13,12 @@ The archive holds one Shift-JIS CSV named `KEN_ALL.CSV`, fifteen
 comma-separated columns per record, quoted text fields. (The older
 `/zipcode/dl/kogaki/zip/ken_all.zip` path now answers HTTP 404.)
 
-Retrieval date: **2026-10-16**, by running the procedure below against the
-live site. That retrieval yielded 124,840 records, which `regenerate`
-turned into 120,720 postal codes and 124,525 addresses. No town name was
-left with an unbalanced parenthesis after the split-town reassembly.
-
-The committed data has not been switched to that retrieval yet. The
-Worker's artifact still comes from the small hand-built source described
-next (shaped on 2026-09-21 like `KEN_ALL.CSV`; see also
-`acceptance/fixtures/japan-post-ken-all-excerpt.csv`). Replacing it with
-the full dataset is a separate decision, because the artifact's size and
-the Worker's limits come with it.
+Retrieval date: **2026-11-03**, by running the procedure below against the
+live site. That retrieval yielded 124,841 records, which `regenerate`
+turned into 120,721 postal codes and 124,526 addresses; 1,338 postal codes
+have more than one address. This is the data committed below and served by
+the Worker (Issue #88). The first real retrieval, on 2026-10-16, yielded
+124,840 records.
 
 ### Retrieving the archive from Japan Post
 
@@ -60,12 +55,15 @@ maintainer procedure.
 
 `apps/web/backend/src/data/postal-codes.generated.json` is the artifact the
 Worker imports at runtime. Its source is committed at
-`data/ken-all.source.csv`: a small `KEN_ALL.CSV`-shaped file, hand-built the
-same way as the test fixture above, covering the same five postal codes the
-Worker's artifact holds. Regenerating from it through
-`buildPostalCodeDataset` reproduces that artifact's content and order
-exactly (design.md §4.3's "the same input must produce the same content and
-order").
+`data/ken-all.source.csv`. `data/ken-all.source.csv` is the full `KEN_ALL.CSV`
+from the retrieval dated above, decoded to UTF-8 by `fetch-ken-all`.
+Regenerating from it through `buildPostalCodeDataset` reproduces that
+artifact's content and order exactly (design.md §4.3's "the same input must
+produce the same content and order").
+
+The artifact is about 13.7 MB of JSON, 1.3 MB gzip-compressed, which keeps
+the Worker bundle under the Workers Free plan's 3 MiB compressed limit. The
+Worker validates it once, at module evaluation (Issue #88).
 
 ## Checking the generated artifact for drift
 
