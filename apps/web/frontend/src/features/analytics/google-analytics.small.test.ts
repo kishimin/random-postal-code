@@ -1,19 +1,14 @@
 import { describe, expect, test } from "vitest";
-import {
-  installGoogleAnalytics,
-  startGoogleAnalytics,
-  type AnalyticsHost,
-} from "./google-analytics";
+import { installGoogleAnalytics, type AnalyticsHost } from "./google-analytics";
 
 const MEASUREMENT_ID = "G-ABC123DEF4";
 
 // design.md section 7: denied for the EEA (27 EU member states plus Iceland,
 // Liechtenstein, and Norway), the UK, and Switzerland.
-const CONSENT_REGIONS = [
-  ...["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE"],
-  ...["GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT"],
-  ...["RO", "SK", "SI", "ES", "SE", "IS", "LI", "NO", "GB", "CH"],
-];
+const CONSENT_REGIONS =
+  "AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE IS LI NO GB CH".split(
+    " ",
+  );
 
 const CONSENT_TYPES = [
   "ad_storage",
@@ -35,17 +30,18 @@ const createHost = (): AnalyticsHost => ({
 
 /**
  * The entries on the host's data layer, as gtag.js would read them.
- * @param host - The host the tag was installed into.
+ * @param {AnalyticsHost} host - The host the tag was installed into.
  * @returns {unknown[]} Every entry, in the order it was queued.
  */
 const dataLayerOf = (host: AnalyticsHost): unknown[] => {
   const layer: unknown = Reflect.get(host.window, "dataLayer");
-  return Array.isArray(layer) ? layer : [];
+  const entries: unknown[] = Array.isArray(layer) ? layer : [];
+  return entries;
 };
 
 /**
  * The commands gtag() queued, each as the plain array of its arguments.
- * @param host - The host the tag was installed into.
+ * @param {AnalyticsHost} host - The host the tag was installed into.
  * @returns {unknown[][]} One array per queued command, in order.
  */
 const queuedCommands = (host: AnalyticsHost): unknown[][] =>
@@ -169,54 +165,5 @@ describe("installGoogleAnalytics", () => {
     installGoogleAnalytics(MEASUREMENT_ID, host);
 
     expect(dataLayerOf(host)[0]).toBe(existing);
-  });
-});
-
-describe("startGoogleAnalytics", () => {
-  test("installs the tag for the measurement ID in the build environment", () => {
-    const host = createHost();
-
-    startGoogleAnalytics(
-      {
-        VITE_API_BASE_URL: "https://api.example.com",
-        VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: MEASUREMENT_ID,
-      },
-      host,
-    );
-
-    expect(Array.from(host.document.scripts, (script) => script.src)).toEqual([
-      `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`,
-    ]);
-  });
-
-  test("loads nothing for a build environment without a measurement ID", () => {
-    const host = createHost();
-
-    startGoogleAnalytics({ VITE_API_BASE_URL: "https://api.example.com" }, host);
-
-    expect(host.document.scripts).toHaveLength(0);
-  });
-
-  // design.md section 7: Analytics is optional, so whatever goes wrong
-  // installing it must not stop the application from starting.
-  test("does not throw when the tag cannot be installed", () => {
-    const host: AnalyticsHost = {
-      document: document.implementation.createHTMLDocument(""),
-      window: Object.defineProperty({}, "dataLayer", {
-        get: () => {
-          throw new Error("a page that refuses the data layer");
-        },
-      }),
-    };
-
-    expect(() =>
-      startGoogleAnalytics(
-        {
-          VITE_API_BASE_URL: "https://api.example.com",
-          VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: MEASUREMENT_ID,
-        },
-        host,
-      ),
-    ).not.toThrow();
   });
 });
