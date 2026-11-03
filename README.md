@@ -28,6 +28,7 @@ Show a random real Japanese postal code, with every address it covers, at the pr
 9. [Deployment](#deployment)
 10. [Documentation](#documentation)
 11. [Troubleshooting](#troubleshooting)
+12. [License](#license)
 
 ## About the Project
 
@@ -84,6 +85,7 @@ Bun's version is the one CI installs (`.github/actions/setup-frontend/action.yml
 │   ├── postal-data
 │   └── shared
 ├── CLAUDE.md
+├── LICENSE
 ├── README.md
 ├── bun.lock
 └── package.json
@@ -343,5 +345,13 @@ Playwright's WebKit needs system libraries that the browser download does not in
 cd apps/web/frontend
 bunx playwright install-deps webkit
 ```
+
+<p align="right">(<a href="#top">back to top</a>)</p>
+
+## License
+
+The code in this repository is released under the [MIT License](./LICENSE).
+
+The postal-code data comes from Japan Post's `KEN_ALL.CSV`. Japan Post states that it does not claim copyright in its postal-code data and that the data may be freely redistributed ([Japan Post's notes on the data](https://www.post.japanpost.jp/service/search/zipcode/download/readme.html)). The site credits Japan Post as the source.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
