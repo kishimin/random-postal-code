@@ -91,6 +91,32 @@ describe("selectRandomPostalCode", () => {
     expect(parseSpy.mock.calls.length).toBe(callsAfterFirstRequest);
   });
 
+  // The memo above still validates once per isolate, on the first request.
+  // With the full dataset (Issue #88) that one pass is about 80 ms, eight
+  // times the Free plan's per-request CPU limit, and it repeats what the
+  // repository did at module evaluation.
+  test("skips per-entry validation for a repository that declares its entries already validated", async () => {
+    const postalCodes = [postalCode("1000001")];
+    const parseSpy = vi.spyOn(postalCodeSchema, "safeParse");
+
+    const result = await selectRandomPostalCode({
+      listPostalCodes: () => Promise.resolve(postalCodes),
+      entriesValidated: true,
+    });
+
+    expect(result).toEqual({ outcome: "ok", postalCode: postalCodes[0] });
+    expect(parseSpy).not.toHaveBeenCalled();
+  });
+
+  test("still reports dataUnavailable for an empty collection from a repository that declares its entries validated", async () => {
+    const result = await selectRandomPostalCode({
+      listPostalCodes: () => Promise.resolve([]),
+      entriesValidated: true,
+    });
+
+    expect(result).toEqual({ outcome: "dataUnavailable" });
+  });
+
   // `postalCodes[index]` is typed as non-optional without
   // `noUncheckedIndexedAccess`, so nothing
   // stops a future edit from returning `{ outcome: "ok", postalCode:
