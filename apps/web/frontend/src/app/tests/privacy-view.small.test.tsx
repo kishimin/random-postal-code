@@ -74,6 +74,28 @@ describe("PrivacyView", () => {
     expect(thirdPartySection).toHaveTextContent(/住所[^。]*Google[^。]*送信/);
   });
 
+  // Issue #92: design.md section 8 names Google Analytics among the services
+  // /privacy distinguishes from what Zipnami itself stores.
+  test("the third-party section documents Google Analytics: what is sent, its cookies, consent regions, and opting out", () => {
+    render(<PrivacyView />);
+
+    const thirdPartySection = screen.getByRole("region", {
+      name: /第三者|サードパーティ|外部サービス/,
+    });
+
+    expect(thirdPartySection).toHaveTextContent(/Google\s*Analytics/);
+    // What is sent: pages visited, where the visit came from, device, region.
+    expect(thirdPartySection).toHaveTextContent(
+      /(?:ページ|閲覧)[^。]*(?:参照元|リファラ)[^。]*(?:端末|デバイス)[^。]*(?:地域|国)/,
+    );
+    expect(thirdPartySection).toHaveTextContent(/_ga\b/);
+    expect(thirdPartySection).toHaveTextContent(/Cookie|クッキー/i);
+    expect(thirdPartySection).toHaveTextContent(
+      /欧州経済領域[^。]*英国[^。]*スイス[^。]*同意/,
+    );
+    expect(thirdPartySection).toHaveTextContent(/オプトアウト/);
+  });
+
   test("the Zipnami section documents the browser-local history and that no location is collected", () => {
     render(<PrivacyView />);
 
