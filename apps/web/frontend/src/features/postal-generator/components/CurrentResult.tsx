@@ -40,12 +40,20 @@ export const CurrentResult = ({
   selectedAddress,
 }: CurrentResultProps) => (
   <section aria-labelledby={RESULT_HEADING_ID} className={"text-left"}>
-    <p className={eyebrowClass}>{postalGeneratorText.resultEyebrow}</p>
+    <p className={`${eyebrowClass} hidden md:block`}>
+      {postalGeneratorText.resultEyebrow}
+    </p>
     {/* The heading keeps its accessible name "生成結果"; Figma's headline is
         what a sighted visitor reads beside it. The phone frame has no such
-        headline, since its headline is the postal code. */}
+        headline, since its headline is the postal code, so there the heading
+        carries the eyebrow instead: a heading with no visible text has no
+        box, and a heading nobody can see is not a heading a sighted visitor
+        can find. */}
     <h2 id={RESULT_HEADING_ID} className={"text-title font-bold text-ink"}>
       <span className={"sr-only"}>{postalGeneratorText.resultHeading}</span>
+      <span className={`${eyebrowClass} md:hidden`}>
+        {postalGeneratorText.resultEyebrow}
+      </span>
       <span className={"hidden md:inline"}>
         {postalGeneratorText.resultHeadline}
       </span>
