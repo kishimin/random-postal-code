@@ -11,6 +11,10 @@ export const siteText = {
     "郵便番号データは日本郵便株式会社が公開するデータを利用しています。",
   privacyLabel: "プライバシーポリシー",
   backToGenerator: "トップへ戻る",
+  // The header's tagline and the footer's attribution, both fixed by the
+  // Figma frames (ui-design.md section 9.2).
+  tagline: "日本のどこかへ、波まかせ。",
+  copyright: "© kishimin 2026",
 } as const;
 
 /**

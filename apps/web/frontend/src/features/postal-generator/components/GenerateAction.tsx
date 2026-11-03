@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { postalGeneratorText } from "../site-text";
-import { tapTargetClass } from "../styles";
+import { primaryButtonClass } from "../styles";
 
 type GenerateActionProps = {
   onGenerate: () => void;
@@ -54,7 +54,7 @@ export const GenerateAction = ({
     <button
       ref={buttonRef}
       type={"button"}
-      className={tapTargetClass}
+      className={primaryButtonClass}
       disabled={isGenerating}
       onClick={handleClick}
     >

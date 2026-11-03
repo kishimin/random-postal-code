@@ -26,9 +26,11 @@ const HISTORY_HEADING_ID = "history-heading";
  * least once.
  */
 export const HistoryList = ({ entries }: HistoryListProps) => (
-  <section aria-labelledby={HISTORY_HEADING_ID}>
-    <h2 id={HISTORY_HEADING_ID}>{historyText.heading}</h2>
-    <ul>
+  <section aria-labelledby={HISTORY_HEADING_ID} className={"mt-12"}>
+    <h2 id={HISTORY_HEADING_ID} className={"text-heading font-bold text-ink"}>
+      {historyText.heading}
+    </h2>
+    <ul className={"mt-4 flex flex-col gap-3"}>
       {entries.map((entry) => (
         <HistoryItem key={entry.id} entry={entry} />
       ))}

@@ -1,7 +1,8 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { siteText } from "../site-text";
-import { linkClass } from "../styles";
+import { privacyLinkClass, wordmarkClass } from "../styles";
+import { AppFrame } from "./AppFrame";
 
 /**
  * Frame shared by every route.
@@ -49,30 +50,20 @@ export const RootLayout = () => {
   }, [pathname]);
 
   return (
-    <div className={"flex min-h-dvh flex-col"}>
-      <header className={"border-b"}>
-        <div className={"mx-auto w-full max-w-[1200px] px-4 py-3"}>
-          <Link className={linkClass} to={"/"}>
-            {siteText.name}
-          </Link>
-        </div>
-      </header>
-
-      <main
-        ref={mainRef}
-        className={"mx-auto w-full max-w-[1200px] flex-1 px-4 py-6"}
-      >
-        <Outlet />
-      </main>
-
-      <footer className={"border-t"}>
-        <div className={"mx-auto w-full max-w-[1200px] px-4 py-4 text-sm"}>
-          <p>{siteText.attribution}</p>
-          <Link className={linkClass} to={"/privacy"}>
-            {siteText.privacyLabel}
-          </Link>
-        </div>
-      </footer>
-    </div>
+    <AppFrame
+      mainRef={mainRef}
+      wordmark={
+        <Link className={wordmarkClass} to={"/"}>
+          {siteText.name}
+        </Link>
+      }
+      privacyLink={
+        <Link className={privacyLinkClass} to={"/privacy"}>
+          {siteText.privacyLabel}
+        </Link>
+      }
+    >
+      <Outlet />
+    </AppFrame>
   );
 };

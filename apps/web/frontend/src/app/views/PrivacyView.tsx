@@ -6,6 +6,10 @@ import { privacyText } from "./privacy-text";
 const FIRST_PARTY_HEADING_ID = "privacy-first-party-heading";
 const THIRD_PARTY_HEADING_ID = "privacy-third-party-heading";
 
+const sectionClass = "flex flex-col gap-3 rounded-card bg-card p-6";
+const sectionHeadingClass = "text-heading font-bold text-ink";
+const paragraphClass = "text-body-sm text-ink-muted";
+
 /**
  * Privacy screen (Issue #10).
  *
@@ -20,32 +24,55 @@ export const PrivacyView = () => {
   useDocumentTitle(pageTitle(siteText.privacyLabel));
 
   return (
-    <>
+    <div className={"mx-auto flex max-w-[720px] flex-col gap-6"}>
       {/* tabIndex: RootLayout focuses a screen's own h1 after a client-side
           route change (Issue #16 AC-5), and a plain heading is not in the
           focusable area without one. */}
-      <h1 tabIndex={-1}>{siteText.privacyLabel}</h1>
+      <h1 tabIndex={-1} className={"text-headline font-bold text-ink"}>
+        {siteText.privacyLabel}
+      </h1>
 
-      <section aria-labelledby={FIRST_PARTY_HEADING_ID}>
-        <h2 id={FIRST_PARTY_HEADING_ID}>{privacyText.firstParty.heading}</h2>
-        <p>{privacyText.firstParty.browserLocalHistory}</p>
-        <p>{privacyText.firstParty.noLocationCollection}</p>
-        <p>{privacyText.firstParty.noOwnUserIdentifier}</p>
-        <p>{privacyText.firstParty.noStoredAdvertisingIdentifier}</p>
+      <section
+        aria-labelledby={FIRST_PARTY_HEADING_ID}
+        className={sectionClass}
+      >
+        <h2 id={FIRST_PARTY_HEADING_ID} className={sectionHeadingClass}>
+          {privacyText.firstParty.heading}
+        </h2>
+        <p className={paragraphClass}>
+          {privacyText.firstParty.browserLocalHistory}
+        </p>
+        <p className={paragraphClass}>
+          {privacyText.firstParty.noLocationCollection}
+        </p>
+        <p className={paragraphClass}>
+          {privacyText.firstParty.noOwnUserIdentifier}
+        </p>
+        <p className={paragraphClass}>
+          {privacyText.firstParty.noStoredAdvertisingIdentifier}
+        </p>
       </section>
 
-      <section aria-labelledby={THIRD_PARTY_HEADING_ID}>
-        <h2 id={THIRD_PARTY_HEADING_ID}>{privacyText.thirdParty.heading}</h2>
-        <p>{privacyText.thirdParty.googleMaps}</p>
-        <p>{privacyText.thirdParty.googleAdSense}</p>
-        <p>{privacyText.thirdParty.consent}</p>
+      <section
+        aria-labelledby={THIRD_PARTY_HEADING_ID}
+        className={sectionClass}
+      >
+        <h2 id={THIRD_PARTY_HEADING_ID} className={sectionHeadingClass}>
+          {privacyText.thirdParty.heading}
+        </h2>
+        <p className={paragraphClass}>{privacyText.thirdParty.googleMaps}</p>
+        <p className={paragraphClass}>{privacyText.thirdParty.googleAdSense}</p>
+        <p className={paragraphClass}>{privacyText.thirdParty.consent}</p>
       </section>
 
       <p>
-        <a className={linkClass} href={privacyText.contactHref}>
+        <a
+          className={`${linkClass} text-body-sm text-ink`}
+          href={privacyText.contactHref}
+        >
           {privacyText.contactLabel}
         </a>
       </p>
-    </>
+    </div>
   );
 };

@@ -39,11 +39,11 @@ export const AdvertisingRegion = ({
   return (
     <section
       aria-labelledby={ADVERTISING_LABEL_ID}
-      className={"rounded-md border border-gray-300 bg-gray-50 p-4"}
+      className={"mt-8 rounded-field border border-card-border bg-card p-4"}
     >
       <p
         id={ADVERTISING_LABEL_ID}
-        className={"mb-2 text-xs font-medium text-gray-600"}
+        className={"mb-2 text-caption font-medium text-ink-muted"}
       >
         {advertisingText.regionLabel}
       </p>

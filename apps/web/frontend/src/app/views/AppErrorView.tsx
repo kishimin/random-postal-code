@@ -1,6 +1,7 @@
 import { siteText } from "../site-text";
-import { linkClass } from "../styles";
+import { privacyLinkClass, wordmarkClass } from "../styles";
 import { AppErrorContent } from "./AppErrorContent";
+import { AppFrame } from "./AppFrame";
 
 /**
  * Destination for a failure that left no usable page at all.
@@ -13,30 +14,25 @@ import { AppErrorContent } from "./AppErrorContent";
  * Used by RootErrorBoundary, which sits outside the router. A route that fails
  * while the layout still renders gets AppErrorContent instead, so the frame
  * appears once rather than twice.
+ *
+ * Figma's Global Error frames draw no wordmark, but every screen shows one
+ * (Issue #97), so the frame keeps its header.
  */
 export const AppErrorView = () => {
   return (
-    <div className={"flex min-h-dvh flex-col"}>
-      <header className={"border-b"}>
-        <div className={"mx-auto w-full max-w-[1200px] px-4 py-3"}>
-          <a className={linkClass} href={"/"}>
-            {siteText.name}
-          </a>
-        </div>
-      </header>
-
-      <main className={"mx-auto w-full max-w-[1200px] flex-1 px-4 py-6"}>
-        <AppErrorContent />
-      </main>
-
-      <footer className={"border-t"}>
-        <div className={"mx-auto w-full max-w-[1200px] px-4 py-4 text-sm"}>
-          <p>{siteText.attribution}</p>
-          <a className={linkClass} href={"/privacy"}>
-            {siteText.privacyLabel}
-          </a>
-        </div>
-      </footer>
-    </div>
+    <AppFrame
+      wordmark={
+        <a className={wordmarkClass} href={"/"}>
+          {siteText.name}
+        </a>
+      }
+      privacyLink={
+        <a className={privacyLinkClass} href={"/privacy"}>
+          {siteText.privacyLabel}
+        </a>
+      }
+    >
+      <AppErrorContent />
+    </AppFrame>
   );
 };
