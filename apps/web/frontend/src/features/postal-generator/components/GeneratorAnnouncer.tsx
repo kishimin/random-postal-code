@@ -4,8 +4,6 @@ import {
 } from "../announcement-tones";
 import { postalGeneratorText } from "../site-text";
 
-
-
 type GeneratorAnnouncerProps = {
   announcement: string;
   tone: AnnouncementTone;

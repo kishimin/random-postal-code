@@ -65,6 +65,37 @@ describe("CurrentResult", () => {
     ).toBe(true);
   });
 
+  // Figma's result frames state how many addresses the code covers.
+  test("states how many addresses the postal code corresponds to", () => {
+    render(
+      <CurrentResult
+        result={result}
+        onCopy={() => undefined}
+        copyFeedback={""}
+      />,
+    );
+
+    expect(
+      screen.getByText(postalGeneratorText.addressCount(1), { exact: false }),
+    ).toBeInTheDocument();
+  });
+
+  // The heading keeps the name the accessibility tests find the region by;
+  // Figma's headline is extra visible text inside it.
+  test("names the result region after both the section and Figma's headline", () => {
+    render(
+      <CurrentResult
+        result={result}
+        onCopy={() => undefined}
+        copyFeedback={""}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: /生成結果/ }),
+    ).toHaveTextContent(postalGeneratorText.resultHeadline);
+  });
+
   // Issue #8 places a per-address map action inside AddressList's own
   // entries; CurrentResult sits between GeneratorView and AddressList, so it
   // has to pass the slot through rather than swallow it.
