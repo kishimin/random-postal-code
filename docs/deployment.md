@@ -24,13 +24,25 @@ creates it. The workflows read every production value from the
 
 1. Create the Pages project as a Direct Upload project whose production
    branch is `main`. The deploy workflow uploads with `--branch main`, and
-   only the production branch counts as a production deployment:
+   only the production branch counts as a production deployment. Run it
+   from `apps/web/frontend`, which pins wrangler in `bun.lock` (Issue #90):
 
    ```sh
-   bunx wrangler pages project create <project> --production-branch main
+   bunx wrangler pages project create <project> --production-branch main --force
    ```
 
-   Its production origin is `https://<project>.pages.dev`.
+   `--force` keeps it a classic Pages project. Without it, wrangler now
+   hands the command to "Pages as part of Workers". On 2026-11-03 that
+   failed at the repository root, and from `apps/web/backend`, where
+   `wrangler.jsonc` describes the API, it deployed the API as a new Worker
+   named `<project>` instead of creating a Pages project. Do not run it
+   inside `apps/web/backend`. Wrangler says later commands against an
+   existing classic project run on Pages directly, so only creation needs
+   `--force`.
+
+   Its production origin is `https://<project>.pages.dev`. The production
+   project is `zipnami` (`https://zipnami.pages.dev`), created this way on
+   2026-11-03.
 
 2. Create a Cloudflare API token with **Account › Workers Scripts › Edit**
    and **Account › Cloudflare Pages › Edit** for the account.
