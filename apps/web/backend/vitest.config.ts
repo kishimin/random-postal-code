@@ -33,6 +33,7 @@ export default defineConfig({
       "../../../acceptance/random-postal-code-api.medium.test.ts",
       "../../../acceptance/cors-and-secret-boundaries.medium.test.ts",
       "../../../acceptance/csp-report-endpoint.medium.test.ts",
+      "../../../acceptance/full-postal-dataset-runtime.medium.test.ts",
     ],
     pool: cloudflarePool({
       wrangler: { configPath: "./wrangler.jsonc" },
