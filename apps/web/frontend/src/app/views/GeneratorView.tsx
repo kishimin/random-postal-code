@@ -6,12 +6,12 @@ import { useHistory } from "../../features/history/hooks/use-history";
 import { MapAddressActions } from "../../features/maps/components/MapAddressActions";
 import { MapSection } from "../../features/maps/components/MapSection";
 import { useMapSelection } from "../../features/maps/hooks/use-map-selection";
-import { CurrentResult } from "../../features/postal-generator/components/CurrentResult";
-import { GenerateAction } from "../../features/postal-generator/components/GenerateAction";
 import {
   announcementTones,
   type AnnouncementTone,
 } from "../../features/postal-generator/announcement-tones";
+import { CurrentResult } from "../../features/postal-generator/components/CurrentResult";
+import { GenerateAction } from "../../features/postal-generator/components/GenerateAction";
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
 import { MysteryPlaceholder } from "../../features/postal-generator/components/MysteryPlaceholder";
 import { useGenerator } from "../../features/postal-generator/hooks/use-generator";
