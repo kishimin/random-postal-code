@@ -7,9 +7,13 @@ defined in [api-design.md](../../../docs/api-design.md) and implements the inter
 ## Getting started
 
 ```sh
-bun install                 # from the repository root
-cp .env.example .env        # already points at the local backend
+bun install                                              # from the repository root
+cp .env.example .env                                     # already points at the local backend
+cp ../backend/.dev.vars.example ../backend/.dev.vars     # lets the local Worker answer this origin
 ```
+
+Without `../backend/.dev.vars`, `wrangler dev` has no `ALLOWED_ORIGINS`. The Worker then authorizes
+no origin, and the browser refuses every response from it, so each generation fails.
 
 Then run the two servers in separate terminals, from the repository root:
 
