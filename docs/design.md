@@ -144,16 +144,21 @@ Android, Expo, AdMob, UMP, and Google Play delivery are not part of the Web MVP.
 
 ## 7. External Services and Failure Boundaries
 
-Google Maps, AdSense, and consent services are optional dependencies isolated from core Web behavior. Their failure must not make an already successful postal code, addresses, history, or regeneration unavailable.
+Google Maps, AdSense, Google Analytics, and consent services are optional dependencies isolated from core Web behavior. Their failure must not make an already successful postal code, addresses, history, or regeneration unavailable.
 
 - Only production has a Web Maps API key, restricted by HTTP referrer to the production origin and by API to the Maps Embed API. Development runs without a key, so the map falls back to its external link; a key that also allowed localhost would weaken the production restriction.
 - Ads must not obscure primary actions or retry indefinitely.
 - In regions that require consent, complete the selected Web consent flow before eligible ad requests.
 - The Zipnami API neither receives nor stores advertising identifiers.
+- Google Analytics 4 measures visits to the Web (Issue #92). Only production carries a measurement ID (`G-` format, built in as `VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID` and supplied as `ZIPNAMI_WEB_GA_MEASUREMENT_ID`). A build without one, such as development, CI, and end-to-end test builds, loads no Analytics script and makes no request to Google Analytics.
+  - The tag loads asynchronously and is never awaited. If it fails to load, is blocked, or never answers, core Web behavior is unaffected.
+  - Google consent mode defaults are declared before the tag is configured: `denied` for the EEA, the UK, and Switzerland, and `granted` everywhere else. The visitor's choice then comes from the Google Privacy & messaging message shared with AdSense (Issue #39).
+  - The application sends no custom events. Page views, including screen changes of the single-page application, are counted by the tag's enhanced measurement through browser history changes, so the application does not send `page_view` itself.
+  - It processes page views, referrers, region, and device information, and may set the `_ga` cookies. The Zipnami API neither receives nor stores any of it.
 
 ## 8. Privacy and Accessibility
 
-`/privacy` distinguishes data stored by Zipnami from data processed by Google Maps, AdSense, and consent services. It documents browser-local history, the absence of location collection, Japan Post attribution, and a contact method.
+`/privacy` distinguishes data stored by Zipnami from data processed by Google Maps, AdSense, Google Analytics, and consent services. It documents browser-local history, the absence of location collection, Japan Post attribution, and a contact method.
 
 The Web uses semantic HTML, keyboard-operable controls, visible focus, meaningful names, and appropriate announcements for dynamic results and errors. State is not conveyed by color alone. Advertising areas are distinguishable from application content.
 
