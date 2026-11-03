@@ -74,6 +74,37 @@ describe("problemsWithFrontendDeploySettings", () => {
     expect(problems[0]).toContain(name);
   });
 
+  test("accepts a GA4 measurement ID", () => {
+    expect(
+      problemsWithFrontendDeploySettings({
+        ...valid,
+        VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-ABC123DEF4",
+      }),
+    ).toEqual([]);
+  });
+
+  // Issue #92 will also refuse a missing ID. That waits for the human
+  // approval to rewrite acceptance/web-deployment.medium.test.ts, whose
+  // settings carry no ID, so only a malformed one is refused for now.
+  test.each([
+    "UA-123456789-1",
+    "AW-1234567890",
+    "G-",
+    "G-abc123",
+    "   ",
+    " G-ABC123DEF4",
+    "G-ABC123DEF4\n",
+    "not-a-measurement-id",
+  ])("refuses the malformed measurement ID %j", (id) => {
+    const problems = problemsWithFrontendDeploySettings({
+      ...valid,
+      VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: id,
+    });
+
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID");
+  });
+
   test("reports every unusable setting at once, not only the first", () => {
     const problems = problemsWithFrontendDeploySettings({});
 
