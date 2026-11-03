@@ -183,9 +183,7 @@ describe("Issue #88: the full Japan Post dataset served by the Worker", () => {
         .map((name) => path.join(outdir, name))
         .filter((file) => statSync(file).isFile());
 
-      expect(uploaded.length, "the dry run wrote no bundle").toBeGreaterThan(
-        0,
-      );
+      expect(uploaded.length, "the dry run wrote no bundle").toBeGreaterThan(0);
 
       const compressed = uploaded.reduce(
         (total, file) => total + gzipSync(readFileSync(file)).length,
