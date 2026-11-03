@@ -161,7 +161,7 @@ describe("Issue #3: the Japan Post postal-code dataset build", () => {
       {
         prefecture: "北海道",
         city: "札幌市中央区",
-        town: "以下に掲載がない場合",
+        town: "",
       },
     ]);
   });
@@ -179,12 +179,12 @@ describe("Issue #3: the Japan Post postal-code dataset build", () => {
       {
         prefecture: "愛知県",
         city: "弥富市",
-        town: "以下に掲載がない場合",
+        town: "",
       },
       {
         prefecture: "三重県",
         city: "桑名郡木曽岬町",
-        town: "以下に掲載がない場合",
+        town: "",
       },
     ]);
   });

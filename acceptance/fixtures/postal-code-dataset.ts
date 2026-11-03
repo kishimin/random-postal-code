@@ -40,7 +40,7 @@ export const normalizedPostalCodes: readonly PostalCode[] = [
       {
         prefecture: "北海道",
         city: "札幌市中央区",
-        town: "以下に掲載がない場合",
+        town: "",
       },
     ],
   },
@@ -51,11 +51,11 @@ export const normalizedPostalCodes: readonly PostalCode[] = [
   {
     postalCode: "3620000",
     addresses: [
-      { prefecture: "埼玉県", city: "上尾市", town: "以下に掲載がない場合" },
+      { prefecture: "埼玉県", city: "上尾市", town: "" },
       {
         prefecture: "埼玉県",
         city: "北足立郡伊奈町",
-        town: "以下に掲載がない場合",
+        town: "",
       },
     ],
   },
@@ -69,11 +69,11 @@ export const normalizedPostalCodes: readonly PostalCode[] = [
   {
     postalCode: "4980000",
     addresses: [
-      { prefecture: "愛知県", city: "弥富市", town: "以下に掲載がない場合" },
+      { prefecture: "愛知県", city: "弥富市", town: "" },
       {
         prefecture: "三重県",
         city: "桑名郡木曽岬町",
-        town: "以下に掲載がない場合",
+        town: "",
       },
     ],
   },
