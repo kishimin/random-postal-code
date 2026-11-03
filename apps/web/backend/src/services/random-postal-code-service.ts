@@ -26,10 +26,9 @@ export type PostalCodeSelectionResult =
 // validation here instead would let a repository stub that returns a
 // partially-corrupt array (the acceptance test's DATA_UNAVAILABLE-on-corrupt
 // case) serve an invalid entry, so the check is memoized by collection
-// identity rather than removed: the real repository returns the same
-// module-level array reference on every call (api-design.md section 5:
-// "loaded once ... and treated as immutable"), so this validates once per
-// isolate in practice and every subsequent call is a WeakMap lookup.
+// identity rather than removed. Even once per isolate is too much for the
+// full dataset (Issue #88), so a repository that declares `entriesValidated`
+// skips it entirely; this memo now serves only repositories that do not.
 const usableCollectionCache = new WeakMap<readonly PostalCode[], boolean>();
 
 const isUsableCollection = (postalCodes: readonly PostalCode[]): boolean => {
@@ -68,7 +67,12 @@ export const selectRandomPostalCode = async (
     return { outcome: "internalError" };
   }
 
-  if (!isUsableCollection(postalCodes)) {
+  const usable =
+    repository.entriesValidated === true
+      ? postalCodes.length > 0
+      : isUsableCollection(postalCodes);
+
+  if (!usable) {
     return { outcome: "dataUnavailable" };
   }
 

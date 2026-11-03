@@ -12,4 +12,12 @@ import type { PostalCode } from "@zipnami/shared";
  */
 export type PostalCodeRepository = {
   listPostalCodes: () => Promise<readonly PostalCode[]>;
+  /**
+   * True when every entry `listPostalCodes` returns has already passed the
+   * shared `postalCodeSchema`. Validating the full dataset again on a
+   * request costs far more than the Workers Free plan's per-request CPU
+   * limit (Issue #88). Absent means unknown, and the application layer
+   * validates the entries itself.
+   */
+  readonly entriesValidated?: true;
 };

@@ -51,4 +51,7 @@ const postalCodes = parseGeneratedPostalCodes(rawPostalCodes);
  */
 export const generatedDatasetRepository: PostalCodeRepository = {
   listPostalCodes: () => Promise.resolve(postalCodes),
+  // parseGeneratedPostalCodes above returns either every entry validated or
+  // an empty collection, never a partly validated one.
+  entriesValidated: true,
 };
