@@ -36,7 +36,7 @@ export const AddressList = ({
       // before this ever renders, so the triple itself is already a unique key.
       <li
         key={`${address.prefecture}-${address.city}-${address.town}`}
-        className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-field border border-card-border px-4 py-2 text-body-sm font-semibold text-ink ${address === selectedAddress ? "bg-accent-surface" : "bg-card"}`}
+        className={`flex flex-wrap items-center wrap-anywhere justify-between gap-x-4 gap-y-1 rounded-field border border-card-border px-4 py-2 text-body-sm font-semibold text-ink ${address === selectedAddress ? "bg-accent-surface" : "bg-card"}`}
       >
         {`${address.prefecture}${address.city}${address.town}`}
         {renderAddressExtra?.(address)}

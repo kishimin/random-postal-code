@@ -72,7 +72,7 @@ export const GeneratorView = () => {
       <div
         className={
           hasResult
-            ? "mt-8 grid gap-6 lg:grid-cols-[560px_1fr] lg:items-start"
+            ? "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[560px_1fr] lg:items-start"
             : undefined
         }
       >
