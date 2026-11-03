@@ -9,8 +9,17 @@ export type AppEnv = {
   mapsApiKey: string;
   googleAdsenseClientId: string;
   googleAdsenseSlotId: string;
+  /**
+   * design.md section 7: Google Analytics is an optional dependency and only
+   * production carries a measurement ID, so "" means no Analytics tag.
+   */
+  googleAnalyticsMeasurementId: string;
   useTestAds: boolean;
 };
+
+// A GA4 measurement ID: "G-" and uppercase letters or digits. Universal
+// Analytics ("UA-") and Google Ads ("AW-") IDs are other products' IDs.
+export const GOOGLE_ANALYTICS_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/;
 
 // Not a real, restricted publisher ID. AdSense is an optional dependency
 // (design.md section 7): a build with no VITE_GOOGLE_ADSENSE_CLIENT_ID set
@@ -45,6 +54,9 @@ const envSchema = z.object({
   VITE_GOOGLE_ADSENSE_CLIENT_ID: z.string().optional(),
   VITE_GOOGLE_ADSENSE_SLOT_ID: z.string().optional(),
   VITE_ADSENSE_TEST_MODE: z.string().optional(),
+  // Plain string for the same reason: a malformed ID must not take the build
+  // down; it resolves to no ID below.
+  VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: z.string().optional(),
 });
 
 /**
@@ -75,6 +87,11 @@ export const parseAppEnv = (env: Record<string, unknown>): AppEnv => {
     googleAdsenseSlotId:
       result.data.VITE_GOOGLE_ADSENSE_SLOT_ID ??
       DEV_ADSENSE_SLOT_ID_PLACEHOLDER,
+    googleAnalyticsMeasurementId: GOOGLE_ANALYTICS_MEASUREMENT_ID_PATTERN.test(
+      result.data.VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID ?? "",
+    )
+      ? (result.data.VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID ?? "")
+      : "",
     // Fails safe: anything other than the exact opt-out keeps test ads,
     // rather than requiring an exact opt-in that a future default could miss.
     useTestAds: result.data.VITE_ADSENSE_TEST_MODE !== "false",
