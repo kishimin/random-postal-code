@@ -160,6 +160,13 @@ jobs:
       - name: Run Issue #25 Figma UI source acceptance test (Medium)
         run: bun test ./acceptance/figma-ui-source-and-screen-map.medium.test.ts
 
+      # Issue #97's token and document half reads files only, so like the
+      # Issue #25 test above it runs under bun test, bound to its runner by
+      # naming its path here (ADR-0077). Its browser half is in the Playwright
+      # testMatch list.
+      - name: Run Issue #97 Figma design tokens acceptance test (Medium)
+        run: bun test ./acceptance/figma-design-tokens.medium.test.ts
+
       # Issue #19's acceptance test reads the deployment workflows and runs
       # each workspace's deploy-settings verifier, so like the two above it
       # belongs to no single package's vitest.config.ts (ADR-0077). It needs
