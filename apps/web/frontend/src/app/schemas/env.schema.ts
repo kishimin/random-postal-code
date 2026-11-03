@@ -78,6 +78,9 @@ export const parseAppEnv = (env: Record<string, unknown>): AppEnv => {
     );
   }
 
+  const analyticsMeasurementId =
+    result.data.VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID ?? "";
+
   return {
     apiBaseUrl: result.data.VITE_API_BASE_URL,
     mapsApiKey: result.data.VITE_GOOGLE_MAPS_API_KEY ?? "",
@@ -87,11 +90,10 @@ export const parseAppEnv = (env: Record<string, unknown>): AppEnv => {
     googleAdsenseSlotId:
       result.data.VITE_GOOGLE_ADSENSE_SLOT_ID ??
       DEV_ADSENSE_SLOT_ID_PLACEHOLDER,
-    googleAnalyticsMeasurementId: GOOGLE_ANALYTICS_MEASUREMENT_ID_PATTERN.test(
-      result.data.VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID ?? "",
-    )
-      ? (result.data.VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID ?? "")
-      : "",
+    googleAnalyticsMeasurementId:
+      GOOGLE_ANALYTICS_MEASUREMENT_ID_PATTERN.test(analyticsMeasurementId)
+        ? analyticsMeasurementId
+        : "",
     // Fails safe: anything other than the exact opt-out keeps test ads,
     // rather than requiring an exact opt-in that a future default could miss.
     useTestAds: result.data.VITE_ADSENSE_TEST_MODE !== "false",
