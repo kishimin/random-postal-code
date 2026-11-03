@@ -203,6 +203,11 @@ jobs:
       - name: Run Issue #88 full postal dataset acceptance test (Medium)
         run: bun test ./acceptance/full-postal-dataset.medium.test.ts
 
+      # Issue #90's acceptance test reads the workflows, each workspace's
+      # package.json, and docs/deployment.md, so it is bound here (ADR-0077).
+      - name: Run Issue #90 pinned Pages wrangler acceptance test (Medium)
+        run: bun test ./acceptance/pages-deploy-wrangler-pin.medium.test.ts
+
       - name: Upload coverage report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
