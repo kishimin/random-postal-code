@@ -96,7 +96,9 @@ const buildStep = (job: Job) =>
 
 const referencesMeasurementId = (value: string | undefined) =>
   new RegExp(
-    "^\$\{\{\s*(?:vars|secrets)\." + MEASUREMENT_ID_VARIABLE + "\s*\}\}$",
+    String.raw`^\$\{\{\s*(?:vars|secrets)\.` +
+      MEASUREMENT_ID_VARIABLE +
+      String.raw`\s*\}\}$`,
   ).test((value ?? "").trim());
 
 /** The env names a step binds to the measurement ID variable. */
