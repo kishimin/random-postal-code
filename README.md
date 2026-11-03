@@ -41,7 +41,7 @@ Zipnami picks one postal code uniformly at random from Japan Post's data and sho
 
 The Web app generates a code, copies it, keeps a history of earlier results in the browser, and shows each address on an embedded Google Map with a link to open it in Google Maps. It also has a privacy page and a reserved AdSense slot. If Maps, advertising, or consent fails, the postal code, its addresses, and the history stay usable.
 
-The committed dataset is still a small hand-built source shaped like `KEN_ALL.CSV`. The tooling to retrieve and normalize the full Japan Post archive exists, but the switch to the full dataset has not been made yet; see [packages/postal-data/README.md](./packages/postal-data/README.md).
+The committed dataset is the full Japan Post archive: about 120,000 postal codes. [packages/postal-data/README.md](./packages/postal-data/README.md) records its retrieval date and how to update it.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 

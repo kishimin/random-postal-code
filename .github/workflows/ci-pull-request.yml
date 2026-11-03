@@ -196,6 +196,13 @@ jobs:
       - name: Run Issue #21 release checklist acceptance test (Medium)
         run: bun test ./acceptance/web-mvp-release-checklist.medium.test.ts
 
+      # Issue #88's file-level half reads the committed dataset, regenerates it,
+      # and builds the Worker bundle to measure it, so it belongs to no single
+      # package's vitest.config.ts (ADR-0077). Its runtime half is registered in
+      # apps/web/backend/vitest.config.ts.
+      - name: Run Issue #88 full postal dataset acceptance test (Medium)
+        run: bun test ./acceptance/full-postal-dataset.medium.test.ts
+
       - name: Upload coverage report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
