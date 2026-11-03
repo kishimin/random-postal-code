@@ -208,6 +208,15 @@ jobs:
       - name: Run Issue #90 pinned Pages wrangler acceptance test (Medium)
         run: bun test ./acceptance/pages-deploy-wrangler-pin.medium.test.ts
 
+      # Issue #92's repository half reads design.md, deploy.yml, and
+      # docs/deployment.md, runs the deploy settings check, and builds the
+      # frontend with a measurement ID to read its policy, so it is bound here
+      # (ADR-0077). Its browser half is registered in
+      # apps/web/frontend/playwright.config.ts. This job's own builds keep no
+      # measurement ID: only production measures visits.
+      - name: Run Issue #92 Google Analytics release acceptance test (Medium)
+        run: bun test ./acceptance/web-google-analytics-release.medium.test.ts
+
       - name: Upload coverage report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
