@@ -55,10 +55,11 @@ creates it. The workflows read every production value from the
    | Variable | `ZIPNAMI_ADSENSE_SLOT_ID`   | The production ad unit's numeric slot ID                            |
    | Variable | `ZIPNAMI_MAPS_API_KEY`      | The production Google Maps browser API key (`AIza` + 35 characters) |
 
-`ZIPNAMI_MAPS_API_KEY` must be a production-only browser key, separate
-from the development key. Restrict it by HTTP referrer to
-`https://<project>.pages.dev/*` and the production domain, and by API to
-the Maps Embed API only (design.md section 7).
+`ZIPNAMI_MAPS_API_KEY` is the only Maps key. Restrict it by HTTP referrer
+to `https://<project>.pages.dev/*` and the production domain, and by API
+to the Maps Embed API only. Do not add `localhost` to its referrers: local
+development runs without a key, and the map shows its fallback link
+instead (design.md section 7).
 
 `ZIPNAMI_PAGES_ORIGIN` is used twice on purpose: it becomes the Worker's
 CORS allowlist (`ALLOWED_ORIGINS`), and it is the site the smoke check
