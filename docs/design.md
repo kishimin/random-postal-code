@@ -146,7 +146,7 @@ Android, Expo, AdMob, UMP, and Google Play delivery are not part of the Web MVP.
 
 Google Maps, AdSense, and consent services are optional dependencies isolated from core Web behavior. Their failure must not make an already successful postal code, addresses, history, or regeneration unavailable.
 
-- Separate production and development Web Maps API keys and restrict each by HTTP referrer and Maps Embed API.
+- Only production has a Web Maps API key, restricted by HTTP referrer to the production origin and by API to the Maps Embed API. Development runs without a key, so the map falls back to its external link; a key that also allowed localhost would weaken the production restriction.
 - Ads must not obscure primary actions or retry indefinitely.
 - In regions that require consent, complete the selected Web consent flow before eligible ad requests.
 - The Zipnami API neither receives nor stores advertising identifiers.
