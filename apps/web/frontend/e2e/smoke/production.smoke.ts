@@ -25,12 +25,15 @@ test("the deployed site generates and displays a postal code through the Worker"
   // Pages path that happens to end in /api/random.
   expect(new URL(response.url()).origin).not.toBe(new URL(page.url()).origin);
 
-  // What is displayed is what the Worker returned, not a placeholder.
+  // What is displayed is what the Worker returned, not a placeholder. Looked
+  // for in the current result only: since Issue #7 the same code also
+  // appears in the history below it, and a match anywhere in main would be
+  // two elements.
   const { postalCode } = (await response.json()) as { postalCode: string };
 
   await expect(
     page
-      .getByRole("main")
+      .getByTestId("result-region")
       .getByText(`${postalCode.slice(0, 3)}-${postalCode.slice(3)}`, {
         exact: true,
       }),
