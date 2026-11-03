@@ -35,7 +35,10 @@ describe("startGoogleAnalytics", () => {
   test("loads nothing for a build environment without a measurement ID", () => {
     const host = createHost();
 
-    startGoogleAnalytics({ VITE_API_BASE_URL: "https://api.example.com" }, host);
+    startGoogleAnalytics(
+      { VITE_API_BASE_URL: "https://api.example.com" },
+      host,
+    );
 
     expect(host.document.scripts).toHaveLength(0);
   });

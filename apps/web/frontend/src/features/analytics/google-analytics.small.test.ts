@@ -45,9 +45,11 @@ const dataLayerOf = (host: AnalyticsHost): unknown[] => {
  * @returns {unknown[][]} One array per queued command, in order.
  */
 const queuedCommands = (host: AnalyticsHost): unknown[][] =>
-  dataLayerOf(host).map((entry) =>
-    Array.from(entry instanceof Object ? Object.values(entry) : []),
-  );
+  dataLayerOf(host).map((entry) => {
+    const command: unknown[] =
+      entry instanceof Object ? Object.values(entry) : [];
+    return command;
+  });
 
 const consentDefaults = (host: AnalyticsHost) =>
   queuedCommands(host).filter(
@@ -55,7 +57,10 @@ const consentDefaults = (host: AnalyticsHost) =>
   );
 
 const consentOf = (parameters: unknown) =>
-  CONSENT_TYPES.map((type) => [type, Reflect.get(Object(parameters), type)]);
+  CONSENT_TYPES.map((type) => {
+    const state: unknown = Reflect.get(Object(parameters), type);
+    return [type, state];
+  });
 
 describe("installGoogleAnalytics", () => {
   test("loads nothing and queues nothing when there is no measurement ID", () => {
@@ -85,9 +90,9 @@ describe("installGoogleAnalytics", () => {
 
     installGoogleAnalytics(MEASUREMENT_ID, host);
 
-    expect(
-      queuedCommands(host).filter(([name]) => name === "config"),
-    ).toEqual([["config", MEASUREMENT_ID]]);
+    expect(queuedCommands(host).filter(([name]) => name === "config")).toEqual([
+      ["config", MEASUREMENT_ID],
+    ]);
   });
 
   test("denies every consent type for the EEA, the UK, and Switzerland", () => {
@@ -96,7 +101,8 @@ describe("installGoogleAnalytics", () => {
     installGoogleAnalytics(MEASUREMENT_ID, host);
 
     const regional = consentDefaults(host).filter(
-      ([, , parameters]) => Reflect.get(Object(parameters), "region") !== undefined,
+      ([, , parameters]) =>
+        Reflect.get(Object(parameters), "region") !== undefined,
     );
     expect(regional).toHaveLength(1);
     const [[, , parameters]] = regional;
@@ -112,7 +118,8 @@ describe("installGoogleAnalytics", () => {
     installGoogleAnalytics(MEASUREMENT_ID, host);
 
     const elsewhere = consentDefaults(host).filter(
-      ([, , parameters]) => Reflect.get(Object(parameters), "region") === undefined,
+      ([, , parameters]) =>
+        Reflect.get(Object(parameters), "region") === undefined,
     );
     expect(elsewhere).toHaveLength(1);
     const [[, , parameters]] = elsewhere;
@@ -138,9 +145,9 @@ describe("installGoogleAnalytics", () => {
 
     installGoogleAnalytics(MEASUREMENT_ID, host);
 
-    expect(
-      queuedCommands(host).filter(([name]) => name === "event"),
-    ).toEqual([]);
+    expect(queuedCommands(host).filter(([name]) => name === "event")).toEqual(
+      [],
+    );
   });
 
   test("queues commands as the arguments objects gtag.js reads", () => {
