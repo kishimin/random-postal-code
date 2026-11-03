@@ -65,9 +65,14 @@ creates it. The workflows read every production value from the
    | Variable | `ZIPNAMI_WORKER_URL`        | The Worker URL from step 3                                          |
    | Variable | `ZIPNAMI_ADSENSE_CLIENT_ID` | The production AdSense publisher ID (`ca-pub-` + 16 digits)         |
    | Variable | `ZIPNAMI_ADSENSE_SLOT_ID`   | The production ad unit's numeric slot ID                            |
-   | Variable | `ZIPNAMI_MAPS_API_KEY`      | The production Google Maps browser API key (`AIza` + 35 characters) |
+   | Variable | `ZIPNAMI_WEB_MAPS_API_KEY`  | The production Google Maps browser API key (`AIza` + 35 characters) |
 
-`ZIPNAMI_MAPS_API_KEY` is the only Maps key. Restrict it by HTTP referrer
+A value that a future Android app would need its own copy of carries
+`WEB` in its name, so the two cannot be confused: the Maps key here is a
+browser key, and an Android app needs an Android key. AdSense (Android
+uses AdMob), Pages, and the Worker are Web only and keep their names.
+
+`ZIPNAMI_WEB_MAPS_API_KEY` is the only Web Maps key. Restrict it by HTTP referrer
 to `https://<project>.pages.dev/*` and the production domain, and by API
 to the Maps Embed API only. Do not add `localhost` to its referrers: local
 development runs without a key, and the map shows its fallback link
@@ -127,7 +132,7 @@ workflow:
      off (`VITE_ADSENSE_TEST_MODE=false`). `VITE_GOOGLE_MAPS_API_KEY` must be a real
      Google Maps browser key, not empty or one of the placeholders CI and the
      Large E2E run use. Without it every map would quietly fall back to the
-     external link. Until `ZIPNAMI_MAPS_API_KEY` is set in the `production`
+     external link. Until `ZIPNAMI_WEB_MAPS_API_KEY` is set in the `production`
      environment, the Pages deploy is refused at "Verify Pages deploy
      settings" before building; this also applies to environments created
      before #58.
