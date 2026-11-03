@@ -214,11 +214,56 @@ The Figma file fixes these values per screen; recording them here makes that exi
 
 **Color.** Page/frame surface `#FAFBFA`; header/card surface `#FFFFFF`; text primary `#091F33`; text secondary `#526B78`; brand/accent `#148CC7`; accent surface (the "Mystery card") `#E5F7F7`; error text/icon `#CC292E`; error surface `#FFF0F0`; address-card border `#D1E3E5`; map panel surface `#E8EDE3`; map pin `#E04D40`. (Figma's own canvas backdrop behind each screen's frame — `#F0F5F7` on some screens, `#FFFFFF` on others — is a board color, not a screen surface, and is not listed.)
 
-**Type.** Font family `Inter` at weights 400 (regular), 600 (semibold), and 700 (bold). Representative sizes: desktop display headline 52px with 68px line-height, desktop body 17px with 28px line-height, mobile display headline 34px with 46px line-height, mobile body 14px with 22px line-height, button label 16px, eyebrow label 11-13px (mobile 11px, desktop 13px), footer/caption 11-12px (varies by screen). `Inter` has no Japanese glyphs, and every screen's body is Japanese (section 2); the Figma file's text styles name only `Inter` and do not specify a CJK fallback, so which Japanese-capable family renders that text is deliberately not fixed here — it is a choice the UI foundation issues still have to make (section 12).
+**Type.** Font family `Inter` at weights 400 (regular), 600 (semibold), and 700 (bold). Representative sizes: desktop display headline 52px with 68px line-height, desktop body 17px with 28px line-height, mobile display headline 34px with 46px line-height, mobile body 14px with 22px line-height, button label 16px, eyebrow label 11-13px (mobile 11px, desktop 13px), footer/caption 11-12px (varies by screen). `Inter` has no Japanese glyphs, and every screen's body is Japanese (section 2); the Figma file's text styles name only `Inter` and do not specify a CJK fallback, so which Japanese-capable family renders that text is chosen in section 9.3.
 
 **Copy.** Two literal strings are fixed on every screen: the brand wordmark `"ZIPNAMI"` and the footer attribution `"© kishimin 2026"`. Per-screen headline and body copy is deliberately not fixed in this document; it is left to the mapped Figma node in section 9.1, because transcribing that literal Japanese text here would create a second source of truth that can drift from Figma without anything catching it — the same reason this repository's `CLAUDE.md` gives for not duplicating acceptance criteria into `docs/ACCEPTANCE.md`.
 
-The Figma design already fixes the color, typography, and copy values recorded in 9.2 above; elevation tokens are not yet fixed by that design. Adopting the fixed values into CSS or theme code remains the separate job of the UI foundation issues (section 12), which also still owns the per-screen copy and other values this document deliberately leaves open, and must be documented without changing the information hierarchy in this file.
+The Figma design already fixes the color, typography, and copy values recorded in 9.2 above; elevation tokens are not yet fixed by that design. Section 9.3 records how those values are adopted into theme code.
+
+### 9.3 Theme Tokens and Font Stack
+
+Issue #97 adopts the section 9.2 values as Tailwind v4 theme tokens, declared in an `@theme` block of `apps/web/frontend/src/theme/globals.css`. Components reach colors and type sizes only through the utilities those tokens generate (`bg-page`, `text-ink`, `text-display`, and so on); a raw hex value, a Tailwind default palette color, a Tailwind default font size, or an arbitrary `text-[17px]` in a component is a defect. The table rows below pair each section 9.2 value with the token that holds it.
+
+**Font stack.** The font token is `--font-sans`. The stack is `Inter` first, then `Hiragino Sans`, `Hiragino Kaku Gothic ProN`, `Yu Gothic`, `Noto Sans JP`, `Meiryo`, and the generic `sans-serif`. `Inter` is self-hosted: the `@fontsource-variable/inter` package is bundled by Vite and serves weights 400, 600, and 700 from the site's own origin. The Japanese families are the ones the operating systems ship (Hiragino on Apple platforms, Yu Gothic and Meiryo on Windows, Noto Sans JP on Android and Linux), so Japanese text needs no web font and no third-party font host; the privacy page lists third-party processing, and a font CDN would add to it.
+
+| Role                 | Token         | Stack                                                                                                      |
+| -------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
+| Font family (all UI) | `--font-sans` | `Inter`, `Hiragino Sans`, `Hiragino Kaku Gothic ProN`, `Yu Gothic`, `Noto Sans JP`, `Meiryo`, `sans-serif` |
+
+**Color tokens.** One color per row.
+
+| Role                                | Value     | Token                    | Utility suffix   |
+| ----------------------------------- | --------- | ------------------------ | ---------------- |
+| Page/frame surface                  | `#FAFBFA` | `--color-page`           | `page`           |
+| Header/card surface                 | `#FFFFFF` | `--color-card`           | `card`           |
+| Text primary                        | `#091F33` | `--color-ink`            | `ink`            |
+| Text secondary                      | `#526B78` | `--color-ink-muted`      | `ink-muted`      |
+| Brand/accent                        | `#148CC7` | `--color-brand`          | `brand`          |
+| Accent surface (the "Mystery card") | `#E5F7F7` | `--color-accent-surface` | `accent-surface` |
+| Error text/icon                     | `#CC292E` | `--color-error`          | `error`          |
+| Error surface                       | `#FFF0F0` | `--color-error-surface`  | `error-surface`  |
+| Address-card border                 | `#D1E3E5` | `--color-card-border`    | `card-border`    |
+| Map panel surface                   | `#E8EDE3` | `--color-map-surface`    | `map-surface`    |
+| Map pin                             | `#E04D40` | `--color-map-pin`        | `map-pin`        |
+
+**Type-scale tokens.** Each size is a `--text-*` token with its `--text-*--line-height` where section 9.2 gives one. The responsive pairs switch at the `lg` breakpoint (`1024px`, the same point where section 5.1 changes the layout); below it, the mobile size applies.
+
+| Role                                      | Size        | Token               |
+| ----------------------------------------- | ----------- | ------------------- |
+| Desktop display headline                  | 52px / 68px | `--text-display`    |
+| Desktop body                              | 17px / 28px | `--text-body`       |
+| Mobile display headline                   | 34px / 46px | `--text-display-sm` |
+| Mobile body                               | 14px / 22px | `--text-body-sm`    |
+| Button label                              | 16px        | `--text-button`     |
+| Desktop eyebrow label                     | 13px        | `--text-eyebrow`    |
+| Footer/caption                            | 12px        | `--text-caption`    |
+| Mobile eyebrow label and smallest caption | 11px        | `--text-caption-sm` |
+
+Sizes the Figma nodes use that section 9.2 does not list are tokens too, so a component still never carries a one-off size: `--text-giant` (72px, the 404 numeral), `--text-mystery` (48px, the start card's placeholder code and the error mark), `--text-display-md` (42px / 56px, the tablet headline and the desktop result code), `--text-title` (36px, the result headline), `--text-headline` (30px, the 404 and global error headlines), `--text-heading` (24px, the desktop wordmark and the error panel headline), and `--text-action` (19px, the primary action label and the small-screen wordmark).
+
+**Contrast decisions.** White (`#FFFFFF`) on the brand color (`#148CC7`) is 3.75:1, which passes WCAG 2.2 AA (1.4.3) only for large text. A primary action therefore sets its label in `--text-action` at weight 700, which is 14pt bold, not in the 16px `--text-button` size Figma draws. Brand-colored text is used only at large sizes (the 404 numeral); a small eyebrow label is set in the secondary text color instead. Every such departure from a Figma node is listed in the pull request that makes it.
+
+**Wordmark and footer.** The wordmark is the markup text `Zipnami` rendered upper-case by CSS (`ZIPNAMI`), so the header link keeps the accessible name the application already had. The footer shows `© kishimin 2026` as its own line on every screen, including the global error screen, whose Figma frame draws no wordmark but whose acceptance criterion requires one.
 
 ## 10. Responsive Verification
 
@@ -260,10 +305,10 @@ Classify tests by actual dependencies, not by component, integration, or E2E lab
 
 ## 12. Unresolved Implementation Details
 
+Resolved by Issue #97 (section 9.3): adopting section 9.2's Figma-fixed design tokens into theme code, and the Japanese-capable font stack that renders every screen's body text. Only the light theme exists; a dark theme is out of scope.
+
 The UI foundation Issues resolve:
 
-- adopting section 9.2's Figma-fixed design tokens into CSS or theme code, and supported theme behavior;
-- the Japanese-capable font family or fallback stack that renders every screen's body text (section 9.2 fixes only `Inter`, which has no Japanese glyphs);
 - the component library, if any;
 - browser persistence adapters and version keys;
 - per-screen Japanese copy (left to the Figma nodes in section 9.1) and the contact destination;
