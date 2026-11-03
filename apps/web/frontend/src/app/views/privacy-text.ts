@@ -38,6 +38,11 @@ export const privacyText = {
    * platform is Google Privacy & messaging (Issue #39; design.md section 12),
    * so `consent` names it.
    *
+   * `googleAnalytics*` (Issue #92) disclose what the visit measurement
+   * sends, the `_ga` cookies, how the consent regions behave, and how to
+   * opt out. They state the data design.md section 7 lists, and say the
+   * measurement is Google's, not Zipnami's, like the services around them.
+   *
    * `googleMaps`, `googleAdSense`, and `consent` are worded to match what
    * this codebase actually does today rather than the finished product.
    * `googleMaps` names what reaches Google and when: the embed requests the
@@ -63,6 +68,12 @@ export const privacyText = {
       "選択した住所を地図に表示するため、Google Maps（Maps Embed API）を利用しています。地図の領域が画面に表示されると、選択した住所がGoogleへ送信され、Googleのサーバーから地図が読み込まれます。Google側の設定により、お使いのブラウザにCookieが保存される場合があります。「Googleマップで開く」を選ぶと、その住所でGoogleマップのサイトを開きます。",
     googleAdSense:
       "広告の配信にはGoogle AdSenseを利用しています。AdSense側の設定により、お使いのブラウザに広告用の識別子やCookieが保存される場合があります。",
+    googleAnalytics:
+      "アクセス状況の把握にはGoogle Analyticsを利用しています。閲覧したページ、参照元、お使いの端末の種類、おおよその地域といったアクセス情報がGoogleへ送信されます。Zipnamiが独自のイベントを送信することはありません。計測のため、Googleがお使いのブラウザに_gaなどのCookieを保存する場合があります。",
+    googleAnalyticsConsent:
+      "欧州経済領域（EEA）、英国、スイスからのアクセスでは、Googleの同意管理プラットフォーム（プライバシーとメッセージ）で同意が得られるまで、Cookieを保存せず、個人を特定しない範囲の情報のみをGoogleへ送信します。それ以外の地域からのアクセスは、同意を求めずに計測します。",
+    googleAnalyticsOptOut:
+      "計測を望まない場合は、同意メッセージで同意しないか、Googleが提供するGoogle Analyticsオプトアウトアドオンをブラウザに導入することで、オプトアウトできます。",
     consent:
       "欧州経済領域（EEA）、英国、スイスからのアクセスには、Googleの同意管理プラットフォーム（プライバシーとメッセージ）が同意を求めるメッセージを表示します。パーソナライズ広告に同意しない場合や同意が得られる前は、パーソナライズされていない広告または制限付き広告が表示されます。選択はこのメッセージからいつでも変更できます。",
   },
