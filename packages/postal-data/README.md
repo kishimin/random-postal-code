@@ -129,6 +129,34 @@ different postal code, prefecture, or city, even if its `（` is never
 closed: joining across those boundaries would invent an address that
 Japan Post never published, so the unclosed fragment is kept as it is.
 
+### Placeholder phrases in the town column
+
+`KEN_ALL.CSV` also uses the town column for notes, not only for names
+(Issue #99). Shown as they are, they read as place names: `3400000` would
+display as 「埼玉県草加市以下に掲載がない場合」. After reassembly, and before
+grouping and deduplication, the build rewrites them:
+
+| Town in `KEN_ALL.CSV` | Becomes | Why |
+| --- | --- | --- |
+| `以下に掲載がない場合` | `""` | The rest of the city, not listed under another code |
+| `…の次に番地がくる場合` (for example `境町の次に番地がくる場合`) | `""` | The city name is followed directly by a lot number |
+| `…（次のビルを除く）` (for example `中央（次のビルを除く）`) | the name before the parenthetical (`中央`) | A town minus the buildings that have their own codes |
+| `…（地階・階層不明）` (for example `中央アエル（地階・階層不明）`) | the name before the parenthetical (`中央アエル`) | A building whose floor is unknown |
+| `…一円` (for example `利島村一円`) | unchanged | A real description: the whole municipality |
+
+An empty town is a valid address (`@zipnami/shared`'s address schema allows
+it); the address then reads as prefecture and city only. The Web composes
+an address by concatenating its three parts, so an empty town adds no
+separator to the result, the history, or the Maps query.
+
+Only these exact phrasings are rewritten. Other notes inside town names
+(for example `（丁目）` or numeric ranges) are kept as they are.
+
+Two addresses of one postal code that become identical under this rule
+(for example `以下に掲載がない場合` and `…の次に番地がくる場合` in the same city)
+are deduplicated like any other identical addresses: only the first is
+kept, in first-appearance order (design.md §4.2).
+
 ## Regenerating the dataset
 
 ```sh
