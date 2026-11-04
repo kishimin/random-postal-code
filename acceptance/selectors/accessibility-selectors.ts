@@ -66,7 +66,7 @@ export const documentTitleSelectors = {
  * address-to-map selection that ui-design.md sections 7 and 8 require
  * (Issue #8).
  */
-export const generatorButtonNames = /生成|コピー|住所|地図/;
+export const generatorButtonNames = /生成|コピー|住所|地図|波に乗る|再試行/;
 
 /*
  * Every accessible name a link on any Web screen is allowed to have: the
@@ -75,7 +75,7 @@ export const generatorButtonNames = /生成|コピー|住所|地図/;
  * an address in Google Maps (Issue #8).
  */
 export const applicationLinkNames =
-  /Zipnami|プライバシー|(?:お)?問(?:い)?合(?:わ)?せ|連絡先|Contact|トップへ戻る|Google\s*マップ/i;
+  /Zipnami|プライバシー|(?:お)?問(?:い)?合(?:わ)?せ|連絡先|Contact|トップへ戻る|Google\s*マップ|このアプリについて|About/i;
 
 /*
  * Visible words that say a generation is in progress.
@@ -102,7 +102,7 @@ export const failureText = /もう一度|再度|やり直/;
  * ui-design.md section 8 asks for hierarchical headings for the result, map,
  * and history regions; the word is what identifies which of them this is.
  */
-export const resultHeadingName = /結果/;
+export const resultHeadingName = /結果|波が運んできた場所/;
 
 /* Visible words that say the postal code was copied. */
 export const copySuccessText = /コピーしました/;

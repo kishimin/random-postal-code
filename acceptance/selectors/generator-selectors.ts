@@ -9,7 +9,7 @@
  * no locale to select between.
  */
 export const generatorSelectors = {
-  siteName: /Zipnami/,
+  siteName: /Zipnami|知らない場所へ、郵便番号の波に乗って/,
   // The idle screen's explanation. Matched on the domain word, because the
   // generate action's own label contains it too; the paragraph role is what
   // separates the two, not the wording.
