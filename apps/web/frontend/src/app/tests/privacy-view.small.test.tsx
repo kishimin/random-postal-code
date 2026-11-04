@@ -114,6 +114,10 @@ describe("PrivacyView", () => {
     expect(firstPartySection).toHaveTextContent(
       /位置情報[^。]*(?:しません|していません|ありません|ない)/,
     );
+    // Issue #7 ships the history, so the disclosure must describe it as in
+    // use. The production /privacy still called it "not yet implemented"
+    // while the deployed site kept history (Issue #21's deployed check).
+    expect(firstPartySection).not.toHaveTextContent(/未実装|実装後/);
   });
 
   test("the Zipnami section states that no identifier of its own is issued and no advertising identifier is stored", () => {
