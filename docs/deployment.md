@@ -158,9 +158,10 @@ workflow:
      external link. Until `ZIPNAMI_WEB_MAPS_API_KEY` is set in the `production`
      environment, the Pages deploy is refused at "Verify Pages deploy
      settings" before building; this also applies to environments created
-     before #58. `VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID`, when set, must be a
-     GA4 measurement ID (`G-` format), not a Universal Analytics (`UA-`) or
-     Google Ads (`AW-`) ID.
+     before #58. `VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID` is required too, and
+     must be a GA4 measurement ID (`G-` format), not a Universal Analytics
+     (`UA-`) or Google Ads (`AW-`) ID; until `ZIPNAMI_WEB_GA_MEASUREMENT_ID`
+     is set, the Pages deploy is refused at the same step.
 2. **Deploys.**
    - Worker: `bunx wrangler deploy --var ALLOWED_ORIGINS:$PAGES_ORIGIN`.
    - Pages: builds with the Worker URL baked in, then runs
