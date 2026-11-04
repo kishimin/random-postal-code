@@ -496,6 +496,8 @@ describe("buildPostalCodeDataset", () => {
       "次に番地がくる場合",
       // The parenthetical is dropped only at the end of the town.
       "中央（次のビルを除く）東",
+      "アエル（地階・階層不明）東",
+      "境町の次に番地がくる場合の例",
     ])("keeps %j as it is", async (town) => {
       expect(await townsOf(town)).toEqual([town]);
     });
@@ -505,14 +507,16 @@ describe("buildPostalCodeDataset", () => {
     });
 
     test("keeps only the first of the addresses the rewrite makes identical", async () => {
+      // The first occurrences come in the order 丸の内, "" and the last ones
+      // in the order "", 丸の内, so keeping the last would fail this.
       expect(
         await townsOf(
-          "以下に掲載がない場合",
           "丸の内（次のビルを除く）",
+          "以下に掲載がない場合",
           "City の次に番地がくる場合",
           "丸の内",
         ),
-      ).toEqual(["", "丸の内"]);
+      ).toEqual(["丸の内", ""]);
     });
   });
 });
