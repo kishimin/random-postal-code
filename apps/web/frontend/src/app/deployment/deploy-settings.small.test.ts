@@ -7,6 +7,7 @@ const valid = {
   VITE_GOOGLE_ADSENSE_SLOT_ID: "9876543210",
   VITE_ADSENSE_TEST_MODE: "false",
   VITE_GOOGLE_MAPS_API_KEY: "AIzaSy0123456789abcdefghijklmnopqrstuvw",
+  VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-ABC123DEF4",
 };
 
 describe("problemsWithFrontendDeploySettings", () => {
@@ -83,10 +84,10 @@ describe("problemsWithFrontendDeploySettings", () => {
     ).toEqual([]);
   });
 
-  // Issue #92 will also refuse a missing ID. That waits for the human
-  // approval to rewrite acceptance/web-deployment.medium.test.ts, whose
-  // settings carry no ID, so only a malformed one is refused for now.
   test.each([
+    // GitHub Actions passes an unset `vars.X` as "", not as undefined.
+    undefined,
+    "",
     "UA-123456789-1",
     "AW-1234567890",
     "G-",
@@ -95,7 +96,7 @@ describe("problemsWithFrontendDeploySettings", () => {
     " G-ABC123DEF4",
     "G-ABC123DEF4\n",
     "not-a-measurement-id",
-  ])("refuses the malformed measurement ID %j", (id) => {
+  ])("refuses the missing or malformed measurement ID %j", (id) => {
     const problems = problemsWithFrontendDeploySettings({
       ...valid,
       VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: id,
@@ -114,6 +115,7 @@ describe("problemsWithFrontendDeploySettings", () => {
       "VITE_GOOGLE_ADSENSE_SLOT_ID",
       "VITE_ADSENSE_TEST_MODE",
       "VITE_GOOGLE_MAPS_API_KEY",
+      "VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID",
     ]) {
       expect(problems.filter((problem) => problem.includes(name))).toHaveLength(
         1,
