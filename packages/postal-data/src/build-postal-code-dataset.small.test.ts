@@ -458,4 +458,61 @@ describe("buildPostalCodeDataset", () => {
       expect(await townsOf(source)).toEqual(["A（b、c）"]);
     });
   });
+
+  describe("placeholder phrases in the town column", () => {
+    const townsOf = async (...towns: string[]): Promise<string[]> =>
+      (
+        await buildPostalCodeDataset(
+          towns
+            .map((town) =>
+              kenAllLine({
+                postalCode: "1000001",
+                prefecture: "Pref",
+                city: "City",
+                town,
+              }),
+            )
+            .join("\n"),
+        )
+      ).flatMap((entry) => entry.addresses.map((address) => address.town));
+
+    test.each([
+      ["以下に掲載がない場合", ""],
+      ["境町の次に番地がくる場合", ""],
+      ["中央（次のビルを除く）", "中央"],
+      ["中央アエル（地階・階層不明）", "中央アエル"],
+    ])("rewrites %j to %j", async (town, expected) => {
+      expect(await townsOf(town)).toEqual([expected]);
+    });
+
+    test.each([
+      // A real description of the whole municipality, not a note.
+      "利島村一円",
+      // Other notes are out of scope for #99.
+      "大通西（１〜１９丁目）",
+      "中央（丁目）",
+      // Only the exact phrasing is a placeholder, not one that contains it.
+      "以下に掲載がない場合の例",
+      "次に番地がくる場合",
+      // The parenthetical is dropped only at the end of the town.
+      "中央（次のビルを除く）東",
+    ])("keeps %j as it is", async (town) => {
+      expect(await townsOf(town)).toEqual([town]);
+    });
+
+    test("rewrites a town that was reassembled from split records", async () => {
+      expect(await townsOf("中央（次の", "ビルを除く）")).toEqual(["中央"]);
+    });
+
+    test("keeps only the first of the addresses the rewrite makes identical", async () => {
+      expect(
+        await townsOf(
+          "以下に掲載がない場合",
+          "丸の内（次のビルを除く）",
+          "City の次に番地がくる場合",
+          "丸の内",
+        ),
+      ).toEqual(["", "丸の内"]);
+    });
+  });
 });
