@@ -7,6 +7,7 @@ const valid = {
   VITE_GOOGLE_ADSENSE_SLOT_ID: "9876543210",
   VITE_ADSENSE_TEST_MODE: "false",
   VITE_GOOGLE_MAPS_API_KEY: "AIzaSy0123456789abcdefghijklmnopqrstuvw",
+  VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-ABC123DEF4",
 };
 
 describe("problemsWithFrontendDeploySettings", () => {
@@ -74,6 +75,37 @@ describe("problemsWithFrontendDeploySettings", () => {
     expect(problems[0]).toContain(name);
   });
 
+  test("accepts a GA4 measurement ID whose body is digits only", () => {
+    expect(
+      problemsWithFrontendDeploySettings({
+        ...valid,
+        VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-0123456789",
+      }),
+    ).toEqual([]);
+  });
+
+  test.each([
+    // GitHub Actions passes an unset `vars.X` as "", not as undefined.
+    undefined,
+    "",
+    "UA-123456789-1",
+    "AW-1234567890",
+    "G-",
+    "G-abc123",
+    "   ",
+    " G-ABC123DEF4",
+    "G-ABC123DEF4\n",
+    "not-a-measurement-id",
+  ])("refuses the missing or malformed measurement ID %j", (id) => {
+    const problems = problemsWithFrontendDeploySettings({
+      ...valid,
+      VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: id,
+    });
+
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID");
+  });
+
   test("reports every unusable setting at once, not only the first", () => {
     const problems = problemsWithFrontendDeploySettings({});
 
@@ -83,6 +115,7 @@ describe("problemsWithFrontendDeploySettings", () => {
       "VITE_GOOGLE_ADSENSE_SLOT_ID",
       "VITE_ADSENSE_TEST_MODE",
       "VITE_GOOGLE_MAPS_API_KEY",
+      "VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID",
     ]) {
       expect(problems.filter((problem) => problem.includes(name))).toHaveLength(
         1,
