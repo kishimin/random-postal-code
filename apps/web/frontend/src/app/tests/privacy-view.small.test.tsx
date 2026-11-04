@@ -90,8 +90,10 @@ describe("PrivacyView", () => {
     );
     expect(thirdPartySection).toHaveTextContent(/_ga\b/);
     expect(thirdPartySection).toHaveTextContent(/Cookie|クッキー/i);
+    // The AdSense consent sentence also names these regions and consent, so
+    // the measurement's own behavior there is told apart by its cookies.
     expect(thirdPartySection).toHaveTextContent(
-      /欧州経済領域[^。]*英国[^。]*スイス[^。]*同意/,
+      /欧州経済領域[^。]*英国[^。]*スイス[^。]*同意[^。]*Cookie/,
     );
     expect(thirdPartySection).toHaveTextContent(/オプトアウト/);
   });

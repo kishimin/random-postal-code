@@ -75,11 +75,11 @@ describe("problemsWithFrontendDeploySettings", () => {
     expect(problems[0]).toContain(name);
   });
 
-  test("accepts a GA4 measurement ID", () => {
+  test("accepts a GA4 measurement ID whose body is digits only", () => {
     expect(
       problemsWithFrontendDeploySettings({
         ...valid,
-        VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-ABC123DEF4",
+        VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-0123456789",
       }),
     ).toEqual([]);
   });
