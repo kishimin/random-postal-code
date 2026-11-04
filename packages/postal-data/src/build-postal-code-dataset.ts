@@ -108,6 +108,37 @@ const reassembleSplitTowns = (
   return reassembled;
 };
 
+// Notes Japan Post writes in the town column in place of a name (see the
+// package README). Only these exact phrasings are rewritten: other notes,
+// such as `（丁目）`, and real descriptions such as `…一円` are kept.
+const NO_TOWN_PLACEHOLDER = "以下に掲載がない場合";
+const NO_TOWN_SUFFIX = "の次に番地がくる場合";
+const DROPPED_PARENTHETICALS = ["（次のビルを除く）", "（地階・階層不明）"];
+
+const withoutPlaceholder = (town: string): string => {
+  if (town === NO_TOWN_PLACEHOLDER || town.endsWith(NO_TOWN_SUFFIX)) {
+    return "";
+  }
+
+  const parenthetical = DROPPED_PARENTHETICALS.find((suffix) =>
+    town.endsWith(suffix),
+  );
+
+  return parenthetical === undefined
+    ? town
+    : town.slice(0, -parenthetical.length);
+};
+
+// Runs after reassembly, so a phrase split across records is whole, and
+// before grouping, so addresses the rewrite makes identical deduplicate.
+const rewritePlaceholderTowns = (
+  records: readonly ParsedRecord[],
+): ParsedRecord[] =>
+  records.map((record) => ({
+    ...record,
+    address: { ...record.address, town: withoutPlaceholder(record.address.town) },
+  }));
+
 // Two records are the same address only when prefecture, city, and town all
 // match; JSON.stringify of the tuple gives each distinct combination a
 // distinct key without picking a delimiter that real address text could
@@ -150,8 +181,9 @@ const toDataset = (
 /**
  * Builds the Zipnami postal-code dataset from Japan Post's KEN_ALL.CSV-shaped
  * text, already decoded to UTF-8: converts each record, rejoins town names
- * Japan Post split across consecutive records, groups the results by their
- * seven-digit postal code, and deduplicates each group's addresses.
+ * Japan Post split across consecutive records, rewrites the placeholder
+ * phrases it writes as towns, groups the results by their seven-digit postal
+ * code, and deduplicates each group's addresses.
  *
  * The function is `async` despite having no `await` in its body: the
  * contract is a Promise, so an idiomatic `buildPostalCodeDataset(source)
@@ -164,6 +196,8 @@ export const buildPostalCodeDataset = async (
   source: string,
 ): Promise<PostalCode[]> =>
   toDataset(
-    groupAddressesByPostalCode(reassembleSplitTowns(parseRecords(source))),
+    groupAddressesByPostalCode(
+      rewritePlaceholderTowns(reassembleSplitTowns(parseRecords(source))),
+    ),
   );
 /* eslint-enable @typescript-eslint/require-await -- scoped to this one intentionally await-less async function */
