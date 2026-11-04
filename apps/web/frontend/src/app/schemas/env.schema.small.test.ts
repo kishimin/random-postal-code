@@ -34,6 +34,30 @@ describe("parseAppEnv", () => {
     );
   });
 
+  // design.md section 7: Google Analytics is an optional dependency, and only
+  // production carries a measurement ID (Issue #92). Every other build must
+  // still succeed, and without one it loads no Analytics tag.
+  test.each([
+    [{}, ""],
+    [{ VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "" }, ""],
+    [{ VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "   " }, ""],
+    [{ VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "UA-123456789-1" }, ""],
+    [{ VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-" }, ""],
+    [{ VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-abc" }, ""],
+    [{ VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: " G-ABC123" }, ""],
+    [{ VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-ABC123" }, "G-ABC123"],
+  ])(
+    "resolves the Analytics measurement ID from %j to %j",
+    (analyticsEnv, expected) => {
+      const env = parseAppEnv({
+        VITE_API_BASE_URL: "https://api.example.com",
+        ...analyticsEnv,
+      });
+
+      expect(env.googleAnalyticsMeasurementId).toBe(expected);
+    },
+  );
+
   // design.md section 7: Google Maps is an optional dependency of the Web
   // experience, so a build that never configured a key must still succeed --
   // unlike VITE_API_BASE_URL, this is not fatal.

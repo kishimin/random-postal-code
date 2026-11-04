@@ -43,3 +43,25 @@ describe("buildExternalMapHref", () => {
     expect(href.includes(address.town)).toBe(false);
   });
 });
+
+// Issue #99: an empty town, where Japan Post wrote a placeholder, leaves the
+// query as prefecture and city with nothing trailing them.
+describe("an address with an empty town", () => {
+  const withoutTown: Address = {
+    prefecture: "埼玉県",
+    city: "草加市",
+    town: "",
+  };
+
+  test("embeds a map queried by prefecture and city only", () => {
+    const url = new URL(buildEmbedSrc(withoutTown, "test-key"));
+
+    expect(url.searchParams.get("q")).toBe("埼玉県草加市");
+  });
+
+  test("links to a Google Maps search for prefecture and city only", () => {
+    const url = new URL(buildExternalMapHref(withoutTown));
+
+    expect(url.searchParams.get("query")).toBe("埼玉県草加市");
+  });
+});

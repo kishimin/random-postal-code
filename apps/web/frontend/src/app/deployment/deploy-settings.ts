@@ -4,6 +4,7 @@
 import {
   DEV_ADSENSE_CLIENT_ID_PLACEHOLDER,
   DEV_ADSENSE_SLOT_ID_PLACEHOLDER,
+  GOOGLE_ANALYTICS_MEASUREMENT_ID_PATTERN,
 } from "../schemas/env.schema.ts";
 
 export type FrontendDeploySettings = Partial<
@@ -12,7 +13,8 @@ export type FrontendDeploySettings = Partial<
     | "VITE_GOOGLE_ADSENSE_CLIENT_ID"
     | "VITE_GOOGLE_ADSENSE_SLOT_ID"
     | "VITE_ADSENSE_TEST_MODE"
-    | "VITE_GOOGLE_MAPS_API_KEY",
+    | "VITE_GOOGLE_MAPS_API_KEY"
+    | "VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID",
     string
   >
 >;
@@ -70,6 +72,13 @@ const checks: [
     // the empty, blank, and placeholder values the repository uses elsewhere.
     (value) => value !== undefined && /^AIza[0-9A-Za-z_-]{35}$/.test(value),
     "VITE_GOOGLE_MAPS_API_KEY must be the production Google Maps browser API key (AIza followed by 35 characters), not empty or a placeholder",
+  ],
+  [
+    "VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID",
+    (value) =>
+      value !== undefined &&
+      GOOGLE_ANALYTICS_MEASUREMENT_ID_PATTERN.test(value),
+    "VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID must be the production GA4 measurement ID (G- followed by uppercase letters and digits), not empty",
   ],
 ];
 

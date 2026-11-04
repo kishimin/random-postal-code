@@ -62,6 +62,15 @@ export const PrivacyView = () => {
         </h2>
         <p className={paragraphClass}>{privacyText.thirdParty.googleMaps}</p>
         <p className={paragraphClass}>{privacyText.thirdParty.googleAdSense}</p>
+        <p className={paragraphClass}>
+          {privacyText.thirdParty.googleAnalytics}
+        </p>
+        <p className={paragraphClass}>
+          {privacyText.thirdParty.googleAnalyticsConsent}
+        </p>
+        <p className={paragraphClass}>
+          {privacyText.thirdParty.googleAnalyticsOptOut}
+        </p>
         <p className={paragraphClass}>{privacyText.thirdParty.consent}</p>
       </section>
 

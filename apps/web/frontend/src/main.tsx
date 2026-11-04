@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { applyInitialDocumentTitle } from "./app/document-title";
 import { RootErrorBoundary } from "./app/providers/RootErrorBoundary";
+import { startGoogleAnalytics } from "./app/start-google-analytics";
 import { App } from "./app/views/App";
 import "./theme/globals.css";
 
@@ -20,6 +21,13 @@ if (!rootElement) {
  * ever mounts, means the title is never wrong even for that first instant.
  */
 applyInitialDocumentTitle(window.location.pathname);
+
+/*
+ * Before React mounts, so the consent defaults are queued ahead of anything
+ * the tag could measure. The tag loads asynchronously and nothing waits for
+ * it: a blocked or unanswered Analytics request must not delay the render.
+ */
+startGoogleAnalytics(import.meta.env);
 
 /*
  * A second boundary, outside App rather than inside it.

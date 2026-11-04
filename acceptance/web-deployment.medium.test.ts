@@ -164,6 +164,7 @@ const validFrontendSettings = {
   // Well-formed but not a real key (AIza + 35 characters), so a production
   // deploy can require one (Issue #58).
   VITE_GOOGLE_MAPS_API_KEY: "AIzaSy0123456789abcdefghijklmnopqrstuvw",
+  VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-0123456789",
 };
 
 const verifyFrontend = (env: Record<string, string | undefined>) =>
