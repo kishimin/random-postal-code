@@ -59,35 +59,17 @@ under the category they support.
       cannot read it (Large test; the CORS rules themselves are held by Medium
       Issue #11).
 
-## Deployed site
+## Pending deployment
 
-These are checked against the deployed site, https://zipnami.pages.dev, so no
-local run reproduces them. Each deployment that changes which third-party
-scripts the page loads, or what /privacy says, reruns them by hand.
+These need the deployed site, so they stay open until Issue #19 is deployed.
 
-- [x] /privacy is publicly accessible on the deployed site: a direct request
-      answers HTTP 200 and the page shows the Zipnami and third-party
-      sections.
-- [x] The Japan Post attribution is publicly accessible on the deployed site:
-      the page footer says the postal data is Japan Post's published data.
-- [x] The deployed Web SDKs match what /privacy discloses: after a
-      generation with the map in view, the page requested only its own
-      assets, the Worker's GET /api/random, Google AdSense
-      (pagead2.googlesyndication.com, googleads.g.doubleclick.net, and the
-      ep1 and ep2 .adtrafficquality.google hosts with the
-      www.google.com/recaptcha frame they load), and the Maps Embed API at
-      www.google.com/maps/embed. The
-      deployed /privacy names Google Maps, Google AdSense, and Google's
-      consent platform. The deployed build predates Issue #92 (PR #100), so it
-      loads no Google Analytics and its /privacy does not name it; on main both
-      arrive together. The deployed /privacy also still calls the history
-      not yet implemented, which main corrects; the next deployment carries
-      the correction.
+- [ ] #19: /privacy is publicly accessible on the deployed site.
+- [ ] #19: The Japan Post attribution is publicly accessible on the deployed site.
+- [ ] #19: The deployed Web SDKs match what /privacy discloses.
 
 ## Evidence
 
-The ticks above rest on these runs of the Large test and the Medium suite,
-and on one reading of the deployed site.
+The ticks above rest on these runs of the Large test and the Medium suite.
 
 - Local run, Windows, 2026-10-28, infrastructure commit c13594c: local wrangler
   dev and vite preview. The Large test passed 10 of 10 on Chromium and 10 of 10
@@ -96,7 +78,3 @@ and on one reading of the deployed site.
   test passed 20 of 20 (10 on Chromium, 10 on WebKit) in the Frontend E2E
   (Large) job,
   https://github.com/kishimin/random-postal-code/actions/runs/40538230977
-- Deployed site, 2026-11-05: the Pages deployment of commit 9d2ed15 by
-  https://github.com/kishimin/random-postal-code/actions/runs/41612170579 ,
-  read in a browser. The requested hosts come from the page's resource
-  timing entries after it loaded.
