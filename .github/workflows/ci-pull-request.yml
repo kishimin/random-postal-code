@@ -217,6 +217,12 @@ jobs:
       - name: Run Issue #92 Google Analytics release acceptance test (Medium)
         run: bun test ./acceptance/web-google-analytics-release.medium.test.ts
 
+      # Issue #99's acceptance test reads design.md, the postal-data README,
+      # the committed source and artifact, and runs check:postal-data, so it
+      # belongs to no single package's vitest.config.ts (ADR-0077).
+      - name: Run Issue #99 placeholder town acceptance test (Medium)
+        run: bun test ./acceptance/postal-data-placeholder-towns.medium.test.ts
+
       - name: Upload coverage report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
