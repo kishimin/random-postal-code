@@ -14,18 +14,17 @@ export const privacyText = {
    * history, the absence of location collection") and section 7 ("The
    * Zipnami API neither receives nor stores advertising identifiers").
    *
-   * `browserLocalHistory` states the current status rather than the
-   * finished product's: Issue #7 (the history feature itself) is still
-   * open, and neither `GeneratorView` nor `useGenerator` writes a
-   * generated result anywhere but React state, so a present-tense claim
-   * that history is already saved in the browser would misstate what this
-   * codebase does today (a Codex review on this PR caught this the same
-   * way CR-001 caught the consent sentence below).
+   * `browserLocalHistory` states what the code does today, like the
+   * sentences below. It said "not yet implemented" until Issue #7 shipped
+   * the history, and the deployed /privacy kept saying so after the deployed
+   * site already kept history (Issue #21). The history is the visitor's own
+   * browser storage (`localStorage`), which the Worker never receives, so the
+   * sentence names both where it lives and where it does not go.
    */
   firstParty: {
     heading: "Zipnamiが保存する情報",
     browserLocalHistory:
-      "生成した郵便番号の履歴をブラウザに保存する機能は、本サービスでは現時点で未実装です。実装後もサーバーには送信せず、ブラウザ内にのみ保存します。",
+      "生成した郵便番号の履歴は、お使いのブラウザ内にのみ保存し、サーバーには送信しません。",
     noLocationCollection: "Zipnamiは位置情報を取得しません。",
     noOwnUserIdentifier: "Zipnamiは独自の利用者識別子を発行しません。",
     noStoredAdvertisingIdentifier:
