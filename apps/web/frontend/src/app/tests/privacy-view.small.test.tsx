@@ -117,7 +117,17 @@ describe("PrivacyView", () => {
     // Issue #7 ships the history, so the disclosure must describe it as in
     // use. The production /privacy still called it "not yet implemented"
     // while the deployed site kept history (Issue #21's deployed check).
+    // Banning the old phrases alone would let another "not available yet"
+    // wording through, so the sentence must also say it is saved now.
     expect(firstPartySection).not.toHaveTextContent(/未実装|実装後/);
+    expect(firstPartySection).toHaveTextContent(
+      /履歴[^。]*ブラウザ[^。]*保存し(?!ていません|ません)/,
+    );
+    // The other half of the promise: history-storage.ts only touches
+    // localStorage, so nothing of it reaches the Worker.
+    expect(firstPartySection).toHaveTextContent(
+      /履歴[^。]*(?:サーバー|サーバ)[^。]*送信し(?:ません|ない)/,
+    );
   });
 
   test("the Zipnami section states that no identifier of its own is issued and no advertising identifier is stored", () => {
