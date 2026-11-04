@@ -117,7 +117,7 @@ describe("Issue #33: reassembling town names split across KEN_ALL.CSV records", 
       {
         prefecture: "北海道",
         city: "札幌市中央区",
-        town: "以下に掲載がない場合",
+        town: "",
       },
     ]);
   });

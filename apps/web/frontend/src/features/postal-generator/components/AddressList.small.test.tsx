@@ -18,6 +18,18 @@ describe("AddressList", () => {
     expect(items[1]).toHaveTextContent("大阪府大阪市北区梅田");
   });
 
+  // Issue #99: the dataset gives an empty town where Japan Post wrote a
+  // placeholder, and the address then reads as prefecture and city only.
+  test("renders an address with an empty town as prefecture and city, with no separator after them", () => {
+    render(
+      <AddressList
+        addresses={[{ prefecture: "埼玉県", city: "草加市", town: "" }]}
+      />,
+    );
+
+    expect(screen.getByRole("listitem").textContent).toBe("埼玉県草加市");
+  });
+
   // Issue #8 renders a per-address map action inside that same address's own
   // entry (acceptance/pages/address-map-page.ts scopes its locators that
   // way). AddressList stays feature-pure by accepting the content rather

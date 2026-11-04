@@ -51,6 +51,26 @@ describe("HistoryItem", () => {
     ).toHaveAttribute("aria-expanded", "true");
   });
 
+  // Issue #99: an empty town, where Japan Post wrote a placeholder, reads as
+  // prefecture and city only. HistoryItem composes its own address string.
+  test("shows an address with an empty town as prefecture and city, with no separator after them", async () => {
+    const user = userEvent.setup();
+    render(
+      <HistoryItem
+        entry={{
+          postalCode: "3400000",
+          addresses: [{ prefecture: "埼玉県", city: "草加市", town: "" }],
+        }}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /住所/ }));
+
+    // The entry itself is a listitem too; the address is the list inside it.
+    const addressList = screen.getByRole("list");
+    expect(addressList.textContent).toBe("埼玉県草加市");
+  });
+
   test("collapses the addresses again when the expand control is activated a second time", async () => {
     const user = userEvent.setup();
     render(<HistoryItem entry={entry} />);
