@@ -136,13 +136,13 @@ Japan Post never published, so the unclosed fragment is kept as it is.
 display as 「埼玉県草加市以下に掲載がない場合」. After reassembly, and before
 grouping and deduplication, the build rewrites them:
 
-| Town in `KEN_ALL.CSV` | Becomes | Why |
-| --- | --- | --- |
-| `以下に掲載がない場合` | `""` | The rest of the city, not listed under another code |
-| `…の次に番地がくる場合` (for example `境町の次に番地がくる場合`) | `""` | The city name is followed directly by a lot number |
-| `…（次のビルを除く）` (for example `中央（次のビルを除く）`) | the name before the parenthetical (`中央`) | A town minus the buildings that have their own codes |
-| `…（地階・階層不明）` (for example `中央アエル（地階・階層不明）`) | the name before the parenthetical (`中央アエル`) | A building whose floor is unknown |
-| `…一円` (for example `利島村一円`) | unchanged | A real description: the whole municipality |
+| Town in `KEN_ALL.CSV`                                              | Becomes                                          | Why                                                  |
+| ------------------------------------------------------------------ | ------------------------------------------------ | ---------------------------------------------------- |
+| `以下に掲載がない場合`                                             | `""`                                             | The rest of the city, not listed under another code  |
+| `…の次に番地がくる場合` (for example `境町の次に番地がくる場合`)   | `""`                                             | The city name is followed directly by a lot number   |
+| `…（次のビルを除く）` (for example `中央（次のビルを除く）`)       | the name before the parenthetical (`中央`)       | A town minus the buildings that have their own codes |
+| `…（地階・階層不明）` (for example `中央アエル（地階・階層不明）`) | the name before the parenthetical (`中央アエル`) | A building whose floor is unknown                    |
+| `…一円` (for example `利島村一円`)                                 | unchanged                                        | A real description: the whole municipality           |
 
 An empty town is a valid address (`@zipnami/shared`'s address schema allows
 it); the address then reads as prefecture and city only. The Web composes

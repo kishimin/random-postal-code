@@ -135,7 +135,10 @@ const rewritePlaceholderTowns = (
 ): ParsedRecord[] =>
   records.map((record) => ({
     ...record,
-    address: { ...record.address, town: withoutPlaceholder(record.address.town) },
+    address: {
+      ...record.address,
+      town: withoutPlaceholder(record.address.town),
+    },
   }));
 
 // Two records are the same address only when prefecture, city, and town all
