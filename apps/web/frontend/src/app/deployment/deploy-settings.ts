@@ -75,16 +75,10 @@ const checks: [
   ],
   [
     "VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID",
-    // Issue #92 also requires a production deploy to refuse a missing ID, but
-    // that would break acceptance/web-deployment.medium.test.ts, whose settings
-    // carry none and which is locked until a human approves rewriting it
-    // (asked on #92). Until then only a value that is present is checked; an
-    // unset GitHub variable arrives as "".
     (value) =>
-      value === undefined ||
-      value === "" ||
+      value !== undefined &&
       GOOGLE_ANALYTICS_MEASUREMENT_ID_PATTERN.test(value),
-    "VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID must be a GA4 measurement ID (G- followed by uppercase letters and digits)",
+    "VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID must be the production GA4 measurement ID (G- followed by uppercase letters and digits), not empty",
   ],
 ];
 
