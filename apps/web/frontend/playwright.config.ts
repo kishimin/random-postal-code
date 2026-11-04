@@ -26,6 +26,7 @@ export default defineConfig({
     "acceptance/dependency-failure-isolation.medium.test.ts",
     "acceptance/web-address-maps.medium.test.ts",
     "acceptance/web-generation-history.medium.test.ts",
+    "acceptance/web-google-analytics.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,

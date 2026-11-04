@@ -56,20 +56,22 @@ creates it. The workflows read every production value from the
    credentials can't be used from any other branch even if a workflow
    changes. Then set:
 
-   | Kind     | Name                        | Value                                                               |
-   | -------- | --------------------------- | ------------------------------------------------------------------- |
-   | Secret   | `CLOUDFLARE_API_TOKEN`      | The token from step 2                                               |
-   | Secret   | `CLOUDFLARE_ACCOUNT_ID`     | The Cloudflare account ID                                           |
-   | Variable | `ZIPNAMI_PAGES_PROJECT`     | `<project>` from step 1                                             |
-   | Variable | `ZIPNAMI_PAGES_ORIGIN`      | `https://<project>.pages.dev`, no trailing slash                    |
-   | Variable | `ZIPNAMI_WORKER_URL`        | The Worker URL from step 3                                          |
-   | Variable | `ZIPNAMI_ADSENSE_CLIENT_ID` | The production AdSense publisher ID (`ca-pub-` + 16 digits)         |
-   | Variable | `ZIPNAMI_ADSENSE_SLOT_ID`   | The production ad unit's numeric slot ID                            |
-   | Variable | `ZIPNAMI_WEB_MAPS_API_KEY`  | The production Google Maps browser API key (`AIza` + 35 characters) |
+   | Kind     | Name                            | Value                                                                                     |
+   | -------- | ------------------------------- | ----------------------------------------------------------------------------------------- |
+   | Secret   | `CLOUDFLARE_API_TOKEN`          | The token from step 2                                                                     |
+   | Secret   | `CLOUDFLARE_ACCOUNT_ID`         | The Cloudflare account ID                                                                 |
+   | Variable | `ZIPNAMI_PAGES_PROJECT`         | `<project>` from step 1                                                                   |
+   | Variable | `ZIPNAMI_PAGES_ORIGIN`          | `https://<project>.pages.dev`, no trailing slash                                          |
+   | Variable | `ZIPNAMI_WORKER_URL`            | The Worker URL from step 3                                                                |
+   | Variable | `ZIPNAMI_ADSENSE_CLIENT_ID`     | The production AdSense publisher ID (`ca-pub-` + 16 digits)                               |
+   | Variable | `ZIPNAMI_ADSENSE_SLOT_ID`       | The production ad unit's numeric slot ID                                                  |
+   | Variable | `ZIPNAMI_WEB_MAPS_API_KEY`      | The production Google Maps browser API key (`AIza` + 35 characters)                       |
+   | Variable | `ZIPNAMI_WEB_GA_MEASUREMENT_ID` | The production Google Analytics 4 measurement ID (`G-` + letters and digits), from step 6 |
 
 A value that a future Android app would need its own copy of carries
 `WEB` in its name, so the two cannot be confused: the Maps key here is a
-browser key, and an Android app needs an Android key. AdSense (Android
+browser key, and an Android app needs an Android key. The Analytics
+measurement ID here likewise belongs to the Web data stream. AdSense (Android
 uses AdMob), Pages, and the Worker are Web only and keep their names.
 
 `ZIPNAMI_WEB_MAPS_API_KEY` is the only Web Maps key. Restrict it by HTTP referrer
@@ -110,6 +112,27 @@ visits. The two can't drift apart.
      section 12 requires, since no automated test can place a browser in a
      consent region.
 
+6. Set up Google Analytics (Issue #92). Only production measures visits;
+   development, CI, and end-to-end test builds carry no measurement ID and
+   load no Analytics script.
+   - In Google Analytics, create a GA4 property and add a **web data
+     stream** for `https://<project>.pages.dev`. Note the stream's
+     measurement ID (`G-` followed by letters and digits).
+   - Set it as the `ZIPNAMI_WEB_GA_MEASUREMENT_ID` variable in the
+     `production` environment (step 4). A Pages deploy without it, or with
+     a value not in the `G-` format, stops at the settings check.
+   - In the stream's **Enhanced measurement** settings, keep **Page views**
+     on, and under its advanced settings keep **Page changes based on
+     browser history events** on. The site is a single-page application
+     that sends no events of its own, so this setting is the only thing
+     that counts a move between screens as a page view.
+   - Check, together with step 5, that the **Privacy & messaging** message
+     covers Analytics consent. The code declares consent mode defaults
+     (denied for the EEA, the UK, and Switzerland, granted elsewhere); the
+     message is what asks the visitor.
+   - After the first deploy with the ID, open the production site and
+     confirm the visit appears in the property's **Realtime** report.
+
 ## Deploying
 
 ```sh
@@ -135,7 +158,10 @@ workflow:
      external link. Until `ZIPNAMI_WEB_MAPS_API_KEY` is set in the `production`
      environment, the Pages deploy is refused at "Verify Pages deploy
      settings" before building; this also applies to environments created
-     before #58.
+     before #58. `VITE_GOOGLE_ANALYTICS_MEASUREMENT_ID` is required too, and
+     must be a GA4 measurement ID (`G-` format), not a Universal Analytics
+     (`UA-`) or Google Ads (`AW-`) ID; until `ZIPNAMI_WEB_GA_MEASUREMENT_ID`
+     is set, the Pages deploy is refused at the same step.
 2. **Deploys.**
    - Worker: `bunx wrangler deploy --var ALLOWED_ORIGINS:$PAGES_ORIGIN`.
    - Pages: builds with the Worker URL baked in, then runs
