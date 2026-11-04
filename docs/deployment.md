@@ -119,7 +119,8 @@ visits. The two can't drift apart.
      stream** for `https://<project>.pages.dev`. Note the stream's
      measurement ID (`G-` followed by letters and digits).
    - Set it as the `ZIPNAMI_WEB_GA_MEASUREMENT_ID` variable in the
-     `production` environment (step 4).
+     `production` environment (step 4). A Pages deploy without it, or with
+     a value not in the `G-` format, stops at the settings check.
    - In the stream's **Enhanced measurement** settings, keep **Page views**
      on, and under its advanced settings keep **Page changes based on
      browser history events** on. The site is a single-page application
