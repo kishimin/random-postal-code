@@ -111,22 +111,21 @@ const reassembleSplitTowns = (
 // Notes Japan Post writes in the town column in place of a name (see the
 // package README). Only these exact phrasings are rewritten: other notes,
 // such as `（丁目）`, and real descriptions such as `…一円` are kept.
-const NO_TOWN_PLACEHOLDER = "以下に掲載がない場合";
-const NO_TOWN_SUFFIX = "の次に番地がくる場合";
-const DROPPED_PARENTHETICALS = ["（次のビルを除く）", "（地階・階層不明）"];
+const NO_TOWN = /^以下に掲載がない場合$|の次に番地がくる場合$/;
+const DROPPED_PARENTHETICAL = /（(?:次のビルを除く|地階・階層不明)）$/;
 
+// Regular expressions rather than string methods: a malformed record that
+// lacks the town column reaches here with `town` undefined, and must pass
+// through so the build script's PostalCode validation refuses the dataset
+// with its own message instead of this step throwing.
 const withoutPlaceholder = (town: string): string => {
-  if (town === NO_TOWN_PLACEHOLDER || town.endsWith(NO_TOWN_SUFFIX)) {
+  if (NO_TOWN.test(town)) {
     return "";
   }
 
-  const parenthetical = DROPPED_PARENTHETICALS.find((suffix) =>
-    town.endsWith(suffix),
-  );
+  const parenthetical = DROPPED_PARENTHETICAL.exec(town);
 
-  return parenthetical === undefined
-    ? town
-    : town.slice(0, -parenthetical.length);
+  return parenthetical === null ? town : town.slice(0, parenthetical.index);
 };
 
 // Runs after reassembly, so a phrase split across records is whole, and
