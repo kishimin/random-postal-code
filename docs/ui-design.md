@@ -185,7 +185,7 @@ Advertising uses a dedicated region labeled as advertising where required. An un
 
 ### 9.1 Figma Source and Screen Map
 
-The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the sixteen screens below. Each row names the screen, its Figma node id, and the issue that owns its behavior — or marks the row `V2` or an open gap when no issue owns it yet.
+The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the seventeen screens below. Where Figma and an accessibility requirement (WCAG 2.2 AA) disagree, AA wins and Figma is corrected, not the implementation (owner decision on Issue #97, 2026-11-05). Each row names the screen, its Figma node id, and the issue that owns its behavior — or marks the row `V2` or an open gap when no issue owns it yet.
 
 | #   | Screen                      | Node     | Owner                               |
 | --- | --------------------------- | -------- | ----------------------------------- |
@@ -205,6 +205,9 @@ The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the sixt
 | 14  | 404 / Mobile                | `27:112` | #26                                 |
 | 15  | Global Error / Desktop      | `27:123` | #26                                 |
 | 16  | Global Error / Mobile       | `27:131` | #26                                 |
+| 17  | Privacy Policy / Desktop    | `46:165` | #10, #97                            |
+
+Figma draws no mobile frame for the privacy page (row 17). At mobile widths it follows the desktop frame's order and headings, with the side margins and footer of the other mobile frames (rows 05 and 06).
 
 Screens 09 and 10 (Field Error) are an open gap, not covered by any issue: Figma shows one address among several failing to load inside an otherwise successful result, but the Web API (Issues #3, #4) answers a request as a whole — a rejected dataset entry empties the dataset rather than producing a partial address list — and the frontend's `UiError` model (section 4 above) has only whole-request kinds (`offline`, `service-unavailable`, `invalid-response`, `unexpected`), not a partial-failure kind. Issue #25's own Notes section named screens 13 through 16 (404 and Global Error) as the uncovered ones instead; that claim is now stale, since Issue #26 (closed) covers both and is attributed to it above.
 
@@ -212,11 +215,18 @@ Screens 09 and 10 (Field Error) are an open gap, not covered by any issue: Figma
 
 The Figma file fixes these values per screen; recording them here makes that existing design decision legible without opening Figma.
 
-**Color.** Page/frame surface `#FAFBFA`; header/card surface `#FFFFFF`; text primary `#091F33`; text secondary `#526B78`; brand/accent `#148CC7`; accent surface (the "Mystery card") `#E5F7F7`; error text/icon `#CC292E`; error surface `#FFF0F0`; address-card border `#D1E3E5`; map panel surface `#E8EDE3`; map pin `#E04D40`. (Figma's own canvas backdrop behind each screen's frame — `#F0F5F7` on some screens, `#FFFFFF` on others — is a board color, not a screen surface, and is not listed.)
+**Color.** Page/frame surface `#FAFBFA`; header/card surface `#FFFFFF`; text primary `#091F33`; text secondary `#526B78`; brand/accent `#0F6E9E` (primary action surfaces, outline-button strokes and labels, and small accent text such as the eyebrow; Figma used `#148CC7` until 2026-11-05 and was changed to meet AA); accent surface (the "Mystery card") `#E5F7F7`; error text/icon `#CC292E`; error surface `#FFF0F0`; address-card border `#D1E3E5`; map panel surface `#E8EDE3`; map pin `#E04D40`; advertising slot surface `#F5F5F0`. (Figma's own canvas backdrop behind each screen's frame — `#F0F5F7` on some screens, `#FFFFFF` on others — is a board color, not a screen surface, and is not listed.)
 
 **Type.** Font family `Inter` at weights 400 (regular), 600 (semibold), and 700 (bold). Representative sizes: desktop display headline 52px with 68px line-height, desktop body 17px with 28px line-height, mobile display headline 34px with 46px line-height, mobile body 14px with 22px line-height, button label 16px, eyebrow label 11-13px (mobile 11px, desktop 13px), footer/caption 11-12px (varies by screen). `Inter` has no Japanese glyphs, and every screen's body is Japanese (section 2); the Figma file's text styles name only `Inter` and do not specify a CJK fallback, so which Japanese-capable family renders that text is chosen in section 9.3.
 
-**Copy.** Two literal strings are fixed on every screen: the brand wordmark `"ZIPNAMI"` and the footer attribution `"© kishimin 2026"`. Per-screen headline and body copy is deliberately not fixed in this document; it is left to the mapped Figma node in section 9.1, because transcribing that literal Japanese text here would create a second source of truth that can drift from Figma without anything catching it — the same reason this repository's `CLAUDE.md` gives for not duplicating acceptance criteria into `docs/ACCEPTANCE.md`.
+**Copy.** The literal strings fixed on every screen are the brand wordmark `"ZIPNAMI"`, the footer's privacy link `"プライバシーポリシー"`, the Japan Post attribution, and `"© kishimin 2026"`. Per-screen headline, body, and control copy is deliberately not fixed in this document; it is left to the mapped Figma node in section 9.1, because transcribing that literal Japanese text here would create a second source of truth that can drift from Figma without anything catching it — the same reason this repository's `CLAUDE.md` gives for not duplicating acceptance criteria into `docs/ACCEPTANCE.md`. Every control's visible label is its Figma text, and the acceptance tests find controls by that text exactly.
+
+**Where Figma is not taken literally** (owner decisions on Issue #97, 2026-11-05):
+
+- The privacy page (row 17) takes its layout and section headings from Figma, but its body is the application's own accurate disclosure (section 7): the Figma body names no service, gives no contact, and promises a history deletion the application does not have.
+- `地図に表示` and `Google マップで開く` repeat on every address in Figma. Their visible labels are Figma's, and their accessible names include the address (for example `沖縄県宜野湾市大山 1丁目を地図に表示`), so a screen reader can tell them apart (section 8).
+- The history's `履歴を展開` opens the list. An opened entry shows every address of its postal code, so every stored address stays reachable (section 5).
+- `広告掲載エリア` inside the advertising slot is a placeholder in the mock, not copy; the slot shows the ad, or collapses (section 7).
 
 The Figma design already fixes the color, typography, and copy values recorded in 9.2 above; elevation tokens are not yet fixed by that design. Section 9.3 records how those values are adopted into theme code.
 
@@ -238,13 +248,14 @@ Issue #97 adopts the section 9.2 values as Tailwind v4 theme tokens, declared in
 | Header/card surface                 | `#FFFFFF` | `--color-card`           | `card`           |
 | Text primary                        | `#091F33` | `--color-ink`            | `ink`            |
 | Text secondary                      | `#526B78` | `--color-ink-muted`      | `ink-muted`      |
-| Brand/accent                        | `#148CC7` | `--color-brand`          | `brand`          |
+| Brand/accent                        | `#0F6E9E` | `--color-brand`          | `brand`          |
 | Accent surface (the "Mystery card") | `#E5F7F7` | `--color-accent-surface` | `accent-surface` |
 | Error text/icon                     | `#CC292E` | `--color-error`          | `error`          |
 | Error surface                       | `#FFF0F0` | `--color-error-surface`  | `error-surface`  |
 | Address-card border                 | `#D1E3E5` | `--color-card-border`    | `card-border`    |
 | Map panel surface                   | `#E8EDE3` | `--color-map-surface`    | `map-surface`    |
 | Map pin                             | `#E04D40` | `--color-map-pin`        | `map-pin`        |
+| Advertising slot surface            | `#F5F5F0` | `--color-ad-surface`     | `ad-surface`     |
 
 **Type-scale tokens.** Each size is a `--text-*` token with its `--text-*--line-height` where section 9.2 gives one. The responsive pairs switch at the `lg` breakpoint (`1024px`, the same point where section 5.1 changes the layout); below it, the mobile size applies.
 
@@ -261,7 +272,7 @@ Issue #97 adopts the section 9.2 values as Tailwind v4 theme tokens, declared in
 
 Sizes the Figma nodes use that section 9.2 does not list are tokens too, so a component still never carries a one-off size: `--text-giant` (72px, the 404 numeral), `--text-mystery` (48px, the start card's placeholder code and the error mark), `--text-display-md` (42px / 56px, the tablet headline and the desktop result code), `--text-title` (36px, the result headline), `--text-headline` (30px, the 404 and global error headlines), `--text-heading` (24px, the desktop wordmark and the error panel headline), and `--text-action` (19px, the primary action label and the small-screen wordmark).
 
-**Contrast decisions.** White (`#FFFFFF`) on the brand color (`#148CC7`) is 3.75:1, which passes WCAG 2.2 AA (1.4.3) only for large text. A primary action therefore sets its label in `--text-action` at weight 700, which is 14pt bold, not in the 16px `--text-button` size Figma draws. Brand-colored text is used only at large sizes (the 404 numeral); a small eyebrow label is set in the secondary text color instead. Every such departure from a Figma node is listed in the pull request that makes it.
+**Contrast.** White (`#FFFFFF`) on the brand color (`#0F6E9E`) is 5.61:1, and the brand color on the page surface (`#FAFBFA`) is 5.41:1, so both pass WCAG 2.2 AA (1.4.3) for normal text. A primary action's label and a small eyebrow therefore use the sizes and the color Figma draws; no departure is needed for contrast.
 
 **Wordmark and footer.** The wordmark is the markup text `Zipnami` rendered upper-case by CSS (`ZIPNAMI`), so the header link keeps the accessible name the application already had. The footer shows `© kishimin 2026` as its own line on every screen, including the global error screen, whose Figma frame draws no wordmark but whose acceptance criterion requires one.
 
