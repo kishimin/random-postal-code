@@ -168,13 +168,16 @@ describe("Issue #21: the Web MVP release checks are recorded", () => {
     expect(readChecklist()).toContain(reproducingTest);
   });
 
-  test("the deployment-dependent checks are listed and still open, pending Issue #19", () => {
-    const pendingOnDeployment = checklistItems(readChecklist()).filter((item) =>
-      /#19\b/.test(item.text),
+  test("the deployment-dependent checks are recorded as done in the deployed-site section", () => {
+    // Issue #21 answer B (2026-11-05): checked on the site deployed by #19,
+    // so each is ticked, under a heading that says it was the deployed site.
+    const deployedSiteHeading = /deployed site|デプロイ済み/i;
+    const onDeployedSite = checklistItems(readChecklist()).filter((item) =>
+      item.headings.some((heading) => deployedSiteHeading.test(heading)),
     );
 
-    // Issue #21 answer B: /privacy and the Japan Post attribution being
-    // publicly reachable, and the deployed Web SDKs matching the disclosure.
+    // /privacy and the Japan Post attribution being publicly reachable, and
+    // the deployed Web SDKs matching the disclosure.
     const owed: readonly { name: string; pattern: RegExp }[] = [
       { name: "/privacy publicly accessible", pattern: /\/privacy/ },
       { name: "Japan Post attribution", pattern: /Japan Post|日本郵便/i },
@@ -182,30 +185,52 @@ describe("Issue #21: the Web MVP release checks are recorded", () => {
     ];
 
     for (const { name, pattern } of owed) {
-      const listed = pendingOnDeployment.filter((item) =>
-        pattern.test(item.text),
-      );
-      expect({ check: name, listed: listed.length > 0 }).toEqual({
-        check: name,
-        listed: true,
-      });
-      // Not ticked: nothing can have checked a site that is not deployed.
       expect({
         check: name,
-        ticked: listed.some((item) => item.checked),
+        recordedAsDone: onDeployedSite.some(
+          (item) => item.checked && pattern.test(item.text),
+        ),
       }).toEqual({
         check: name,
-        ticked: false,
+        recordedAsDone: true,
       });
     }
   });
 
-  test("no deployment-only claim is ticked, whether or not it mentions Issue #19", () => {
-    const tickedClaims = checklistItems(readChecklist())
-      .filter((item) => item.checked && isDeploymentOnlyClaim(item))
+  test("every ticked deployment-only claim sits in the deployed-site section, and the evidence cites a deploy run by URL", () => {
+    const checklist = readChecklist();
+    const deployedSiteHeading = /deployed site|デプロイ済み/i;
+    const misplaced = checklistItems(checklist)
+      .filter(
+        (item) =>
+          item.checked &&
+          isDeploymentOnlyClaim(item) &&
+          !item.headings.some((heading) => deployedSiteHeading.test(heading)),
+      )
       .map((item) => item.text);
 
-    // Nothing can have checked a site that is not deployed yet.
-    expect(tickedClaims).toEqual([]);
+    // A deployment-only claim ticked anywhere else is not tied to the run
+    // that checked it.
+    expect(misplaced).toEqual([]);
+
+    // The Evidence section, up to the next heading of the same or a higher
+    // level, has to name a deploy and link the Actions run that made it.
+    const evidence =
+      /^(#{1,6})\s+(?:Evidence|根拠)\s*$([\s\S]*?)(?=^#{1,6}\s|(?![\s\S]))/im.exec(
+        checklist,
+      )?.[2] ?? "";
+    const citesDeployRun = evidence
+      .split(/\n\s*\n/)
+      .some(
+        (paragraph) =>
+          /deploy|デプロイ/i.test(paragraph) &&
+          /https:\/\/github\.com\/kishimin\/random-postal-code\/actions\/runs\/\d+/.test(
+            paragraph,
+          ),
+      );
+
+    expect({ evidenceCitesDeployRun: citesDeployRun }).toEqual({
+      evidenceCitesDeployRun: true,
+    });
   });
 });
