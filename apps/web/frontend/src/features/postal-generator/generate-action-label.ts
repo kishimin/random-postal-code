@@ -7,7 +7,7 @@ import { postalGeneratorText } from "./site-text";
  * Figma labels it three ways: before a result (#2:13), after one (#2:33), and
  * while the API error shows (#27:78). The label follows what is on screen, so
  * a request in flight keeps the label of the screen it was started from.
- * @param state - The generator's current request lifecycle.
+ * @param {GeneratorState} state - The generator's current request lifecycle.
  */
 export const generateActionLabel = (state: GeneratorState): string => {
   if (state.status === "error") return postalGeneratorText.retryActionLabel;
