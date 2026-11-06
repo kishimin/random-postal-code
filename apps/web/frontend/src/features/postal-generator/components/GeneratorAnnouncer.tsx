@@ -49,9 +49,9 @@ export const GeneratorAnnouncer = ({
         <p aria-hidden={"true"} className={"text-mystery font-bold text-error"}>
           {"!"}
         </p>
-        <p className={"mt-2 text-heading font-bold text-ink"}>
+        <h2 className={"mt-2 text-heading font-bold text-ink"}>
           {postalGeneratorText.failureHeading}
-        </p>
+        </h2>
       </>
     )}
     <div

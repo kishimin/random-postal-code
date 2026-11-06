@@ -22,6 +22,23 @@ describe("GeneratorAnnouncer", () => {
     expect(screen.getByText(postalGeneratorText.failureHeading)).toBeVisible();
   });
 
+  // The panel's title is drawn as a heading, so it has to be one for
+  // assistive technology too; the page's h1 stays the hero.
+  test("titles a failure with a level-2 heading outside the live region", () => {
+    render(
+      <GeneratorAnnouncer
+        announcement={postalGeneratorText.failureAnnouncement.offline}
+        tone={announcementTones.error}
+      />,
+    );
+
+    const heading = screen.getByRole("heading", {
+      level: 2,
+      name: postalGeneratorText.failureHeading,
+    });
+    expect(screen.getByRole("status")).not.toContainElement(heading);
+  });
+
   test("shows no failure headline when nothing failed", () => {
     render(
       <GeneratorAnnouncer
