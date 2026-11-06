@@ -1,8 +1,10 @@
 name: Deploy (Production)
 
-# Manual only. A deploy is a decision a person makes, and running only on
-# workflow_dispatch also keeps the Cloudflare credentials away from any
-# pull-request code (Issue #18's "CI does not expose deployment secrets").
+# Runs after every merge once CI (Push) passes, and by hand (Issue #108).
+# Neither trigger runs pull-request code, so the Cloudflare credentials stay
+# away from it (Issue #18's "CI does not expose deployment secrets"):
+# workflow_run always runs this file as it is on main, and CI (Push) itself
+# runs only for pushes to main.
 #
 # Every production value comes from the `production` GitHub Environment
 # rather than this file: design.md section 12 fixes the Pages origin, Worker
@@ -19,28 +21,87 @@ on:
           - backend
           - frontend
         default: both
+  workflow_run:
+    workflows:
+      - CI (Push)
+    types:
+      - completed
+    branches:
+      - main
 
 permissions:
   contents: read
 
 # Shared with the rollback workflow, so a deploy and a rollback never race.
+# A group holds only one waiting run and cancels the older one, so a run that
+# will deploy nothing (it follows a failed or cancelled CI run) takes a group
+# of its own; otherwise it could cancel a waiting deploy.
 concurrency:
-  group: deploy-production
+  group: >-
+    ${{ (github.event_name == 'workflow_dispatch' ||
+    github.event.workflow_run.conclusion == 'success') && 'deploy-production' ||
+    format('deploy-nothing-{0}', github.run_id) }}
   cancel-in-progress: false
 
 jobs:
+  plan:
+    name: Plan deploy
+    # workflow_run also fires for a failed or cancelled CI run; only a passed
+    # push to main may deploy. A dispatch picks its halves from inputs.target,
+    # so the job runs for it with every step skipped.
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      frontend: ${{ steps.plan.outputs.frontend }}
+      backend: ${{ steps.plan.outputs.backend }}
+
+    steps:
+      - name: Check out repository
+        if: github.event_name == 'workflow_run'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          # The diff reaches back to the previous verified commit.
+          fetch-depth: 0
+
+      - name: Pick the halves that changed
+        id: plan
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: node .github/scripts/plan-deploy.mjs
+
   backend:
     name: Deploy Worker
+    needs: plan
     # Only main deploys: a dispatch from another branch would otherwise ship
-    # unreviewed code to production.
-    if: github.ref == 'refs/heads/main' && (inputs.target == 'both' || inputs.target == 'backend')
+    # unreviewed code to production. An automatic run has no inputs, so the
+    # plan decides.
+    if: >-
+      github.ref == 'refs/heads/main' && (
+      inputs.target == 'both' || inputs.target == 'backend' ||
+      needs.plan.outputs.backend == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
 
     steps:
+      # On workflow_run, github.sha is main's newest commit, which CI may not
+      # have verified yet; deploy the one it did.
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
@@ -68,7 +129,11 @@ jobs:
     name: Deploy Pages
     # Deliberately not `needs: backend`: each half deploys on its own
     # (design.md section 10). With target "both" they run side by side.
-    if: github.ref == 'refs/heads/main' && (inputs.target == 'both' || inputs.target == 'frontend')
+    needs: plan
+    if: >-
+      github.ref == 'refs/heads/main' && (
+      inputs.target == 'both' || inputs.target == 'frontend' ||
+      needs.plan.outputs.frontend == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
@@ -76,6 +141,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
@@ -111,17 +178,21 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PAGES_PROJECT: ${{ vars.ZIPNAMI_PAGES_PROJECT }}
-        run: bunx wrangler pages deploy dist --project-name "$PAGES_PROJECT" --branch main --commit-hash "$GITHUB_SHA"
+          DEPLOYED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: bunx wrangler pages deploy dist --project-name "$PAGES_PROJECT" --branch main --commit-hash "$DEPLOYED_SHA"
 
   production-tests:
     name: Production tests
     needs:
       - backend
       - frontend
-    # Runs after whichever halves this dispatch deployed. A skipped half is
-    # fine (it was not chosen); a failed one means there is nothing sound to
-    # check.
-    if: ${{ github.ref == 'refs/heads/main' && !cancelled() && !contains(needs.*.result, 'failure') }}
+    # Runs after whichever halves this run deployed. A skipped half is fine
+    # (it was not chosen or did not change); a failed one means there is
+    # nothing sound to check. With neither deployed, production is unchanged.
+    if: >-
+      ${{ github.ref == 'refs/heads/main' && !cancelled() &&
+      !contains(needs.*.result, 'failure') &&
+      (needs.backend.result == 'success' || needs.frontend.result == 'success') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
@@ -129,6 +200,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
@@ -143,3 +216,38 @@ jobs:
         env:
           PRODUCTION_BASE_URL: ${{ vars.ZIPNAMI_PAGES_ORIGIN }}
         run: bun run --filter @zipnami/web-frontend e2e:production
+
+  report-failure:
+    name: Report failure
+    needs:
+      - plan
+      - backend
+      - frontend
+      - production-tests
+    # Reports only. Rolling back stays a person's call: rollback has not yet
+    # run in production, and the first production failure was a test defect
+    # (#96), so an automatic rollback could undo a sound release (Issue #108).
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Post the failed run to Discord
+        env:
+          WEBHOOK_URL: ${{ secrets.ZIPNAMI_DISCORD_WEBHOOK_URL }}
+          MESSAGE: |
+            **Zipnami production deploy failed**
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Commit: ${{ github.event.workflow_run.head_sha || github.sha }}
+            Nothing was rolled back. Check the run first; if production is broken, roll back by hand (docs/deployment.md "Rolling back"):
+            - Worker, to the previous version: `gh workflow run rollback.yml -f target=backend`
+            - Pages: `gh workflow run rollback.yml -f target=frontend -f version=<deployment-id>` (IDs from `bunx wrangler pages deployment list --project-name <project> --environment production`)
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "::error::The Discord webhook secret is not set; see docs/deployment.md, One-time setup step 7."
+            exit 1
+          fi
+          jq -n --arg content "$MESSAGE" '{content: $content}' |
+            curl --fail --silent --show-error --max-time 30 \
+              --header 'Content-Type: application/json' \
+              --data-binary @- "$WEBHOOK_URL"

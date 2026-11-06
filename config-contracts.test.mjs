@@ -508,3 +508,27 @@ test("the pull request workflow runs the lock script and re-runs it when the lab
   assert.match(workflow, /\blabeled\b/);
   assert.match(workflow, /\bunlabeled\b/);
 });
+
+// A concurrency group keeps one waiting run and cancels the older one, so a
+// deploy run that follows a failed CI run must not share the rollback's group
+// (Issue #108): it would cancel a real deploy waiting its turn.
+test("only a deploy run that may deploy queues with the rollback", () => {
+  const read = (name) =>
+    readFileSync(
+      path.join(repositoryRoot, ".github", "workflows", name),
+      "utf8",
+    );
+  const groupOf = (workflow) =>
+    /^concurrency:\n\s+group:\s*(>-\n(?:\s{4}.*\n)+|.*\n)/m
+      .exec(workflow)?.[1]
+      .replace(/\s+/g, " ")
+      .trim();
+
+  assert.equal(groupOf(read("rollback.yml")), "deploy-production");
+  const deployGroup = groupOf(read("deploy.yml"));
+  assert.match(
+    deployGroup,
+    /github\.event_name == 'workflow_dispatch' \|\| github\.event\.workflow_run\.conclusion == 'success'\) && 'deploy-production' \|\|/,
+  );
+  assert.match(deployGroup, /github\.run_id/);
+});
