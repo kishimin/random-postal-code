@@ -402,7 +402,9 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     // The footer's privacy link: with no contact link in the MVP, it is the
     // control the privacy page itself carries in its frame.
     expect(
-      await accessibilityPage.tabIndexOf(privacyDisclosurePage.disclosureLink()),
+      await accessibilityPage.tabIndexOf(
+        privacyDisclosurePage.disclosureLink(),
+      ),
     ).toBeGreaterThanOrEqual(0);
     expect(await accessibilityPage.elementsAheadOfDocumentOrder()).toBe(0);
 
