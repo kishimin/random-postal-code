@@ -259,7 +259,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
       ).toBe(true);
     });
 
-    test(`AC-1 at ${viewport.name}, the privacy page's sections and contact method stay within the visible width`, async ({
+    test(`AC-1 at ${viewport.name}, the privacy page's sections and links stay within the visible width`, async ({
       accessibilityPage,
       privacyDisclosurePage,
     }) => {
@@ -269,11 +269,14 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
       await expect(privacyDisclosurePage.heading()).toBeVisible();
       expect(await accessibilityPage.hasHorizontalOverflow()).toBe(false);
 
+      // Every one of Figma's four sections, and both of the page's links. The
+      // contact link this list used to carry went to V2 with its section
+      // (Issue #105; approved on Issue #97, issuecomment-6670298264).
       for (const element of [
         privacyDisclosurePage.heading(),
-        privacyDisclosurePage.firstPartySection(),
-        privacyDisclosurePage.thirdPartySection(),
-        privacyDisclosurePage.contactLink(),
+        ...privacyDisclosurePage.sectionHeadings.map((name) =>
+          privacyDisclosurePage.section(name),
+        ),
         accessibilityPage.linkNamed(chromeSelectors.siteHeader),
         privacyDisclosurePage.disclosureLink(),
       ]) {
@@ -396,8 +399,10 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     expect(await accessibilityPage.elementsAheadOfDocumentOrder()).toBe(0);
 
     await privacyDisclosurePage.navigate();
+    // The footer's privacy link: with no contact link in the MVP, it is the
+    // control the privacy page itself carries in its frame.
     expect(
-      await accessibilityPage.tabIndexOf(privacyDisclosurePage.contactLink()),
+      await accessibilityPage.tabIndexOf(privacyDisclosurePage.disclosureLink()),
     ).toBeGreaterThanOrEqual(0);
     expect(await accessibilityPage.elementsAheadOfDocumentOrder()).toBe(0);
 
@@ -433,7 +438,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     await privacyDisclosurePage.navigate();
     expect(
       await accessibilityPage.showsFocusIndicator(
-        privacyDisclosurePage.contactLink(),
+        privacyDisclosurePage.disclosureLink(),
       ),
     ).toBe(true);
 
@@ -559,9 +564,12 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     await expectControls("link", await resultLinks(result.addresses));
 
     await privacyDisclosurePage.navigate();
-    await expect(privacyDisclosurePage.contactLink()).toBeVisible();
+    for (const name of privacyDisclosurePage.sectionHeadings) {
+      await expect(privacyDisclosurePage.section(name), name).toBeVisible();
+    }
     await expectControls("button", []);
-    await expectControls("link", frameLinks([applicationCopy.privacyContact]));
+    // Only the frame's links: the contact link went to V2 (Issue #105).
+    await expectControls("link", frameLinks([]));
 
     await notFoundPage.navigate();
     await expect(notFoundPage.backToGeneratorLink()).toBeVisible();
@@ -978,7 +986,9 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     privacyDisclosurePage,
   }) => {
     await privacyDisclosurePage.navigate();
-    await expect(privacyDisclosurePage.contactLink()).toBeVisible();
+    for (const name of privacyDisclosurePage.sectionHeadings) {
+      await expect(privacyDisclosurePage.section(name), name).toBeVisible();
+    }
 
     expect(await accessibilityPage.scanForViolations()).toEqual([]);
   });

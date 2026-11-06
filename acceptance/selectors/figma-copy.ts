@@ -76,9 +76,25 @@ export const figmaCopy = {
   notFoundBody: "URLが正しいか確認するか、トップページへ戻ってください。",
   backToTop: "トップへ戻る",
 
-  // Privacy page heading (#46:165). Its body stays the application's own
-  // accurate text (approved decision 1), so it is not transcribed here.
+  // Privacy page heading (#46:165).
   privacyHeading: "プライバシーポリシー",
+
+  /*
+   * The privacy page's section headings (#46:165), in the page's order.
+   *
+   * The headings are Figma's; the sentences under them stay the
+   * application's own accurate disclosure, moved under the matching heading,
+   * so the body is not transcribed here. Figma's fifth heading,
+   * "5. お問い合わせ", is not in the MVP: a contact section is V2 work
+   * (Issue #105). Owner decision on Issue #97,
+   * https://github.com/kishimin/random-postal-code/issues/97#issuecomment-6670298264.
+   */
+  privacySections: {
+    collectedInformation: "1. 取得する情報",
+    purposeOfUse: "2. 利用目的",
+    advertisingAndAnalytics: "3. 広告とアクセス解析",
+    history: "4. 履歴",
+  },
 
   // Footer on every screen (#2:14 and its copies).
   privacyLink: "プライバシーポリシー",
@@ -115,10 +131,10 @@ export const openInGoogleMapsName = (address: Address) =>
   `${fullAddress(address)}を${figmaCopy.openInGoogleMaps}`;
 
 /*
- * Words Figma does not draw: statuses and announcements, the map's heading,
- * and the privacy page's own sections and contact link. Each is the
- * application's current wording, copied from the file named beside it, so a
- * test still finds it by the whole string rather than by a fragment.
+ * Words Figma does not draw: statuses and announcements, and the map's
+ * heading. Each is the application's current wording, copied from the file
+ * named beside it, so a test still finds it by the whole string rather than
+ * by a fragment.
  */
 export const applicationCopy = {
   // apps/web/frontend/src/features/postal-generator/site-text.ts
@@ -131,9 +147,4 @@ export const applicationCopy = {
 
   // apps/web/frontend/src/features/maps/site-text.ts
   mapHeading: "地図",
-
-  // apps/web/frontend/src/app/views/privacy-text.ts
-  privacyFirstPartyHeading: "Zipnamiが保存する情報",
-  privacyThirdPartyHeading: "第三者サービスが処理する情報",
-  privacyContact: "お問い合わせ",
 } as const;

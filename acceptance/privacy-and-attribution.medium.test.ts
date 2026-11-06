@@ -14,10 +14,7 @@ import {
   respondWith,
   type PostalCodeGeneratorPage,
 } from "./pages/postal-code-generator-page.ts";
-import {
-  contactDestinationPattern,
-  privacySelectors,
-} from "./selectors/privacy-selectors.ts";
+import { privacySelectors } from "./selectors/privacy-selectors.ts";
 
 /*
  * Acceptance test for Issue #10: Publish privacy and postal-data attribution
@@ -33,6 +30,13 @@ import {
  * already routes the advertising and consent configuration to a human review
  * before release; whether the published sentences match that configuration is
  * that review's subject, not this file's.
+ *
+ * The page is divided by Figma's four section headings, and each statement is
+ * asserted inside the section it sits under. That replaced the earlier split
+ * into "data stored by Zipnami" and "data processed by third parties", and the
+ * contact method went to V2 (Issue #105): the owner's decision, approved as an
+ * acceptance-test rewrite on Issue #97 (ADR-0080),
+ * https://github.com/kishimin/random-postal-code/issues/97#issuecomment-6670298264.
  *
  * Nothing here contacts Google. The generator screen loads the AdSense tag, so
  * the tests that visit it refuse every advertising and consent request at the
@@ -85,6 +89,9 @@ const datasetEntry = (postalCode: string): PostalCode => {
 // More than one address, so the credit is shown to sit beside a real result
 // rather than beside an empty region.
 const result = datasetEntry("3670030");
+
+const { collectedInformation, purposeOfUse, advertisingAndAnalytics, history } =
+  privacySelectors.sectionHeadings;
 
 /*
  * Extends the shell fixture rather than editing it.
@@ -143,71 +150,87 @@ test.describe("Issue #10: the privacy and attribution disclosure", () => {
     await expect(privacyDisclosurePage.heading()).toBeVisible();
   });
 
-  test("the disclosure separates what Zipnami stores from what third-party services process", async ({
+  test("the disclosure has Figma's four section headings, each heading its own region", async ({
     privacyDisclosurePage,
   }) => {
     await privacyDisclosurePage.navigate();
 
-    // Two separately named regions rather than one page of prose mentioning
-    // both. Exactly one of each: a second section answering to the same name
-    // would leave a reader unable to tell which one a paragraph belongs to,
-    // and would make the placements asserted below ambiguous.
-    await expect(privacyDisclosurePage.firstPartySection()).toHaveCount(1);
-    await expect(privacyDisclosurePage.thirdPartySection()).toHaveCount(1);
-    await expect(privacyDisclosurePage.firstPartySection()).toBeVisible();
-    await expect(privacyDisclosurePage.thirdPartySection()).toBeVisible();
+    // Separately named regions rather than one page of prose. Exactly one of
+    // each: a second section answering to the same name would leave a reader
+    // unable to tell which one a paragraph belongs to, and would make the
+    // placements asserted below ambiguous. The heading is looked for inside
+    // its region, so a region merely labelled with the same words does not
+    // count as that heading's section.
+    for (const name of privacyDisclosurePage.sectionHeadings) {
+      await expect(privacyDisclosurePage.section(name), name).toHaveCount(1);
+      await expect(privacyDisclosurePage.section(name), name).toBeVisible();
+      await expect(
+        privacyDisclosurePage.headingOfSection(name),
+        name,
+      ).toHaveCount(1);
+      await expect(
+        privacyDisclosurePage.headingOfSection(name),
+        name,
+      ).toBeVisible();
+    }
 
     // ui-design.md section 8: one h1 per page. The disclosure's own sections
     // sit under the page title rather than beside it.
     await expect(privacyDisclosurePage.topLevelHeadings()).toHaveCount(1);
   });
 
-  test("the third-party section documents Google Maps, Google AdSense, and consent", async ({
+  test("the disclosure documents Google Maps under 2. 利用目的, and Google AdSense and consent under 3. 広告とアクセス解析", async ({
     privacyDisclosurePage,
   }) => {
     await privacyDisclosurePage.navigate();
 
-    // Each is asserted against the third-party section rather than the page,
-    // so that naming them is also the act of classifying them: a page that
-    // listed Google Maps among the things Zipnami itself stores would not
-    // satisfy this, which is the distinction the previous test set up.
+    // Each is asserted against the section it sits under rather than the
+    // page, so that naming a service is also the act of placing it: a page
+    // that described Google Maps under 1. 取得する情報 as information Zipnami
+    // itself collects would not satisfy this.
     await expect(
-      privacyDisclosurePage.thirdPartySectionStating(
+      privacyDisclosurePage.sectionStating(
+        purposeOfUse,
         privacySelectors.googleMaps,
       ),
     ).toHaveCount(1);
     await expect(
-      privacyDisclosurePage.thirdPartySectionStating(
+      privacyDisclosurePage.sectionStating(
+        advertisingAndAnalytics,
         privacySelectors.googleAdSense,
       ),
     ).toHaveCount(1);
     await expect(
-      privacyDisclosurePage.thirdPartySectionStating(privacySelectors.consent),
+      privacyDisclosurePage.sectionStating(
+        advertisingAndAnalytics,
+        privacySelectors.consent,
+      ),
     ).toHaveCount(1);
   });
 
-  test("the Zipnami section documents the browser-local history and that no location is collected", async ({
+  test("the disclosure documents the browser-local history under 4. 履歴, and that no location is collected under 1. 取得する情報", async ({
     privacyDisclosurePage,
   }) => {
     await privacyDisclosurePage.navigate();
 
-    // History is first-party data even though it never leaves the browser
-    // (design.md section 6.2), and the absence of location collection is a
-    // statement about what Zipnami itself does (design.md section 2). Both
-    // belong on the Zipnami side of the distinction.
+    // Where the history lives is what its own section is for (design.md
+    // section 6.2), and the absence of location collection is a statement
+    // about what Zipnami itself collects (design.md section 2).
     await expect(
-      privacyDisclosurePage.firstPartySectionStating(
+      privacyDisclosurePage.sectionStating(
+        history,
         privacySelectors.browserLocalHistory,
       ),
     ).toHaveCount(1);
     await expect(
-      privacyDisclosurePage.firstPartySectionStating(
+      privacyDisclosurePage.sectionStating(
+        collectedInformation,
         privacySelectors.noLocationCollection,
       ),
     ).toHaveCount(1);
   });
 
-  test("the Zipnami section states that no identifier of its own is issued and no advertising identifier is stored", async ({
+  test("the disclosure states under 1. 取得する情報 that no identifier of its own is issued and no advertising identifier is stored", async ({
     privacyDisclosurePage,
   }) => {
     await privacyDisclosurePage.navigate();
@@ -217,40 +240,17 @@ test.describe("Issue #10: the privacy and attribution disclosure", () => {
     // advertising SDK supplies. A page denying only the first would leave the
     // second unanswered.
     await expect(
-      privacyDisclosurePage.firstPartySectionStating(
+      privacyDisclosurePage.sectionStating(
+        collectedInformation,
         privacySelectors.noOwnUserIdentifier,
       ),
     ).toHaveCount(1);
     await expect(
-      privacyDisclosurePage.firstPartySectionStating(
+      privacyDisclosurePage.sectionStating(
+        collectedInformation,
         privacySelectors.noStoredAdvertisingIdentifier,
       ),
     ).toHaveCount(1);
-  });
-
-  test("the disclosure offers a contact method a keyboard user can reach and operate", async ({
-    privacyDisclosurePage,
-  }) => {
-    await privacyDisclosurePage.navigate();
-
-    await expect(privacyDisclosurePage.contactLink()).toHaveCount(1);
-    await expect(privacyDisclosurePage.contactLink()).toBeVisible();
-
-    // A destination rather than a placeholder: without this, `href="#"` would
-    // satisfy "provides a contact method".
-    expect(await privacyDisclosurePage.contactDestination()).toMatch(
-      contactDestinationPattern,
-    );
-
-    await privacyDisclosurePage.focusContactLink();
-    await expect(privacyDisclosurePage.contactLink()).toBeFocused();
-
-    // Focus can be placed on an element that was taken out of the tab order,
-    // so the property that decides whether a keyboard user can arrive there
-    // unaided is read as well.
-    expect(await privacyDisclosurePage.contactLinkTabIndex()).toBeGreaterThan(
-      -1,
-    );
   });
 
   test("the screen showing an address credits Japan Post as the source of the postal data", async ({
@@ -294,9 +294,9 @@ test.describe("Issue #10: the privacy and attribution disclosure", () => {
     // Narrow layouts lose content by collapsing it away, so the parts a
     // visitor came for are checked to still be there rather than only that
     // nothing overflowed.
-    await expect(privacyDisclosurePage.firstPartySection()).toBeVisible();
-    await expect(privacyDisclosurePage.thirdPartySection()).toBeVisible();
-    await expect(privacyDisclosurePage.contactLink()).toBeVisible();
+    for (const name of privacyDisclosurePage.sectionHeadings) {
+      await expect(privacyDisclosurePage.section(name), name).toBeVisible();
+    }
     await expect(privacyDisclosurePage.japanPostCredit()).toBeVisible();
   });
 });

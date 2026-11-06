@@ -1,5 +1,8 @@
 import type { Page } from "@playwright/test";
-import { privacySelectors } from "../selectors/privacy-selectors.ts";
+import {
+  privacySelectors,
+  type PrivacySectionHeading,
+} from "../selectors/privacy-selectors.ts";
 import {
   narrowPhoneViewport,
   shellSelectors,
@@ -10,8 +13,8 @@ import {
  *
  * Separate from `privacy-page.ts`, which Issue #5 committed to hold one thing:
  * that a deep link to the route resolves at all. That file is locked by the
- * ATDD guard, and what this Issue adds — the sections, the denials, the
- * contact method — is a different subject rather than a correction of it.
+ * ATDD guard, and what this Issue adds — the sections and the denials — is a
+ * different subject rather than a correction of it.
  *
  * The Japan Post credit is reachable from here as well, even though it is not
  * on the privacy route alone. The Issue asks for it "in the application or
@@ -35,61 +38,42 @@ export const createPrivacyDisclosurePage = (page: Page) => {
   // the test can show the disclosure did not arrive as a second page title.
   const topLevelHeadings = () => page.getByRole("heading", { level: 1 });
 
-  const firstPartySection = () =>
-    page.getByRole("region", {
-      name: privacySelectors.firstPartySectionLabel,
-      exact: true,
-    });
-
-  const thirdPartySection = () =>
-    page.getByRole("region", {
-      name: privacySelectors.thirdPartySectionLabel,
-      exact: true,
-    });
+  // Figma's four section headings, in the page's order.
+  const sectionHeadings: readonly PrivacySectionHeading[] = Object.values(
+    privacySelectors.sectionHeadings,
+  );
 
   /**
-   * The Zipnami-storage section, when it states the given thing.
+   * The section a heading names, as a region.
+   * @param name - The section's heading, exactly.
+   */
+  const section = (name: PrivacySectionHeading) =>
+    page.getByRole("region", { name, exact: true });
+
+  /**
+   * The heading inside the section it names.
+   *
+   * Located inside the region rather than page-wide, so that it resolving at
+   * all shows the heading is that region's own — a region named by an
+   * `aria-label` that only repeats the words would not carry it.
+   * @param name - The section's heading, exactly.
+   */
+  const headingOfSection = (name: PrivacySectionHeading) =>
+    section(name).getByRole("heading", { name, exact: true });
+
+  /**
+   * The section, when it states the given thing.
    *
    * Filtering the section rather than locating the sentence keeps the
    * assertion off the markup: a text locator also matches every ancestor that
    * contains the text, so a count would measure wrappers. A section resolves
    * to exactly one element, so this resolves to one when the statement is
    * inside it and to nothing when it is not.
+   * @param name - The section's heading, exactly.
    * @param statement - What the section has to state.
    */
-  const firstPartySectionStating = (statement: RegExp) =>
-    firstPartySection().filter({ hasText: statement });
-
-  /**
-   * The third-party section, when it states the given thing.
-   * @param statement - What the section has to state.
-   */
-  const thirdPartySectionStating = (statement: RegExp) =>
-    thirdPartySection().filter({ hasText: statement });
-
-  const contactLink = () =>
-    main().getByRole("link", {
-      name: privacySelectors.contactLabel,
-      exact: true,
-    });
-
-  const contactDestination = () => contactLink().getAttribute("href");
-
-  const focusContactLink = () => contactLink().focus();
-
-  /*
-   * Whether the contact link is in the document's tab order.
-   *
-   * Focusing it proves only that focus can be put there, which is also true of
-   * an element removed from the tab order, so the property that decides
-   * reachability is read directly. A Tab-key traversal would have been the
-   * more direct measurement, but it answers a browser setting rather than an
-   * application contract: WebKit does not move Tab focus to links unless full
-   * keyboard access is switched on, which was measured across this suite's
-   * five projects before this file was written.
-   */
-  const contactLinkTabIndex = () =>
-    contactLink().evaluate((element) => element.tabIndex);
+  const sectionStating = (name: PrivacySectionHeading, statement: RegExp) =>
+    section(name).filter({ hasText: statement });
 
   const disclosureLink = () =>
     page.getByRole("link", {
@@ -134,14 +118,10 @@ export const createPrivacyDisclosurePage = (page: Page) => {
     main,
     heading,
     topLevelHeadings,
-    firstPartySection,
-    thirdPartySection,
-    firstPartySectionStating,
-    thirdPartySectionStating,
-    contactLink,
-    contactDestination,
-    focusContactLink,
-    contactLinkTabIndex,
+    sectionHeadings,
+    section,
+    headingOfSection,
+    sectionStating,
     disclosureLink,
     openDisclosureWithKeyboard,
     japanPostCredit,

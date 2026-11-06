@@ -1,4 +1,4 @@
-import { applicationCopy, figmaCopy } from "./figma-copy.ts";
+import { figmaCopy } from "./figma-copy.ts";
 
 /*
  * What the Issue #10 acceptance test locates the privacy and attribution
@@ -16,21 +16,21 @@ import { applicationCopy, figmaCopy } from "./figma-copy.ts";
  */
 export const privacySelectors = {
   /*
-   * The two sections the disclosure is divided into.
+   * The four sections the disclosure is divided into, by Figma's headings.
    *
-   * "It distinguishes data stored by Zipnami from data processed by
-   * third-party services" is a criterion about structure, not about wording,
-   * so it is held as two separately named regions rather than as one page of
-   * prose that happens to mention both. A region is how that structure reaches
-   * a screen reader (ui-design.md section 8), which is why the test may depend
-   * on it at all (ADR-0012).
+   * Each is held as a separately named region rather than as one page of
+   * prose, so that where a statement sits is something a test can read: a
+   * region is how a section reaches a screen reader (ui-design.md section 8),
+   * which is why the test may depend on it at all (ADR-0012). Each region is
+   * found by its heading's exact words.
    *
-   * Each region is found by its heading's exact words. Figma draws the
-   * page's layout but not these sections' wording, so they are the
-   * application's own (approved decision 1 on Issue #97).
+   * This replaces the earlier split into "data stored by Zipnami" and "data
+   * processed by third parties", and the contact link that came after them:
+   * the owner chose Figma's headings and moved contact to V2 (Issue #105),
+   * approved as an acceptance-test rewrite on Issue #97,
+   * https://github.com/kishimin/random-postal-code/issues/97#issuecomment-6670298264.
    */
-  firstPartySectionLabel: applicationCopy.privacyFirstPartyHeading,
-  thirdPartySectionLabel: applicationCopy.privacyThirdPartyHeading,
+  sectionHeadings: figmaCopy.privacySections,
 
   /*
    * The third parties the disclosure has to name.
@@ -79,9 +79,6 @@ export const privacySelectors = {
   noStoredAdvertisingIdentifier:
     /広告[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
 
-  /* The contact link, by its exact words (the application's own). */
-  contactLabel: applicationCopy.privacyContact,
-
   /*
    * The link that leads into the disclosure from the rest of the application.
    *
@@ -98,12 +95,6 @@ export const privacySelectors = {
   japanPostCredit: figmaCopy.attribution,
 } as const;
 
-/*
- * What a usable contact destination looks like.
- *
- * ui-design.md section 12 leaves the destination itself open, so this fixes
- * only that the link leads somewhere a visitor can actually reach — a mail
- * address or a page on the web. Without it, `href="#"` would satisfy "provides
- * a contact method".
- */
-export const contactDestinationPattern = /^(?:mailto:|https:\/\/)\S/;
+/** One of the disclosure's section headings. */
+export type PrivacySectionHeading =
+  (typeof privacySelectors.sectionHeadings)[keyof typeof privacySelectors.sectionHeadings];
