@@ -69,14 +69,20 @@ describe("CurrentResult", () => {
   test("states how many addresses the postal code corresponds to", () => {
     render(
       <CurrentResult
-        result={result}
+        result={{
+          postalCode: "5300001",
+          addresses: [
+            { prefecture: "大阪府", city: "大阪市北区", town: "梅田" },
+            { prefecture: "大阪府", city: "大阪市北区", town: "中之島" },
+          ],
+        }}
         onCopy={() => undefined}
         copyFeedback={""}
       />,
     );
 
     expect(
-      screen.getByText(postalGeneratorText.addressCount(1), { exact: false }),
+      screen.getByText("対応する住所 2件", { exact: false }),
     ).toBeInTheDocument();
   });
 

@@ -86,6 +86,9 @@ describe("PrivacyView", () => {
     // reaches Google from the moment a deployment supplies a key.
     expect(section).not.toHaveTextContent(/未実装|導入します/);
     expect(section).toHaveTextContent(/住所[^。]*Google[^。]*送信/);
+    // Each disclosure sits in the section it belongs to, not in all of them.
+    expect(section).not.toHaveTextContent(/AdSense|Analytics|アドセンス/i);
+    expect(section).not.toHaveTextContent(/履歴|位置情報/);
   });
 
   // Issue #92: design.md section 8 names Google Analytics among the services
@@ -110,6 +113,9 @@ describe("PrivacyView", () => {
       /欧州経済領域[^。]*英国[^。]*スイス[^。]*同意[^。]*Cookie/,
     );
     expect(section).toHaveTextContent(/オプトアウト/);
+    // Each disclosure sits in the section it belongs to, not in all of them.
+    expect(section).not.toHaveTextContent(/Google\s*(?:Maps|マップ)/i);
+    expect(section).not.toHaveTextContent(/履歴|位置情報/);
   });
 
   test("4. 履歴 documents that the history is saved in the browser and never sent to the server", () => {
@@ -137,6 +143,9 @@ describe("PrivacyView", () => {
     expect(section).toHaveTextContent(
       /履歴[^。]*(?:サーバー|サーバ)[^。]*送信し(?:ません|ない)/,
     );
+    // Each disclosure sits in the section it belongs to, not in all of them.
+    expect(section).not.toHaveTextContent(/AdSense|Analytics|アドセンス/i);
+    expect(section).not.toHaveTextContent(/Google\s*(?:Maps|マップ)|Cookie/i);
   });
 
   // The contact section is V2 work (Issue #105), so the MVP page carries no

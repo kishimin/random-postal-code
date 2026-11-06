@@ -16,9 +16,8 @@ describe("GeneratorAnnouncer", () => {
       />,
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(screen.getByRole("status").textContent?.trim()).toBe(
       postalGeneratorText.failureAnnouncement.offline,
-      { normalizeWhitespace: true },
     );
     expect(screen.getByText(postalGeneratorText.failureHeading)).toBeVisible();
   });

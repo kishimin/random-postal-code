@@ -708,9 +708,11 @@ describe("the generator experience", () => {
       await screen.findByRole("button", { name: "ランダム生成する" }),
     );
 
-    expect(
-      await screen.findByRole("button", { name: "ランダム生成する" }),
-    ).toBeDisabled();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "ランダム生成する" }),
+      ).toBeDisabled(),
+    );
 
     resolve(firstResult);
     expect(await currentResultText("100-0001")).toBeInTheDocument();
