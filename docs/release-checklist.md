@@ -59,13 +59,21 @@ under the category they support.
       cannot read it (Large test; the CORS rules themselves are held by Medium
       Issue #11).
 
-## Pending deployment
+## Deployed site
 
-These need the deployed site, so they stay open until Issue #19 is deployed.
+These need the deployed site. They were checked by hand on
+https://zipnami.pages.dev after the deploy of main 0d93e6c on 2026-11-05
+(see Evidence).
 
-- [ ] #19: /privacy is publicly accessible on the deployed site.
-- [ ] #19: The Japan Post attribution is publicly accessible on the deployed site.
-- [ ] #19: The deployed Web SDKs match what /privacy discloses.
+- [x] /privacy is publicly accessible on the deployed site: a direct request
+      answers 200 and shows the Zipnami and third-party sections.
+- [x] The Japan Post attribution is publicly accessible on the deployed site,
+      in the footer of every screen.
+- [x] The deployed Web SDKs match what /privacy discloses: the page contacts
+      only its own assets, the Worker, Google Maps (www.google.com/maps/embed),
+      Google AdSense (googlesyndication, doubleclick, adtrafficquality), and
+      Google Analytics (googletagmanager, google-analytics), and /privacy names
+      Google Maps, Google AdSense, the consent platform, and Google Analytics.
 
 ## Evidence
 
@@ -78,3 +86,10 @@ The ticks above rest on these runs of the Large test and the Medium suite.
   test passed 20 of 20 (10 on Chromium, 10 on WebKit) in the Frontend E2E
   (Large) job,
   https://github.com/kishimin/random-postal-code/actions/runs/40538230977
+
+The Deployed site ticks rest on this production deploy and a check of the
+live site after it.
+
+- Production deploy of main 0d93e6c (Worker and Pages), 2026-11-05 UTC, with
+  the production smoke check passing 3 of 3:
+  https://github.com/kishimin/random-postal-code/actions/runs/42017086081

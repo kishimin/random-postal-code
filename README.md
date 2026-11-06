@@ -292,7 +292,7 @@ Acceptance tests live in `acceptance/`. They are fixed before the implementation
 
 ## Deployment
 
-The frontend and the Worker deploy through the manual `deploy.yml` workflow, only from `main`, and roll back separately through `rollback.yml`. Every production value comes from the `production` GitHub Environment, so none is committed. [docs/deployment.md](./docs/deployment.md) has the one-time setup, the deploy and rollback commands, and the smoke check. [docs/release-checklist.md](./docs/release-checklist.md) records the checks run before release.
+The frontend and the Worker deploy through the manual `deploy.yml` workflow, only from `main`, and roll back separately through `rollback.yml`. Every production value comes from the `production` GitHub Environment, so none is committed. [docs/deployment.md](./docs/deployment.md) has the one-time setup, the deploy and rollback commands, and the production tests (`e2e:production`), which run after each deploy: one happy-path journey on the deployed site (generating, the map, the Google Maps links, copying, history after a reload, and `/privacy`) plus the `/privacy` deep link, with the advertising, consent, and Analytics hosts blocked. [docs/release-checklist.md](./docs/release-checklist.md) records the checks run before release.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
