@@ -68,6 +68,24 @@ describe("HistoryList", () => {
     expect(screen.getByText("東京都千代田区千代田")).toBeInTheDocument();
   });
 
+  // The list is not mounted while closed, so there is nothing to point at
+  // until it opens. The chevron beside the label is decoration, so the name
+  // stays the label alone.
+  test("points the control at the opened list, keeping its name", async () => {
+    const user = userEvent.setup();
+    render(<HistoryList entries={[firstEntry]} />);
+    const control = screen.getByRole("button", { name: "履歴を展開" });
+    expect(control).not.toHaveAttribute("aria-controls");
+
+    await user.click(control);
+
+    // The outer list is the history; each entry nests its own address list.
+    const [historyList] = screen.getAllByRole("list");
+    expect(historyList?.id).not.toBe("");
+    expect(control).toHaveAttribute("aria-controls", historyList?.id);
+    expect(control).toHaveAccessibleName("履歴を展開");
+  });
+
   test("closes the list again when the control is activated a second time", async () => {
     const user = userEvent.setup();
     render(<HistoryList entries={[firstEntry]} />);

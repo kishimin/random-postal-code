@@ -149,7 +149,7 @@ Copy success is announced in a polite status region and does not move focus. Cop
 
 Each history entry stores the canonical `PostalCode`, all addresses, and no server identifier. New successful generations are prepended, duplicates are retained, and entries beyond 20 are removed from the end. Corrupt or unsupported persisted data is discarded or migrated without blocking generation.
 
-History entries are initially collapsed to postal code plus primary address when space is constrained, but every stored address remains reachable through an explicit expand control. Expanding history must not change the current map selection unless the user explicitly chooses a map action from that entry.
+The history is one list, closed until the `履歴を展開` control opens it. The control keeps that visible label and reports its state with `aria-expanded` (and `aria-controls` once the list is mounted), and a chevron beside the label turns over while the list is open. An opened entry shows its postal code and every stored address, so every stored address stays reachable. Expanding history must not change the current map selection unless the user explicitly chooses a map action from that entry.
 
 ## 6. Android V2 Boundary
 
