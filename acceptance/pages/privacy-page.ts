@@ -15,6 +15,7 @@ export const createPrivacyPage = (page: Page) => {
   const heading = () =>
     page.getByRole("heading", {
       name: shellSelectors.privacyHeading,
+      exact: true,
       level: 1,
     });
 

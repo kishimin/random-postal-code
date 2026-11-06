@@ -1,5 +1,6 @@
 import type { Page, Route } from "@playwright/test";
 import type { Address, PostalCode } from "@zipnami/shared";
+import { figmaCopy } from "../selectors/figma-copy.ts";
 import {
   anyDisplayedPostalCode,
   displayedPostalCode,
@@ -179,25 +180,89 @@ export const createPostalCodeGeneratorPage = (page: Page) => {
 
   const main = () => page.getByRole("main");
 
+  /*
+   * The start screen's h1: Figma's headline, which reads differently on a
+   * phone. The layout shows one of them, so exactly one name is expected at
+   * any width.
+   */
   const brandingHeading = () =>
-    page.getByRole("heading", { name: generatorSelectors.siteName, level: 1 });
+    page
+      .getByRole("heading", {
+        name: figmaCopy.startHeadline.regular,
+        exact: true,
+        level: 1,
+      })
+      .or(
+        page.getByRole("heading", {
+          name: figmaCopy.startHeadline.compact,
+          exact: true,
+          level: 1,
+        }),
+      );
 
-  // A paragraph rather than any text carrying the word: the generate action's
-  // label contains it too, and an action is not an explanation.
+  // Figma writes the explanation once per frame width, so the one the layout
+  // shows at this width is the one a visitor reads.
   const explanation = () =>
     main()
-      .getByRole("paragraph")
-      .filter({ hasText: generatorSelectors.explanation })
-      .first();
+      .getByText(figmaCopy.startBody.wide, { exact: true })
+      .or(main().getByText(figmaCopy.startBody.regular, { exact: true }))
+      .or(main().getByText(figmaCopy.startBody.compact, { exact: true }))
+      .filter({ visible: true });
+
+  const buttonNamed = (name: string) =>
+    page.getByRole("button", { name, exact: true });
+
+  // What tells the screen's states apart, as a visitor sees them: Figma's
+  // API error panel, and a current result showing a postal code.
+  const failureShown = () =>
+    page.getByText(figmaCopy.apiErrorHeading, { exact: true });
+
+  const resultShown = () =>
+    page
+      .getByTestId("result-region")
+      .filter({ hasText: anyDisplayedPostalCode });
+
+  const wholePage = () => page.locator("body");
+
+  /*
+   * The generate action, under the label Figma gives it in the current state:
+   * ランダム生成する before any result, もう一度、波に乗る once a result is
+   * shown, and 再試行する while the API error is shown (with or without an
+   * earlier result behind it). Each label is tied to its state, so the right
+   * words in the wrong state fail as surely as the wrong words.
+   *
+   * The state is read from the screen rather than tracked here, because some
+   * tests reach it without this Page Object's stub (a real Worker, an
+   * offline network, a malformed body). A disabled action keeps its label
+   * while it loads, so it is found under the state it was activated from.
+   */
+  const startAction = () =>
+    wholePage()
+      .filter({ hasNot: failureShown() })
+      .filter({ hasNot: resultShown() })
+      .getByRole("button", { name: figmaCopy.startAction, exact: true });
+
+  const regenerateAction = () =>
+    wholePage()
+      .filter({ hasNot: failureShown() })
+      .filter({ has: resultShown() })
+      .getByRole("button", { name: figmaCopy.regenerateAction, exact: true });
+
+  const retryAction = () =>
+    wholePage()
+      .filter({ has: failureShown() })
+      .getByRole("button", { name: figmaCopy.retryAction, exact: true });
 
   const generateAction = () =>
-    page.getByRole("button", { name: generatorSelectors.generateAction });
+    startAction().or(regenerateAction()).or(retryAction());
 
-  const copyAction = () =>
-    page.getByRole("button", { name: generatorSelectors.copyAction });
+  const copyAction = () => buttonNamed(generatorSelectors.copyAction);
 
   const navigationLink = () =>
-    page.getByRole("link", { name: generatorSelectors.navigationLink });
+    page.getByRole("link", {
+      name: generatorSelectors.navigationLink,
+      exact: true,
+    });
 
   /*
    * Resolves to the current-result region when it shows this postal code, and
@@ -267,6 +332,10 @@ export const createPostalCodeGeneratorPage = (page: Page) => {
     navigate,
     brandingHeading,
     explanation,
+    failureShown,
+    startAction,
+    regenerateAction,
+    retryAction,
     generateAction,
     copyAction,
     navigationLink,

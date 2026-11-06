@@ -27,6 +27,7 @@ export const createPrivacyDisclosurePage = (page: Page) => {
   const heading = () =>
     page.getByRole("heading", {
       name: shellSelectors.privacyHeading,
+      exact: true,
       level: 1,
     });
 
@@ -37,11 +38,13 @@ export const createPrivacyDisclosurePage = (page: Page) => {
   const firstPartySection = () =>
     page.getByRole("region", {
       name: privacySelectors.firstPartySectionLabel,
+      exact: true,
     });
 
   const thirdPartySection = () =>
     page.getByRole("region", {
       name: privacySelectors.thirdPartySectionLabel,
+      exact: true,
     });
 
   /**
@@ -65,7 +68,10 @@ export const createPrivacyDisclosurePage = (page: Page) => {
     thirdPartySection().filter({ hasText: statement });
 
   const contactLink = () =>
-    main().getByRole("link", { name: privacySelectors.contactLabel });
+    main().getByRole("link", {
+      name: privacySelectors.contactLabel,
+      exact: true,
+    });
 
   const contactDestination = () => contactLink().getAttribute("href");
 
@@ -86,7 +92,10 @@ export const createPrivacyDisclosurePage = (page: Page) => {
     contactLink().evaluate((element) => element.tabIndex);
 
   const disclosureLink = () =>
-    page.getByRole("link", { name: privacySelectors.disclosureLink });
+    page.getByRole("link", {
+      name: privacySelectors.disclosureLink,
+      exact: true,
+    });
 
   // press() focuses the control and sends real key events, which a control
   // that only answers a mouse click does not act on.
@@ -102,7 +111,7 @@ export const createPrivacyDisclosurePage = (page: Page) => {
    * visitor can read the credit, not how many elements contain it.
    */
   const japanPostCredit = () =>
-    page.getByText(privacySelectors.japanPostCredit).first();
+    page.getByText(privacySelectors.japanPostCredit, { exact: true }).first();
 
   const resizeToNarrowPhone = () => page.setViewportSize(narrowPhoneViewport);
 

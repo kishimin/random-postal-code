@@ -125,7 +125,10 @@ export const createAdvertisingPage = (page: Page) => {
    * that produce them are not (ADR-0012).
    */
   const advertisingRegion = () =>
-    page.getByRole("region", { name: advertisingSelectors.regionLabel });
+    page.getByRole("region", {
+      name: advertisingSelectors.regionLabel,
+      exact: true,
+    });
 
   const adSlot = () => advertisingRegion().locator(adSlotSelector);
 
@@ -139,10 +142,10 @@ export const createAdvertisingPage = (page: Page) => {
    * state the Issue asks for.
    * @param name - The accessible name of the application action to look for.
    */
-  const applicationActionInsideAdvertisingRegion = (name: RegExp) =>
+  const applicationActionInsideAdvertisingRegion = (name: string) =>
     advertisingRegion()
-      .getByRole("button", { name })
-      .or(advertisingRegion().getByRole("link", { name }));
+      .getByRole("button", { name, exact: true })
+      .or(advertisingRegion().getByRole("link", { name, exact: true }));
 
   /** Every control a visitor can activate inside the advertising region. */
   const interactiveControlsInsideAdvertisingRegion = () =>

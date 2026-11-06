@@ -1,3 +1,5 @@
+import { figmaCopy } from "./figma-copy.ts";
+
 /*
  * What the Issue #97 acceptance tests expect of the Figma visual design.
  *
@@ -14,21 +16,24 @@
  */
 
 /**
- * The eleven colors ui-design.md section 9.2 fixes, keyed by the role that
- * section gives each one.
+ * The twelve colors ui-design.md section 9.2 fixes, keyed by the role that
+ * section gives each one. Re-read from Figma on 2026-11-05: the brand accent
+ * changed from `#148CC7` to `#0F6E9E` to meet AA, and the advertising slot
+ * gained its own surface (approved on Issue #97).
  */
 export const designColors = {
   pageSurface: "#FAFBFA",
   cardSurface: "#FFFFFF",
   textPrimary: "#091F33",
   textSecondary: "#526B78",
-  brandAccent: "#148CC7",
+  brandAccent: "#0F6E9E",
   accentSurface: "#E5F7F7",
   errorText: "#CC292E",
   errorSurface: "#FFF0F0",
   addressCardBorder: "#D1E3E5",
   mapPanelSurface: "#E8EDE3",
   mapPin: "#E04D40",
+  adSurface: "#F5F5F0",
 } as const;
 
 /** One size of the section 9.2 type scale, in CSS pixels. */
@@ -123,8 +128,8 @@ export const japaneseCapableFamilies: readonly string[] = [
 
 /** The literal strings section 9.2 fixes on every screen. */
 export const fixedCopy = {
-  wordmark: "ZIPNAMI",
-  footer: "© kishimin 2026",
+  wordmark: figmaCopy.wordmark,
+  footer: figmaCopy.copyright,
 } as const;
 
 /** The viewport widths the Issue names for each Figma frame. */
@@ -162,18 +167,17 @@ export type DesignScreen = {
   readonly bodies: readonly DesignText[];
 };
 
-// Figma writes a line break inside a text node as "\n". The tests compare
-// copy with all white space removed, so where the break falls (a <br>, a
-// block, or a wrap) is the layout's choice, not part of the copy.
-const startHeadlineDesktop = "知らない場所へ、\n郵便番号の波に乗って。";
-const startBodyDesktop =
-  "ボタンを押すと、日本全国からひとつの郵便番号を選びます。\n目的地を決めない、小さな旅を始めましょう。";
-const startHeadlineMobile = "知らない場所へ、\n波に乗って。";
-const startBodyMobile = "日本全国から、ひとつの郵便番号を選びます。";
-const apiErrorHeadline = "場所を取得できませんでした";
-const apiErrorBody = "通信状態を確認して、もう一度お試しください。";
-const notFoundHeadline = "ページが見つかりません";
-const notFoundBody = "URLが正しいか確認するか、トップページへ戻ってください。";
+// The copy lives in figma-copy.ts, with the node of each string. The tests
+// compare copy with all white space removed, so where a Figma line break
+// falls (a <br>, a block, or a wrap) is the layout's choice, not the copy's.
+const startHeadlineDesktop = figmaCopy.startHeadline.regular;
+const startBodyDesktop = figmaCopy.startBody.wide;
+const startHeadlineMobile = figmaCopy.startHeadline.compact;
+const startBodyMobile = figmaCopy.startBody.compact;
+const apiErrorHeadline = figmaCopy.apiErrorHeading;
+const apiErrorBody = figmaCopy.apiErrorBody;
+const notFoundHeadline = figmaCopy.notFoundHeading;
+const notFoundBody = figmaCopy.notFoundBody;
 
 /*
  * The postal code every Figma result frame shows (#2:23, #4:18, #6:19), with
@@ -217,7 +221,7 @@ export const designScreens: readonly DesignScreen[] = [
     node: "11:3",
     state: "result",
     viewport: designViewports.desktop,
-    headlines: [{ node: "2:20", text: "波が運んできた場所" }],
+    headlines: [{ node: "2:20", text: figmaCopy.resultHeading }],
     bodies: [{ node: "2:25", text: "この郵便番号に対応する住所 3件" }],
   },
   {
@@ -230,7 +234,7 @@ export const designScreens: readonly DesignScreen[] = [
     bodies: [
       {
         node: "4:6",
-        text: "日本全国からひとつの郵便番号をランダムに選びます。",
+        text: figmaCopy.startBody.regular,
       },
     ],
   },
@@ -240,7 +244,7 @@ export const designScreens: readonly DesignScreen[] = [
     node: "11:5",
     state: "result",
     viewport: designViewports.tablet,
-    headlines: [{ node: "4:16", text: "波が運んできた場所" }],
+    headlines: [{ node: "4:16", text: figmaCopy.resultHeading }],
     bodies: [{ node: "4:20", text: "対応する住所 3件" }],
   },
   {
@@ -260,7 +264,7 @@ export const designScreens: readonly DesignScreen[] = [
     node: "11:7",
     state: "result",
     viewport: designViewports.mobile,
-    // The mobile result frame has no "波が運んできた場所"; its headline is the
+    // The mobile result frame shows no "波が運んできた場所"; its headline is the
     // postal code itself, at the mobile display size (34px; Figma gives this
     // node no line height, so none is required).
     headlines: [
@@ -321,16 +325,3 @@ export const designScreens: readonly DesignScreen[] = [
     bodies: [{ node: "27:119", text: notFoundBody }],
   },
 ];
-
-/**
- * A six-digit hex color as the `rgb(r, g, b)` string `getComputedStyle`
- * reports for an opaque color.
- * @param hex - A color such as `#FAFBFA`.
- */
-export const computedRgbOf = (hex: string) => {
-  const value = hex.replace(/^#/, "");
-  const channel = (offset: number) =>
-    Number.parseInt(value.slice(offset, offset + 2), 16);
-
-  return `rgb(${channel(0)}, ${channel(2)}, ${channel(4)})`;
-};

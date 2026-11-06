@@ -1,6 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
 import { chromeSelectors, unknownPath } from "../selectors/chrome-selectors.ts";
-import { failureText } from "../selectors/accessibility-selectors.ts";
 import {
   designViewports,
   figmaResult,
@@ -8,10 +7,10 @@ import {
 } from "../selectors/figma-visual-design-selectors.ts";
 import {
   displayedPostalCode,
-  generatorSelectors,
   randomEndpointPattern,
 } from "../selectors/generator-selectors.ts";
 import { refuseLiveThirdPartyRequests } from "./dependency-failure-page.ts";
+import { createPostalCodeGeneratorPage } from "./postal-code-generator-page.ts";
 
 /**
  * How one piece of text is painted, as the browser computed it.
@@ -55,8 +54,11 @@ const responseHeaders = {
 /**
  * Page Object for the Figma visual design of Issue #97.
  *
- * The Issue's criteria are about what a visitor sees — which colors, which
- * sizes, which words — so this reads computed styles and rendered text. It
+ * The Issue's criteria it serves are the words a visitor reads and whether
+ * they meet AA contrast, so this reads rendered text and the colors that
+ * contrast is computed from. Which colors and sizes the design uses is held
+ * by visual regression, manual review, and Storybook instead (approved on
+ * Issue #97). It
  * never reads a class name or the markup's shape: a headline is found by the
  * words it shows, not by its tag, so the implementation is free to choose the
  * element (ADR-0012 forbade style assertions; ADR-0013 and ADR-0015 superseded
@@ -69,29 +71,23 @@ const responseHeaders = {
  * @param page - The Playwright page driving the browser.
  */
 export const createFigmaVisualDesignPage = (page: Page) => {
+  const generator = createPostalCodeGeneratorPage(page);
+
   const main = () => page.getByRole("main");
 
   const banner = () => page.getByRole("banner");
 
   const contentInfo = () => page.getByRole("contentinfo");
 
-  const generateAction = () =>
-    page
-      .getByRole("button", { name: generatorSelectors.generateAction })
-      .first();
+  // The generate action under the label Figma gives it in the current state
+  // (the Issue #6 Page Object chooses it).
+  const generateAction = () => generator.generateAction();
 
   const backToGeneratorLink = () =>
-    page.getByRole("link", { name: chromeSelectors.backToGenerator });
-
-  /*
-   * The list holding the current result's addresses.
-   *
-   * Located through the result region the Issue #6 Page Object already uses
-   * (approved on Issue #7), so the history list further down main is never
-   * mistaken for the result card.
-   */
-  const resultAddressList = () =>
-    main().getByTestId("result-region").getByRole("list").first();
+    page.getByRole("link", {
+      name: chromeSelectors.backToGenerator,
+      exact: true,
+    });
 
   // The control each screen's Figma "Primary Button" stands for: the generate
   // action on the generator, and the way back on the not-found screen.
@@ -147,7 +143,10 @@ export const createFigmaVisualDesignPage = (page: Page) => {
     if (state === "not-found") {
       await page.goto(unknownPath);
       await page
-        .getByRole("heading", { name: chromeSelectors.notFoundHeading })
+        .getByRole("heading", {
+          name: chromeSelectors.notFoundHeading,
+          exact: true,
+        })
         .waitFor();
       return;
     }
@@ -171,7 +170,7 @@ export const createFigmaVisualDesignPage = (page: Page) => {
     }
     if (state === "api-error") {
       await generateAction().click();
-      await main().getByText(failureText).first().waitFor();
+      await generator.failureShown().waitFor();
     }
   };
 
@@ -324,7 +323,6 @@ export const createFigmaVisualDesignPage = (page: Page) => {
     main,
     banner,
     contentInfo,
-    resultAddressList,
     primaryActionOf,
     findText,
     surfaceOf,

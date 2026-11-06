@@ -25,7 +25,7 @@ import { typeScale } from "./selectors/figma-visual-design-selectors.ts";
  *
  *   AC-1  `docs/ui-design.md` records the Japanese-capable font stack, and how
  *         the section 9.2 tokens map to theme code.
- *   AC-2  `src/theme/globals.css` defines a token for each of the eleven
+ *   AC-2  `src/theme/globals.css` defines a token for each of the twelve
  *         section 9.2 colors and for the section 9.2 type scale. Components
  *         use those tokens, not raw hex values or one-off sizes.
  *
@@ -100,7 +100,7 @@ const componentSources = readdirSync(frontendSource, { recursive: true })
   .filter((file) => !file.endsWith(".d.ts"));
 
 describe("Issue #97: Figma design tokens and their documented mapping", () => {
-  test("AC-2 globals.css defines a color token for each of the eleven section 9.2 colors", () => {
+  test("AC-2 globals.css defines a color token for each of the twelve section 9.2 colors", () => {
     expect(
       colorsWithoutToken(tokens),
       `globals.css @theme should declare a --color-* token holding each section 9.2 color. Color tokens found: ${JSON.stringify(colorTokensOf(tokens))}`,

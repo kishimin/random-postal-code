@@ -1,3 +1,5 @@
+import { figmaCopy } from "./figma-copy.ts";
+
 /*
  * What the Issue #9 acceptance test locates the advertising boundary by.
  *
@@ -15,10 +17,9 @@ export const advertisingSelectors = {
    * ui-design.md section 7 requires "a dedicated region labeled as
    * advertising", and section 8 forbids conveying advertising status by colour
    * alone. Together those make a readable label the contract, so the label is
-   * what the test locates by. Which of these words the implementation picks is
-   * still its own choice.
+   * what the test locates by: Figma's exact label (approved on Issue #97).
    */
-  regionLabel: /広告|スポンサー|Advertisement|Sponsored/i,
+  regionLabel: figmaCopy.advertisingLabel,
 } as const;
 
 /*
