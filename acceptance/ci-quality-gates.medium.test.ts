@@ -660,14 +660,56 @@ describe("Issue #18: repository quality gates in CI", () => {
       const events = workflowEvents(workflow.on);
       const label = path.basename(file);
 
-      // pull_request_target and workflow_run run with secrets on behalf of
-      // code the repository has not reviewed.
+      // pull_request_target runs with secrets on behalf of code the
+      // repository has not reviewed. workflow_run does too when the workflow
+      // it follows runs for pull requests, so it may only follow workflows
+      // that run solely for pushes to main (approved on Issue #108).
       expect({
         label,
-        privilegedTriggers: events.filter((event) =>
-          ["pull_request_target", "workflow_run"].includes(event),
+        privilegedTriggers: events.filter(
+          (event) => event === "pull_request_target",
         ),
       }).toEqual({ label, privilegedTriggers: [] });
+
+      if (events.includes("workflow_run")) {
+        const followed =
+          (workflow.on as Record<string, { workflows?: string[] } | undefined>)
+            .workflow_run?.workflows ?? [];
+        expect({ label, followsNamedWorkflows: followed.length > 0 }).toEqual({
+          label,
+          followsNamedWorkflows: true,
+        });
+
+        for (const name of followed) {
+          const source = workflowFiles()
+            .map(readWorkflow)
+            .find(
+              (candidate) =>
+                (candidate as Workflow & { name?: string }).name === name,
+            );
+          const pushBranches =
+            source === undefined
+              ? undefined
+              : (
+                  source.on as Record<
+                    string,
+                    { branches?: string[] } | undefined
+                  >
+                ).push?.branches;
+
+          expect({
+            label,
+            follows: name,
+            triggers: source === undefined ? [] : workflowEvents(source.on),
+            pushBranches,
+          }).toEqual({
+            label,
+            follows: name,
+            triggers: ["push"],
+            pushBranches: ["main"],
+          });
+        }
+      }
 
       if (!events.includes("pull_request")) continue;
 
