@@ -2,7 +2,11 @@ import type { Page, Request, Response } from "@playwright/test";
 import type { Address } from "@zipnami/shared";
 import { advertisingRequestPattern } from "../selectors/advertising-selectors.ts";
 import { randomEndpointPattern } from "../selectors/generator-selectors.ts";
-import { mapAddressQuery, mapSelectors } from "../selectors/map-selectors.ts";
+import {
+  externalMapHostSelector,
+  mapAddressQuery,
+  mapSelectors,
+} from "../selectors/map-selectors.ts";
 import { createAccessibilityPage } from "./accessibility-page.ts";
 import { createAddressMapPage } from "./address-map-page.ts";
 import { createDependencyFailurePage } from "./dependency-failure-page.ts";
@@ -159,10 +163,12 @@ export const createWebMvpJourneyPage = (page: Page) => {
     resultMapSelectionAction(address).click();
 
   const resultExternalMapLinks = (address: Address) =>
-    resultAddressEntry(address).getByRole("link", {
-      name: mapSelectors.externalMapLink(address),
-      exact: true,
-    });
+    resultAddressEntry(address)
+      .getByRole("link", {
+        name: mapSelectors.externalMapLink(address),
+        exact: true,
+      })
+      .and(page.locator(externalMapHostSelector));
 
   /*
    * The addresses this result's external Google Maps links ask for, decoded

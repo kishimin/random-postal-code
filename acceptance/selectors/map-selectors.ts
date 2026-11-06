@@ -32,6 +32,17 @@ export const mapSelectors = {
 } as const;
 
 /*
+ * Where an external map link has to lead: a Google host.
+ *
+ * The links are found by their exact names, and this narrows them to the ones
+ * whose `href` points at Google. A name alone would also accept a link that
+ * hands the visitor to another map service, which the Issue #8 criterion of an
+ * external Google Maps link rules out. The rewrite approved on Issue #97 kept
+ * what each test checks, so this host check stays alongside the exact name.
+ */
+export const externalMapHostSelector = 'a[href*="google."]';
+
+/*
  * Every request the embedded map makes to Google.
  *
  * The acceptance test answers these itself. design.md section 7 calls Maps an

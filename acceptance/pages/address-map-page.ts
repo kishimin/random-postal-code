@@ -1,6 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 import type { Address } from "@zipnami/shared";
 import {
+  externalMapHostSelector,
   googleMapsRequestPattern,
   mapAddressQuery,
   mapSelectors,
