@@ -18,10 +18,10 @@ The Web UI owns presentation, client state, browser-local history, map actions, 
 
 ### 3.1 Web Routes
 
-| Route      | Page      | Purpose                                                                       |
-| ---------- | --------- | ----------------------------------------------------------------------------- |
-| `/`        | Generator | Generate, inspect, copy, map, and revisit results                             |
-| `/privacy` | Privacy   | Explain first-party storage, third-party processing, attribution, and contact |
+| Route      | Page      | Purpose                                                                |
+| ---------- | --------- | ---------------------------------------------------------------------- |
+| `/`        | Generator | Generate, inspect, copy, map, and revisit results                      |
+| `/privacy` | Privacy   | Explain what is collected, why, advertising and analytics, and history |
 
 Two further destinations have no route of their own.
 
@@ -107,7 +107,7 @@ type UiError =
 +------------------------------------------------------+
 | Reserved advertisement region                       |
 +------------------------------------------------------+
-| Japan Post attribution | Privacy | Contact           |
+| Japan Post attribution | Privacy | © kishimin 2026   |
 +------------------------------------------------------+
 ```
 
@@ -223,7 +223,7 @@ The Figma file fixes these values per screen; recording them here makes that exi
 
 **Where Figma is not taken literally** (owner decisions on Issue #97, 2026-11-05):
 
-- The privacy page (row 17) takes its layout and section headings from Figma, but its body is the application's own accurate disclosure (section 7): the Figma body names no service, gives no contact, and promises a history deletion the application does not have.
+- The privacy page (row 17) takes its layout and its four section headings from Figma (`1. 取得する情報`, `2. 利用目的`, `3. 広告とアクセス解析`, `4. 履歴`), but the sentences under them are the application's own accurate disclosure (section 7), moved under the matching heading: the Figma body names no service and promises a history deletion the application does not have. Figma's `5. お問い合わせ` is not in the MVP; a contact section is V2 work (Issue #105). Owner decision on Issue #97, 2026-11-06.
 - `地図に表示` and `Google マップで開く` repeat on every address in Figma. Their visible labels are Figma's, and their accessible names include the address (for example `沖縄県宜野湾市大山 1丁目を地図に表示`), so a screen reader can tell them apart (section 8).
 - The history's `履歴を展開` opens the list. An opened entry shows every address of its postal code, so every stored address stays reachable (section 5).
 - `広告掲載エリア` inside the advertising slot is a placeholder in the mock, not copy; the slot shows the ad, or collapses (section 7).
@@ -274,7 +274,7 @@ Sizes the Figma nodes use that section 9.2 does not list are tokens too, so a co
 
 **Contrast.** White (`#FFFFFF`) on the brand color (`#0F6E9E`) is 5.61:1, and the brand color on the page surface (`#FAFBFA`) is 5.41:1, so both pass WCAG 2.2 AA (1.4.3) for normal text. A primary action's label and a small eyebrow therefore use the sizes and the color Figma draws; no departure is needed for contrast.
 
-**Wordmark and footer.** The wordmark is the markup text `Zipnami` rendered upper-case by CSS (`ZIPNAMI`), so the header link keeps the accessible name the application already had. The footer shows `© kishimin 2026` as its own line on every screen, including the global error screen, whose Figma frame draws no wordmark but whose acceptance criterion requires one.
+**Wordmark and footer.** The wordmark is the markup text `ZIPNAMI`, Figma's literal, so the header link's accessible name is the word a visitor reads. The footer shows `© kishimin 2026` as its own line on every screen, including the global error screen, whose Figma frame draws no wordmark but whose acceptance criterion requires one.
 
 ## 10. Responsive Verification
 
@@ -322,7 +322,7 @@ The UI foundation Issues resolve:
 
 - the component library, if any;
 - browser persistence adapters and version keys;
-- per-screen Japanese copy (left to the Figma nodes in section 9.1) and the contact destination;
+- per-screen Japanese copy (left to the Figma nodes in section 9.1);
 - clipboard output with or without the display hyphen; and
 - SDK-specific empty-ad and consent presentation.
 

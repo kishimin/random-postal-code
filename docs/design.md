@@ -158,7 +158,7 @@ Google Maps, AdSense, Google Analytics, and consent services are optional depend
 
 ## 8. Privacy and Accessibility
 
-`/privacy` distinguishes data stored by Zipnami from data processed by Google Maps, AdSense, Google Analytics, and consent services. It documents browser-local history, the absence of location collection, Japan Post attribution, and a contact method.
+`/privacy` is divided into the four sections of its Figma frame: what is collected, what it is used for, advertising and analytics, and history. It names Google Maps, AdSense, Google Analytics, and consent services, and documents browser-local history, the absence of location collection, and Japan Post attribution. A contact section is V2 work (Issue #105).
 
 The Web uses semantic HTML, keyboard-operable controls, visible focus, meaningful names, and appropriate announcements for dynamic results and errors. State is not conveyed by color alone. Advertising areas are distinguishable from application content.
 
