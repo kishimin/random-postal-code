@@ -11,10 +11,11 @@ GitHub Actions workflow:
 | `.github/workflows/deploy.yml`   | Verifies settings, deploys the Worker and/or the Pages site, then runs the production tests |
 | `.github/workflows/rollback.yml` | Restores an earlier Worker version or an earlier Pages deployment                           |
 
-Both run only when started by hand (`workflow_dispatch`). Their jobs run
-only from `main`, so code that hasn't been reviewed and merged can't reach
-production. Both share one concurrency group, so a deploy and a rollback
-never overlap.
+`deploy.yml` runs automatically after every merge (see "Automatic deploys"
+below) and can also be started by hand. `rollback.yml` runs only by hand.
+Their jobs run only from `main`, so code that hasn't been reviewed and
+merged can't reach production. Both share one concurrency group, so a
+deploy and a rollback never overlap.
 
 ## One-time setup
 
@@ -133,7 +134,45 @@ tests visit. The two can't drift apart.
    - After the first deploy with the ID, open the production site and
      confirm the visit appears in the property's **Realtime** report.
 
-## Deploying
+7. Create a Discord webhook for the channel that should hear about failed
+   deploys, and set its URL as the **repository** secret
+   `ZIPNAMI_DISCORD_WEBHOOK_URL` (Settings › Secrets and variables ›
+   Actions). Until it is set, a failed deploy still fails its run, but the
+   report job fails too, saying the secret is missing.
+
+## Automatic deploys
+
+When `CI (Push)` finishes successfully for a push to `main`, `deploy.yml`
+starts on its own (`workflow_run`, Issue #108). This includes merges the
+unattended loop makes: they pass the same CI gate.
+
+- **What it deploys**: the commit that CI verified
+  (`github.event.workflow_run.head_sha`), not whatever is newest on `main`
+  by the time the deploy starts.
+- **Which halves**: the "Plan deploy" job compares that commit with the
+  commit of the previous successful `CI (Push)` run, and
+  `.github/scripts/plan-deploy.mjs` picks the halves from the changed files:
+
+  | Changed                                         | Deploys |
+  | ----------------------------------------------- | ------- |
+  | `apps/web/frontend/`                            | Pages   |
+  | `apps/web/backend/`, `packages/postal-data/`    | Worker  |
+  | `docs/`, `acceptance/`, any `*.md`, `LICENSE`   | nothing |
+  | anything else (shared code, lockfile, workflow) | both    |
+
+  Both halves deploy when the previous run of `deploy.yml` did not succeed
+  (it failed, or a newer deploy replaced it while it waited), or when the
+  previous verified commit can't be found. A change that was never deployed
+  is therefore not skipped.
+
+- **Afterwards**: the production tests run if either half deployed. A
+  documentation-only merge deploys nothing and runs no production test.
+- **On failure**: the "Report failure" job posts to Discord with a link to
+  the run and the rollback commands below. Nothing rolls back on its own:
+  look at the run first, and roll back by hand if production is broken. A
+  successful run posts nothing.
+
+## Deploying by hand
 
 ```sh
 gh workflow run deploy.yml -f target=both
