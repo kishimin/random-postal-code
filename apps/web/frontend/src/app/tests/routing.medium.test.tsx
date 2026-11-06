@@ -21,9 +21,15 @@ describe("application routes", () => {
     renderAt("/");
 
     expect(
-      await screen.findByRole("heading", { name: /Zipnami/, level: 1 }),
+      await screen.findByRole("heading", { name: /波に乗って/, level: 1 }),
     ).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
+    // The frame every screen shares (Issue #97): the wordmark, then the
+    // footer's privacy link.
+    expect(screen.getByRole("link", { name: "ZIPNAMI" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "プライバシーポリシー" }),
+    ).toBeInTheDocument();
   });
 
   test("the privacy path renders the privacy screen inside a main landmark", async () => {
@@ -45,7 +51,7 @@ describe("application routes", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("heading", { name: /Zipnami/, level: 1 }),
+      screen.queryByRole("heading", { name: /波に乗って/, level: 1 }),
     ).not.toBeInTheDocument();
   });
 });

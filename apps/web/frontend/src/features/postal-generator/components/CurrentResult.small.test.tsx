@@ -80,9 +80,9 @@ describe("CurrentResult", () => {
     ).toBeInTheDocument();
   });
 
-  // The heading keeps the name the accessibility tests find the region by;
-  // Figma's headline is extra visible text inside it.
-  test("names the result region after both the section and Figma's headline", () => {
+  // WCAG 1.3.1: the section keeps a heading at every width, named by Figma's
+  // headline (Issue #97). On a phone it is only visually hidden.
+  test("names the result section after Figma's headline", () => {
     render(
       <CurrentResult
         result={result}
@@ -92,8 +92,11 @@ describe("CurrentResult", () => {
     );
 
     expect(
-      screen.getByRole("heading", { level: 2, name: /生成結果/ }),
-    ).toHaveTextContent(postalGeneratorText.resultHeadline);
+      screen.getByRole("heading", { level: 2, name: "波が運んできた場所" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "波が運んできた場所" }),
+    ).toBeInTheDocument();
   });
 
   // Issue #8 places a per-address map action inside AddressList's own

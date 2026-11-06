@@ -6,6 +6,10 @@ import { HttpResponse, delay, http } from "msw";
 import { describe, expect, test } from "vitest";
 import { worker } from "../../api/mocks/browser";
 import { postalGeneratorText } from "../../features/postal-generator/site-text";
+import {
+  generateActionName,
+  startHeadlineName,
+} from "../../tests/generator-controls";
 import { createAppRouter } from "../routes/app-router";
 
 /*
@@ -225,14 +229,16 @@ describe("the generator experience", () => {
     renderAt("/");
 
     expect(
-      await screen.findByRole("heading", { name: /Zipnami/, level: 1 }),
+      await screen.findByRole("heading", { name: startHeadlineName, level: 1 }),
     ).toBeInTheDocument();
     expect(
       within(screen.getByRole("main"))
         .getAllByRole("paragraph")
         .some((paragraph) => /郵便番号/.test(paragraph.textContent ?? "")),
     ).toBe(true);
-    expect(screen.getByRole("button", { name: /生成/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "ランダム生成する" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/\d{3}-\d{4}/)).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /コピー/ }),
@@ -245,16 +251,22 @@ describe("the generator experience", () => {
     const { resolve } = holdRandomResponse();
     renderAt("/");
 
-    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    await user.click(
+      await screen.findByRole("button", { name: generateActionName }),
+    );
 
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /生成/ })).toBeDisabled(),
+      expect(
+        screen.getByRole("button", { name: generateActionName }),
+      ).toBeDisabled(),
     );
 
     resolve(firstResult);
 
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /生成/ })).toBeEnabled(),
+      expect(
+        screen.getByRole("button", { name: generateActionName }),
+      ).toBeEnabled(),
     );
   });
 
@@ -272,7 +284,9 @@ describe("the generator experience", () => {
   test("a second activation while a generation is in flight starts no second request", async () => {
     const { resolve, requests } = holdRandomResponse();
     renderAt("/");
-    const generateButton = await screen.findByRole("button", { name: /生成/ });
+    const generateButton = await screen.findByRole("button", {
+      name: generateActionName,
+    });
 
     act(() => {
       generateButton.dispatchEvent(
@@ -298,7 +312,9 @@ describe("the generator experience", () => {
     const user = userEvent.setup();
     const { resolve } = holdRandomResponse();
     renderAt("/");
-    const generateButton = await screen.findByRole("button", { name: /生成/ });
+    const generateButton = await screen.findByRole("button", {
+      name: generateActionName,
+    });
     const resultRegion = screen.getByTestId("result-region");
 
     expect(resultRegion).toHaveAttribute("aria-busy", "false");
@@ -324,7 +340,9 @@ describe("the generator experience", () => {
     const user = userEvent.setup();
     const { resolve } = holdRandomResponse();
     renderAt("/");
-    const generateButton = await screen.findByRole("button", { name: /生成/ });
+    const generateButton = await screen.findByRole("button", {
+      name: generateActionName,
+    });
 
     await user.click(generateButton);
     await waitFor(() => expect(generateButton).toBeDisabled());
@@ -348,7 +366,9 @@ describe("the generator experience", () => {
     const user = userEvent.setup();
     queueRandomResponses([{ outcome: "success", result: firstResult }]);
     renderAt("/");
-    const generateButton = await screen.findByRole("button", { name: /生成/ });
+    const generateButton = await screen.findByRole("button", {
+      name: generateActionName,
+    });
 
     await user.click(generateButton);
     expect(await currentResultText("100-0001")).toBeInTheDocument();
@@ -378,7 +398,9 @@ describe("the generator experience", () => {
     queueRandomResponses([{ outcome: "success", result: firstResult }]);
     renderAt("/");
 
-    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    await user.click(
+      await screen.findByRole("button", { name: generateActionName }),
+    );
 
     expect(await currentResultText("100-0001")).toBeInTheDocument();
     for (const address of firstResult.addresses) {
@@ -394,10 +416,12 @@ describe("the generator experience", () => {
     ]);
     renderAt("/");
 
-    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    await user.click(
+      await screen.findByRole("button", { name: generateActionName }),
+    );
     expect(await currentResultText("100-0001")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /生成/ }));
+    await user.click(screen.getByRole("button", { name: generateActionName }));
 
     expect(await currentResultText("530-0001")).toBeInTheDocument();
     expect(queryCurrentResultText("100-0001")).not.toBeInTheDocument();
@@ -413,7 +437,9 @@ describe("the generator experience", () => {
 
     try {
       renderAt("/");
-      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await user.click(
+        await screen.findByRole("button", { name: generateActionName }),
+      );
       await currentResultText("100-0001");
 
       await user.click(screen.getByRole("button", { name: /コピー/ }));
@@ -441,7 +467,9 @@ describe("the generator experience", () => {
 
     try {
       renderAt("/");
-      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await user.click(
+        await screen.findByRole("button", { name: generateActionName }),
+      );
       await currentResultText("100-0001");
       expect(screen.getByTestId("copy-feedback")).toHaveTextContent("");
 
@@ -474,7 +502,9 @@ describe("the generator experience", () => {
 
     try {
       renderAt("/");
-      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await user.click(
+        await screen.findByRole("button", { name: generateActionName }),
+      );
       await currentResultText("100-0001");
       expect(screen.getByTestId("copy-feedback")).toHaveTextContent("");
 
@@ -501,7 +531,9 @@ describe("the generator experience", () => {
 
     try {
       renderAt("/");
-      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await user.click(
+        await screen.findByRole("button", { name: generateActionName }),
+      );
       await currentResultText("100-0001");
       const copyButton = screen.getByRole("button", { name: /コピー/ });
 
@@ -544,7 +576,9 @@ describe("the generator experience", () => {
     ]);
     renderAt("/");
 
-    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    await user.click(
+      await screen.findByRole("button", { name: generateActionName }),
+    );
     expect(await currentResultText("100-0001")).toBeInTheDocument();
     // The live region already carries the first success's announcement, so
     // the failure below must be told apart from that leftover text. Queried
@@ -554,7 +588,7 @@ describe("the generator experience", () => {
       postalGeneratorText.resultAnnouncement("100-0001"),
     );
 
-    await user.click(screen.getByRole("button", { name: /生成/ }));
+    await user.click(screen.getByRole("button", { name: generateActionName }));
 
     // ui-design.md section 8 requires a request error to be announced. The
     // test waits for the failure's own text, not for any change: the loading
@@ -570,7 +604,7 @@ describe("the generator experience", () => {
     // ui-design.md section 4: a failure keeps the previous result on screen.
     expect(getCurrentResultText("100-0001")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /生成/ }));
+    await user.click(screen.getByRole("button", { name: generateActionName }));
 
     expect(await currentResultText("530-0001")).toBeInTheDocument();
   });
@@ -590,11 +624,15 @@ describe("the generator experience", () => {
 
     try {
       renderAt("/");
-      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await user.click(
+        await screen.findByRole("button", { name: generateActionName }),
+      );
       expect(await currentResultText("100-0001")).toBeInTheDocument();
 
       const { resolve } = holdRandomResponse();
-      const generateButton = screen.getByRole("button", { name: /生成/ });
+      const generateButton = screen.getByRole("button", {
+        name: generateActionName,
+      });
       await user.click(generateButton);
       await waitFor(() => expect(generateButton).toBeDisabled());
 
@@ -620,5 +658,81 @@ describe("the generator experience", () => {
     } finally {
       restore();
     }
+  });
+
+  // Issue #97: Figma gives the one generate action a label for each state, so
+  // a visitor is told what the same button will do now.
+  test("the generate action reads ランダム生成する at the start, もう一度、波に乗る after a result, and 再試行する after a failure", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([
+      { outcome: "success", result: firstResult },
+      { outcome: "unavailable" },
+      { outcome: "success", result: secondResult },
+    ]);
+    renderAt("/");
+
+    await user.click(
+      await screen.findByRole("button", { name: "ランダム生成する" }),
+    );
+    expect(await currentResultText("100-0001")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "もう一度、波に乗る" }),
+    );
+
+    // The failure keeps the previous result and offers the retry in place of
+    // the regenerate label (ui-design.md section 4).
+    expect(
+      await screen.findByRole("button", { name: "再試行する" }),
+    ).toBeEnabled();
+    expect(screen.getByText("場所を取得できませんでした")).toBeInTheDocument();
+    expect(getCurrentResultText("100-0001")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "再試行する" }));
+
+    expect(await currentResultText("530-0001")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "もう一度、波に乗る" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("場所を取得できませんでした"),
+    ).not.toBeInTheDocument();
+  });
+
+  test("the generate action keeps its label while its request is in flight", async () => {
+    const user = userEvent.setup();
+    const { resolve } = holdRandomResponse();
+    renderAt("/");
+
+    await user.click(
+      await screen.findByRole("button", { name: "ランダム生成する" }),
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "ランダム生成する" }),
+    ).toBeDisabled();
+
+    resolve(firstResult);
+    expect(await currentResultText("100-0001")).toBeInTheDocument();
+  });
+
+  // WCAG 1.3.1: the result section keeps a heading at every width. Figma
+  // draws none on a phone, where it is only visually hidden.
+  test("the result section is titled 波が運んできた場所", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    renderAt("/");
+
+    await user.click(
+      await screen.findByRole("button", { name: "ランダム生成する" }),
+    );
+    await currentResultText("100-0001");
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "波が運んできた場所" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "波が運んできた場所" }),
+    ).toBeInTheDocument();
   });
 });

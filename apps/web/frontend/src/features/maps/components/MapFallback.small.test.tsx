@@ -23,7 +23,9 @@ describe("MapFallback", () => {
   test("offers an external Google Maps link whose query encodes the address", () => {
     render(<MapFallback address={address} />);
 
-    const link = screen.getByRole("link");
+    const link = screen.getByRole("link", {
+      name: "東京都千代田区千代田をGoogle マップで開く",
+    });
     expect(link).toBeVisible();
 
     const href = link.getAttribute("href") ?? "";

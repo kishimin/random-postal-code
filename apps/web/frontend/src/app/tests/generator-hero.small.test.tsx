@@ -5,17 +5,18 @@ import { siteText } from "../site-text";
 import { GeneratorHero } from "../views/GeneratorHero";
 
 describe("GeneratorHero", () => {
-  // Issue #6 names the page's h1 after the product; Issue #97 puts Figma's
-  // headline inside it. The name has to carry both.
-  test("names the h1 after the product and the headline before any result", () => {
+  // The h1 is Figma's headline (Issue #97): the name a visitor and the
+  // acceptance tests meet is exactly the headline, with no product name put
+  // in front of it.
+  test("names the h1 by Figma's headline alone before any result", () => {
     render(<GeneratorHero hasResult={false} />);
 
     const heading = screen.getByRole("heading", { level: 1 });
 
-    expect(heading).toHaveTextContent(siteText.name);
     expect(heading).toHaveTextContent(
       postalGeneratorText.startHeadline.regular.join(""),
     );
+    expect(heading).not.toHaveTextContent(siteText.name);
   });
 
   test("offers the introduction in each width Figma writes it for", () => {

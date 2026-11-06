@@ -5,6 +5,7 @@ import type { PostalCode } from "@zipnami/shared";
 import { HttpResponse, http } from "msw";
 import { describe, expect, test } from "vitest";
 import { worker } from "../../api/mocks/browser";
+import { startHeadlineName } from "../../tests/generator-controls";
 import { createAppRouter } from "../routes/app-router";
 
 /*
@@ -45,8 +46,8 @@ const generate = async () => {
   worker.use(http.get(RANDOM_ENDPOINT, () => HttpResponse.json(result)));
 
   renderApp();
-  await screen.findByRole("heading", { name: /Zipnami/, level: 1 });
-  await user.click(screen.getByRole("button", { name: /生成/ }));
+  await screen.findByRole("heading", { name: startHeadlineName, level: 1 });
+  await user.click(screen.getByRole("button", { name: "ランダム生成する" }));
   await screen.findByRole("heading", { name: "地図" });
 
   return user;
@@ -81,7 +82,9 @@ describe("the maps experience", () => {
   test("selecting another address's map action moves the map region to it, leaving the result unchanged", async () => {
     const user = await generate();
 
-    await user.click(screen.getByRole("button", { name: /丸の内.*地図/ }));
+    await user.click(
+      screen.getByRole("button", { name: "東京都千代田区丸の内を地図に表示" }),
+    );
 
     const mapRegion = screen.getByRole("region", { name: "地図" });
     expect(
@@ -117,13 +120,17 @@ describe("the maps experience", () => {
     localStorage.clear();
     const user = await generate();
 
-    const history = screen.getByRole("region", { name: "生成履歴" });
-    expect(within(history).getByText("100-0001")).toBeInTheDocument();
+    const history = screen.getByRole("region", { name: "生成の履歴" });
+    expect(within(history).queryByText("100-0001")).not.toBeInTheDocument();
 
     await user.click(
-      within(history).getByRole("button", { name: /住所/, expanded: false }),
+      within(history).getByRole("button", {
+        name: "履歴を展開",
+        expanded: false,
+      }),
     );
 
+    expect(within(history).getByText("100-0001")).toBeInTheDocument();
     expect(
       within(history).getByText("東京都千代田区丸の内"),
     ).toBeInTheDocument();

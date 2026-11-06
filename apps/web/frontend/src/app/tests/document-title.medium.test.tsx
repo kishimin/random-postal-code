@@ -28,7 +28,7 @@ describe("document title per screen", () => {
   test("the generator screen's title names the product", async () => {
     renderAt("/");
 
-    await screen.findByRole("heading", { name: /Zipnami/, level: 1 });
+    await screen.findByRole("heading", { name: /波に乗って/, level: 1 });
     expect(document.title).toMatch(/Zipnami/);
   });
 
@@ -55,7 +55,7 @@ describe("document title per screen", () => {
   // the same document.
   test("gives the three screens three different titles", async () => {
     const { unmount: unmountGenerator } = renderAt("/");
-    await screen.findByRole("heading", { name: /Zipnami/, level: 1 });
+    await screen.findByRole("heading", { name: /波に乗って/, level: 1 });
     const generatorTitle = document.title;
     unmountGenerator();
 
