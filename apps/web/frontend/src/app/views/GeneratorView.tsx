@@ -15,17 +15,19 @@ import { GenerateAction } from "../../features/postal-generator/components/Gener
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
 import { MysteryPlaceholder } from "../../features/postal-generator/components/MysteryPlaceholder";
 import { generateActionLabel } from "../../features/postal-generator/generate-action-label";
+import type { GeneratorState } from "../../features/postal-generator/hooks/generator-state";
 import { useGenerator } from "../../features/postal-generator/hooks/use-generator";
 import { useDocumentTitle } from "../../hooks/use-document-title";
 import { parseAppEnv } from "../schemas/env.schema";
 import { pageTitle } from "../site-text";
 import { GeneratorHero } from "./GeneratorHero";
 
-const toneOf = (status: string): AnnouncementTone => {
-  if (status === "error") return announcementTones.error;
-  if (status === "loading") return announcementTones.loading;
-  return announcementTones.quiet;
-};
+const toneByStatus = {
+  idle: announcementTones.quiet,
+  loading: announcementTones.loading,
+  success: announcementTones.quiet,
+  error: announcementTones.error,
+} as const satisfies Record<GeneratorState["status"], AnnouncementTone>;
 
 // Figma's start card is the accent-surface "Mystery card"; once a result
 // exists the same box becomes the white "Address panel". It is one element
@@ -68,7 +70,7 @@ export const GeneratorView = () => {
       <GeneratorHero hasResult={hasResult} />
       <GeneratorAnnouncer
         announcement={announcement}
-        tone={toneOf(state.status)}
+        tone={toneByStatus[state.status]}
       />
       <div
         className={

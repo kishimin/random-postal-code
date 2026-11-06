@@ -10,7 +10,7 @@
  * Colors and sizes are theme tokens (ui-design.md section 9.3), never raw
  * values.
  */
-export const tapTargetClass = "inline-flex min-h-11 items-center";
+const tapTargetClass = "inline-flex min-h-11 items-center";
 
 /**
  * The brand-accent pill Figma draws as "Primary Button", for a link that acts

@@ -4,7 +4,7 @@
  * the boundaries lint rule keeps features/ from depending on app/ -- so this
  * mirrors that class rather than sharing the module.
  */
-export const tapTargetClass = "inline-flex min-h-11 items-center";
+const tapTargetClass = "inline-flex min-h-11 items-center";
 
 /**
  * The brand-accent pill Figma draws as "Primary Button". White on the brand
