@@ -12,6 +12,9 @@ export const productionSelectors = {
   mapRegion: /地図/,
   privacyLink: /プライバシー/,
   privacyHeading: /^プライバシーポリシー$/,
+  // What Google's Maps Embed error page says, in English or Japanese.
+  mapsKeyRejected:
+    /Google Maps Platform rejected your request|Google マップが正しく読み込まれませんでした/i,
 } as const;
 
 /*
@@ -50,6 +53,9 @@ export const externalMapLinkSelector = 'a[href*="google."]';
 // failed load, is a link, so this matches only a real embed.
 export const mapEmbedSelector =
   'iframe[src^="https://www.google.com/maps/embed/"]';
+
+// Where a loaded embed frame has navigated to.
+export const mapEmbedUrlPattern = /^https:\/\/www\.google\.com\/maps\/embed\//;
 
 // Any displayed postal code (NNN-NNNN, ui-design.md section 5.3).
 export const anyDisplayedPostalCode = /\d{3}-\d{4}/;

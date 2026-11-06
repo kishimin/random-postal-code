@@ -21,6 +21,9 @@ if (baseURL === undefined || baseURL === "") {
 export default defineConfig({
   testDir: "./e2e/production",
   testMatch: "**/*.large.test.ts",
+  // Always, not only on CI: a focused test left in would silently skip
+  // the rest of the gate after a deploy.
+  forbidOnly: true,
   fullyParallel: false,
   workers: 1,
   // One retry absorbs a cold start right after deploying; a second failure

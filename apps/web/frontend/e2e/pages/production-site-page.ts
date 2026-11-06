@@ -5,6 +5,7 @@ import {
   displayedPostalCode,
   externalMapLinkSelector,
   mapEmbedSelector,
+  mapEmbedUrlPattern,
   productionSelectors,
   randomEndpointPattern,
 } from "../selectors/production-selectors.ts";
@@ -82,19 +83,29 @@ export const createProductionSitePage = (page: Page) => {
   const postalCodeDisplay = (postalCode: string) =>
     resultRegion().getByText(displayedPostalCode(postalCode), { exact: true });
 
-  const resultAddressEntry = (address: Address) =>
-    resultRegion()
-      .getByRole("listitem")
-      .filter({ hasText: address.prefecture })
-      .filter({ hasText: address.city })
-      .filter({ hasText: address.town });
-
   /*
-   * The `href` of each Google Maps link of one address, exactly as written:
-   * only the raw attribute shows whether the query was encoded.
+   * The result's address rows, in the order the Worker returned them
+   * (ui-design.md section 5.3 renders them in source order). Matched by
+   * position rather than by text: a town that is a prefix of another in the
+   * same result (本町 and 本町通), or an empty town, would make a text filter
+   * match more than one row.
    */
-  const externalMapHrefs = async (address: Address) => {
-    const links = await resultAddressEntry(address)
+  const resultAddressEntries = () => resultRegion().getByRole("listitem");
+
+  /**
+   * The row of the address at this position in the Worker's answer.
+   * @param {number} index - Its position among the answer's addresses.
+   */
+  const resultAddressEntry = (index: number) =>
+    resultAddressEntries().nth(index);
+
+  /**
+   * The `href` of each Google Maps link of one row, exactly as written: only
+   * the raw attribute shows whether the query was encoded.
+   * @param {number} index - The row's position among the answer's addresses.
+   */
+  const externalMapHrefs = async (index: number) => {
+    const links = await resultAddressEntry(index)
       .locator(externalMapLinkSelector)
       .all();
 
@@ -120,9 +131,25 @@ export const createProductionSitePage = (page: Page) => {
    * there after its load is one the site kept.
    */
   const waitForMapEmbedToLoad = async () => {
-    const frame = await (await mapEmbed().elementHandle())?.contentFrame();
-    await frame?.waitForLoadState("load");
+    const frame = await (await mapEmbed().elementHandle()).contentFrame();
+    if (frame === null) {
+      throw new Error("The map embed has no frame to load.");
+    }
+    // A frame just attached starts on about:blank, whose load would resolve
+    // before Google has answered.
+    await frame.waitForURL(mapEmbedUrlPattern);
+    await frame.waitForLoadState("load");
   };
+
+  /*
+   * Google's answer to a key it refuses (wrong referrer, API not enabled).
+   * That page still fires `load`, so the site keeps the frame and only its
+   * content shows the key was rejected.
+   */
+  const mapEmbedRejection = () =>
+    page
+      .frameLocator(mapEmbedSelector)
+      .getByText(productionSelectors.mapsKeyRejected);
 
   const copy = () => copyAction().click();
 
@@ -162,12 +189,13 @@ export const createProductionSitePage = (page: Page) => {
     });
 
   /**
-   * The first element of main stating this, so a statement repeated in a
-   * heading and its paragraph is still one match.
+   * The first element of the page stating this, so a statement repeated in
+   * a heading and its paragraph is still one match. The whole page, not
+   * main: the Japan Post credit is in the footer every screen shares.
    * @param {RegExp} statement - What the page has to say.
    */
   const privacyStatement = (statement: RegExp) =>
-    page.getByRole("main").getByText(statement).first();
+    page.getByText(statement).first();
 
   return {
     navigate,
@@ -175,12 +203,14 @@ export const createProductionSitePage = (page: Page) => {
     reload,
     generateThroughWorker,
     postalCodeDisplay,
+    resultAddressEntries,
     resultAddressEntry,
     externalMapHrefs,
     revealMap,
     mapEmbed,
     mapEmbedSource,
     waitForMapEmbedToLoad,
+    mapEmbedRejection,
     copy,
     clipboardText,
     historyPostalCodes,

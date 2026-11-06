@@ -182,6 +182,12 @@ run("require-e2e-test-directory", requireE2eTestDirectory, {
       code: "export {};",
       errors: [{ messageId: "directory" }],
     },
+    {
+      // A directory that only starts with "production" is not it.
+      filename: "e2e/productionx/web-mvp.large.test.ts",
+      code: "export {};",
+      errors: [{ messageId: "directory" }],
+    },
   ],
 });
 

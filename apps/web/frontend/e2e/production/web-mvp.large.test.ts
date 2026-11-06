@@ -59,10 +59,15 @@ test.describe("Issue #104: the Web MVP on the deployed site", () => {
     await expect(
       sitePage.postalCodeDisplay(generated.postalCode),
     ).toBeVisible();
-    for (const address of generated.addresses) {
-      await expect(sitePage.resultAddressEntry(address)).toBeVisible();
+    await expect(sitePage.resultAddressEntries()).toHaveCount(
+      generated.addresses.length,
+    );
+    for (const [index, address] of generated.addresses.entries()) {
+      await expect(sitePage.resultAddressEntry(index)).toContainText(
+        fullAddress(address),
+      );
 
-      const hrefs = await sitePage.externalMapHrefs(address);
+      const hrefs = await sitePage.externalMapHrefs(index);
       expect({
         address: fullAddress(address),
         opensIt: hrefs.some((href) => opensEncoded(href, address)),
@@ -70,7 +75,8 @@ test.describe("Issue #104: the Web MVP on the deployed site", () => {
     }
 
     // The production key reaches the embed: a frame asking for the first
-    // address, still there once it has loaded, not the fallback link.
+    // address, still there once Google has answered, not the fallback link,
+    // and not Google's page for a rejected key.
     await sitePage.revealMap();
     await expect(sitePage.mapEmbed()).toBeVisible();
     const embed = new URL((await sitePage.mapEmbedSource()) ?? "");
@@ -80,6 +86,7 @@ test.describe("Issue #104: the Web MVP on the deployed site", () => {
     );
     await sitePage.waitForMapEmbedToLoad();
     await expect(sitePage.mapEmbed()).toBeVisible();
+    await expect(sitePage.mapEmbedRejection()).toHaveCount(0);
 
     // The canonical seven digits, not the hyphenated form on screen.
     await sitePage.copy();
