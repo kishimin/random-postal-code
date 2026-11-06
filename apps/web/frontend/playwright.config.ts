@@ -27,6 +27,7 @@ export default defineConfig({
     "acceptance/web-address-maps.medium.test.ts",
     "acceptance/web-generation-history.medium.test.ts",
     "acceptance/web-google-analytics.medium.test.ts",
+    "acceptance/production-tests-third-party-block.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,

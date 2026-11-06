@@ -13,7 +13,8 @@ export default {
   meta: {
     type: "problem",
     docs: {
-      description: "Keep Playwright tests under e2e/tests, e2e/specs, or e2e/production",
+      description:
+        "Keep Playwright tests under e2e/tests, e2e/specs, or e2e/production",
     },
     schema: [],
     messages: {

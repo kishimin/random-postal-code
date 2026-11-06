@@ -113,8 +113,8 @@ jobs:
           PAGES_PROJECT: ${{ vars.ZIPNAMI_PAGES_PROJECT }}
         run: bunx wrangler pages deploy dist --project-name "$PAGES_PROJECT" --branch main --commit-hash "$GITHUB_SHA"
 
-  smoke:
-    name: Production smoke check
+  production-tests:
+    name: Production tests
     needs:
       - backend
       - frontend
@@ -135,7 +135,11 @@ jobs:
         with:
           playwright-browsers: chromium
 
-      - name: Smoke check from Pages through Workers
+      # The happy path on the deployed site, from Pages through the Worker.
+      # The tests abort the advertising, consent, and Analytics hosts in the
+      # browser, so a deploy neither requests a real ad nor records a visit
+      # (Issue #104).
+      - name: Run the production tests from Pages through Workers
         env:
-          SMOKE_BASE_URL: ${{ vars.ZIPNAMI_PAGES_ORIGIN }}
-        run: bun run --filter @zipnami/web-frontend smoke:production
+          PRODUCTION_BASE_URL: ${{ vars.ZIPNAMI_PAGES_ORIGIN }}
+        run: bun run --filter @zipnami/web-frontend e2e:production
