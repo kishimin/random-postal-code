@@ -9,9 +9,9 @@
  * moved under the matching heading (owner decision on Issue #97,
  * https://github.com/kishimin/random-postal-code/issues/97#issuecomment-6670298264).
  * Figma's fifth heading, "5. お問い合わせ", is not in the MVP: a contact
- * section is V2 work (Issue #105). design.md section 8 still requires the
- * disclosure to tell what Zipnami itself stores (sections 1 and 4) from what
- * third-party services process (sections 2 and 3).
+ * section is V2 work (Issue #105). design.md section 8 divides the page by
+ * those same four sections, so the page follows them rather than a split
+ * between what Zipnami stores and what third-party services process.
  */
 export type PrivacySection = {
   /** The id its heading carries, which names the section's region. */

@@ -17,8 +17,8 @@ export const NotFoundView = () => {
   return (
     <div className={"flex flex-col items-center gap-4 py-12 text-center"}>
       {/* The numeral is Figma's decoration; the heading already says what
-          happened, so a screen reader skips it. 72px bold is large text, the
-          only size at which the brand color reaches AA on the page surface. */}
+          happened, so a screen reader skips it. The brand color on the page
+          surface is 5.41:1, AA for normal text as well. */}
       <p aria-hidden={"true"} className={"text-giant font-bold text-brand"}>
         {"404"}
       </p>

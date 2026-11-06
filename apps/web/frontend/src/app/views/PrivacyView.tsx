@@ -9,9 +9,8 @@ const paragraphClass = "text-body-sm text-ink-muted";
 /**
  * Privacy screen (Issue #10, laid out as Figma's node 46:165 by Issue #97).
  *
- * design.md section 8 requires the disclosure to tell what Zipnami stores
- * from what third-party services process. Figma's four section headings carry
- * that: each `section` is a separately named region, labelled by its own
+ * design.md section 8 divides the page into Figma's four sections: each
+ * `section` is a separately named region, labelled by its own
  * visible heading (aria-labelledby) rather than an invisible aria-label -- the
  * same pattern AdvertisingRegion uses for its labelled region.
  */
