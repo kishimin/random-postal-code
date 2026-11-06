@@ -223,6 +223,14 @@ jobs:
       - name: Run Issue #99 placeholder town acceptance test (Medium)
         run: bun test ./acceptance/postal-data-placeholder-towns.medium.test.ts
 
+      # Issue #104's repository half reads deploy.yml, every workspace's
+      # package.json, the tracked file names, and the docs, and asks
+      # Playwright to list the production tests (no browser starts), so it is
+      # bound here (ADR-0077). Its browser half is registered in
+      # apps/web/frontend/playwright.config.ts.
+      - name: Run Issue #104 production tests acceptance test (Medium)
+        run: bun test ./acceptance/production-tests.medium.test.ts
+
       - name: Upload coverage report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7

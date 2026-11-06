@@ -184,7 +184,7 @@ Before completing a code branch, run every repository-defined formatter, type ch
 - Frontend: deploy `apps/web/frontend` statically to Cloudflare Pages.
 - Backend: deploy `apps/web/backend` as an independent Cloudflare Worker.
 - Deploy and roll back Pages and Workers independently.
-- Run a production smoke check from Pages through Workers.
+- Run the production tests (Large, Issue #104) from Pages through Workers.
 - Do not print secrets in deployment logs.
 - Ensure Web advertising declarations and consent configuration match the production build.
 

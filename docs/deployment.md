@@ -6,10 +6,10 @@ API (`apps/web/backend`) is a separate Cloudflare Worker (design.md section
 10). They deploy and roll back independently, and each through its own
 GitHub Actions workflow:
 
-| Workflow                         | What it does                                                                           |
-| -------------------------------- | -------------------------------------------------------------------------------------- |
-| `.github/workflows/deploy.yml`   | Verifies settings, deploys the Worker and/or the Pages site, then runs the smoke check |
-| `.github/workflows/rollback.yml` | Restores an earlier Worker version or an earlier Pages deployment                      |
+| Workflow                         | What it does                                                                                |
+| -------------------------------- | ------------------------------------------------------------------------------------------- |
+| `.github/workflows/deploy.yml`   | Verifies settings, deploys the Worker and/or the Pages site, then runs the production tests |
+| `.github/workflows/rollback.yml` | Restores an earlier Worker version or an earlier Pages deployment                           |
 
 Both run only when started by hand (`workflow_dispatch`). Their jobs run
 only from `main`, so code that hasn't been reviewed and merged can't reach
@@ -81,8 +81,8 @@ development runs without a key, and the map shows its fallback link
 instead (design.md section 7).
 
 `ZIPNAMI_PAGES_ORIGIN` is used twice on purpose: it becomes the Worker's
-CORS allowlist (`ALLOWED_ORIGINS`), and it is the site the smoke check
-visits. The two can't drift apart.
+CORS allowlist (`ALLOWED_ORIGINS`), and it is the site the production
+tests visit. The two can't drift apart.
 
 5. **After the first production deploy, and before the site is announced
    or linked anywhere**, set up consent (Issue #39). Google only lets a
@@ -166,24 +166,51 @@ workflow:
    - Worker: `bunx wrangler deploy --var ALLOWED_ORIGINS:$PAGES_ORIGIN`.
    - Pages: builds with the Worker URL baked in, then runs
      `bunx wrangler pages deploy dist --project-name <project> --branch main`.
-3. **Runs the smoke check** against `ZIPNAMI_PAGES_ORIGIN`, once both
+3. **Runs the production tests** against `ZIPNAMI_PAGES_ORIGIN`, once both
    halves have finished (a half that wasn't chosen counts as finished):
-   `bun run --filter @zipnami/web-frontend smoke:production`. It loads the
-   live site, generates a postal code, requires a `200` from the Worker's
-   `/api/random`, and reloads the `/privacy` deep link. Nothing is stubbed.
+   `bun run --filter @zipnami/web-frontend e2e:production`. A failure fails
+   the run.
 
-The smoke check also runs against any deployment, or against a local stack:
+### What the production tests cover
+
+They are Large tests (`apps/web/frontend/e2e/production/*.large.test.ts`,
+run by `playwright.production.config.ts`): real Cloudflare and real Google,
+so only what needs the deployed site is here. Error paths, layout, and
+accessibility stay in the Small and Medium tests (Issue #104).
+
+- **One happy-path journey.** Generating shows the postal code and every
+  address the Worker returned, from a `200` on the Worker's own origin. The
+  map embeds with the production key: an embed frame, not the fallback
+  link. Each address has a Google Maps link whose query is that address,
+  encoded. Copying puts the seven-digit postal code on the clipboard. The
+  history still lists that postal code after a reload. `/privacy` opens and
+  shows the services it names and the Japan Post attribution.
+- **The SPA deep link.** A direct visit to `/privacy` and a refresh of it
+  both answer `200` and show the privacy page.
+
+Every test aborts the AdSense, consent, and Google Analytics hosts in the
+browser before the page loads, so a deploy requests no real ad (which
+AdSense can treat as invalid traffic) and records no visit in Analytics.
+Nothing else is stubbed.
+
+The CSP header check that used to run here was removed: the policy is
+report-only, so a missing header affects no visitor. The CSP check returns
+once the policy is enforced (#38).
+
+The production tests also run against any deployment, or against a local
+stack:
 
 ```sh
-SMOKE_BASE_URL=https://<project>.pages.dev bun run --filter @zipnami/web-frontend smoke:production
+PRODUCTION_BASE_URL=https://<project>.pages.dev bun run --filter @zipnami/web-frontend e2e:production
 ```
 
 To try it locally, run the Worker with
 `bunx wrangler dev --var ALLOWED_ORIGINS:http://localhost:4173` in
 `apps/web/backend`. Then build the frontend with
 `VITE_API_BASE_URL=http://localhost:8787`, serve it with
-`bunx vite preview --port 4173`, and point `SMOKE_BASE_URL` at
-`http://localhost:4173`.
+`bunx vite preview --port 4173`, and point `PRODUCTION_BASE_URL` at
+`http://localhost:4173`. Without a Maps key the map shows its fallback
+link, so the map step fails locally unless the build has one.
 
 Deploy through the workflow, not with `bun run deploy` in
 `apps/web/backend`. That script is a plain `wrangler deploy`. It sets no
