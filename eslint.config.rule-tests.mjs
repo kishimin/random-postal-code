@@ -150,6 +150,12 @@ run("require-e2e-test-directory", requireE2eTestDirectory, {
       code: "export {};",
     },
     {
+      // The production tests run only against the deployed site, under a
+      // config of their own (Issue #104).
+      filename: "e2e/production/web-mvp.large.test.ts",
+      code: "export {};",
+    },
+    {
       // Acceptance tests sit directly under the protected acceptance/ root.
       filename: "acceptance/generate-postal-code.large.test.ts",
       code: "export {};",
@@ -168,6 +174,11 @@ run("require-e2e-test-directory", requireE2eTestDirectory, {
   invalid: [
     {
       filename: "e2e/pages/generate-postal-code.test.ts",
+      code: "export {};",
+      errors: [{ messageId: "directory" }],
+    },
+    {
+      filename: "e2e/fixtures/web-mvp.large.test.ts",
       code: "export {};",
       errors: [{ messageId: "directory" }],
     },
