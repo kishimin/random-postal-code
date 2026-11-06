@@ -24,14 +24,20 @@ const Lines = ({ lines }: LinesProps) =>
  * Figma sets the headline with a deliberate break too, but the h1's accessible
  * name has to be exactly the headline (Issue #97), and a <br>, like any
  * element that is not inline, reads as a space in an accessible name. Each
- * line is an inline-block span instead, so the headline breaks between
- * Figma's lines when the width calls for it, and a line may still wrap inside
- * itself when it is wider than the screen (WCAG 1.4.12 letter spacing at 320px
- * would overflow a line that cannot).
+ * line is an inline span that cannot wrap inside itself instead, so the
+ * headline breaks between Figma's lines when the width calls for it.
+ *
+ * Below 360px a line may wrap inside itself: WCAG 1.4.12 letter spacing at a
+ * 320px viewport would otherwise overflow it. inline-block would allow that at
+ * every width, but Chrome then reads the spans as separated by a space, which
+ * the acceptance tests' exact h1 name rejects.
  */
 const HeadlineLines = ({ lines }: LinesProps) =>
   lines.map((line) => (
-    <span key={line} className={"inline-block"}>
+    <span
+      key={line}
+      className={"whitespace-nowrap max-[359px]:whitespace-normal"}
+    >
       {line}
     </span>
   ));
