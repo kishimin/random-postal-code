@@ -70,15 +70,24 @@ export const useAdsenseScript = (scriptUrl: string): void => {
       `script[src="${scriptUrl}"]`,
     );
 
+    // Not appended before the window's load event: a script inserted earlier
+    // holds that event until the script settles, so a silent ad host would
+    // keep the whole page "loading" (design.md section 7: ads must not block
+    // the page). Waiting costs nothing, since the ad is not core content.
+    const startLoading = () => attemptLoad(1);
+
     if (existingScript) {
       load.currentScript = existingScript;
       load.succeeded = true;
+    } else if (document.readyState === "complete") {
+      startLoading();
     } else {
-      attemptLoad(1);
+      window.addEventListener("load", startLoading, { once: true });
     }
 
     return () => {
       load.cancelled = true;
+      window.removeEventListener("load", startLoading);
       clearTimeout(load.retryTimeoutId);
 
       // A script that already loaded is left in the document: removing it

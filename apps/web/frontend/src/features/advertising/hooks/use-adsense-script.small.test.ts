@@ -210,4 +210,40 @@ describe("useAdsenseScript", () => {
 
     appendChildSpy.mockRestore();
   });
+
+  describe("while the page is still loading", () => {
+    beforeEach(() => {
+      vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    // A script inserted before the window's load event holds that event until
+    // the script settles. An unanswered ad request would then keep the page
+    // "loading" for as long as the ad host stays silent (design.md section 7:
+    // ads must not block the page).
+    test("appends the loader only after the window's load event", () => {
+      renderHook(() => useAdsenseScript(SCRIPT_URL));
+      expect(loaderScripts()).toHaveLength(0);
+
+      act(() => {
+        window.dispatchEvent(new Event("load"));
+      });
+
+      expect(loaderScripts()).toHaveLength(1);
+    });
+
+    test("appends nothing when unmounted before the window's load event", () => {
+      const { unmount } = renderHook(() => useAdsenseScript(SCRIPT_URL));
+
+      unmount();
+      act(() => {
+        window.dispatchEvent(new Event("load"));
+      });
+
+      expect(loaderScripts()).toHaveLength(0);
+    });
+  });
 });
