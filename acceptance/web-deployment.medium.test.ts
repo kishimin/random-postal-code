@@ -190,18 +190,18 @@ describe("Issue #19: deploying the frontend to Pages and the API to Workers", ()
     expect(configurationReference(build?.env?.VITE_API_BASE_URL)).toBeDefined();
   });
 
-  test("the Worker CORS allowlist is set to the exact production Pages origin the smoke check uses", () => {
+  test("the Worker CORS allowlist is set to the exact production Pages origin the production tests use", () => {
     const { workflow } = deployment();
     const worker = jobRunning(
       workflow,
       /\bwrangler\b[^\n]*\bdeploy\b(?![^\n]*pages)/,
     );
-    const smoke = jobRunning(workflow, /\bsmoke\b/);
+    const production = jobRunning(workflow, /\be2e:production\b/);
 
     expect(stepText(worker.step)).toMatch(/--var\s+ALLOWED_ORIGINS:/);
 
     // The same configuration value names the origin the Worker allows and
-    // the site the smoke check visits, so the two cannot drift apart.
+    // the site the production tests visit, so the two cannot drift apart.
     const referencesIn = (step: Step) =>
       new Set(
         [...stepText(step).matchAll(/\b(?:vars|secrets)\.\w+/g)].map(
@@ -209,7 +209,7 @@ describe("Issue #19: deploying the frontend to Pages and the API to Workers", ()
         ),
       );
     const shared = [...referencesIn(worker.step)].filter((reference) =>
-      referencesIn(smoke.step).has(reference),
+      referencesIn(production.step).has(reference),
     );
 
     expect(shared).not.toEqual([]);
@@ -394,21 +394,21 @@ describe("Issue #19: deploying the frontend to Pages and the API to Workers", ()
     SUBPROCESS_TEST_TIMEOUT_MS,
   );
 
-  test("a smoke check against production runs after deploying", () => {
+  test("production tests against production run after deploying", () => {
     const { workflow } = deployment();
-    const smoke = jobRunning(workflow, /\bsmoke\b/);
+    const production = jobRunning(workflow, /\be2e:production\b/);
     const pages = jobRunning(workflow, /\bwrangler\b[^\n]*\bpages deploy\b/);
     const worker = jobRunning(
       workflow,
       /\bwrangler\b[^\n]*\bdeploy\b(?![^\n]*pages)/,
     );
 
-    expect(needsOf(smoke.job)).toEqual(
+    expect(needsOf(production.job)).toEqual(
       expect.arrayContaining([pages.id, worker.id]),
     );
-    // The smoke check is a command the repository defines, not inline shell.
-    const script = /bun run (?:--filter\s+\S+\s+)?([\w:-]*smoke[\w:-]*)/.exec(
-      smoke.step.run ?? "",
+    // The production tests are a command the repository defines, not inline shell.
+    const script = /bun run (?:--filter\s+\S+\s+)?(e2e:production)\b/.exec(
+      production.step.run ?? "",
     )?.[1];
 
     expect(script).toBeDefined();
