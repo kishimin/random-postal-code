@@ -23,7 +23,7 @@ const ADVERTISING_LABEL_ID = "advertising-region-label";
  * section 8 lists headings for result, map, and history, not advertising, so
  * this label does not add another entry to the page's heading outline.
  *
- * The border, background, and label styling are presentation only (CR-004 of
+ * The background and label styling are presentation only (CR-004 of
  * Issue #9's review): without them, the only thing separating this region
  * from application content was the word "広告" itself. ADR-0012 keeps
  * appearance out of automated tests, so nothing here asserts these classes;
@@ -39,11 +39,11 @@ export const AdvertisingRegion = ({
   return (
     <section
       aria-labelledby={ADVERTISING_LABEL_ID}
-      className={"mt-8 rounded-field border border-card-border bg-card p-4"}
+      className={"mt-8 rounded-field bg-ad-surface p-4 text-center"}
     >
       <p
         id={ADVERTISING_LABEL_ID}
-        className={"mb-2 text-caption font-medium text-ink-muted"}
+        className={"mb-2 text-caption-sm font-semibold text-ink-muted"}
       >
         {advertisingText.regionLabel}
       </p>

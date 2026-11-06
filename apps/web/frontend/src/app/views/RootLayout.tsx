@@ -54,7 +54,7 @@ export const RootLayout = () => {
       mainRef={mainRef}
       wordmark={
         <Link className={wordmarkClass} to={"/"}>
-          {siteText.name}
+          {siteText.wordmark}
         </Link>
       }
       privacyLink={

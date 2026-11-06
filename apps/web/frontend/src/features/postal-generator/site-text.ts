@@ -26,15 +26,18 @@ export const postalGeneratorText = {
   mysteryNote: "次に出会う場所は、まだわかりません。",
   failureHeading: "場所を取得できませんでした",
   resultEyebrow: "TODAY'S DESTINATION",
-  resultHeadline: "波が運んできた場所",
   postalCodeLabel: "郵便番号",
   // "この郵便番号に" only fits beside the wide layout; the narrower Figma
   // frames say just "対応する住所 N件".
   addressCountPrefix: "この郵便番号に",
   addressCount: (count: number) => `対応する住所 ${count}件`,
-  generateLabel: "郵便番号を生成",
+  // Figma labels the one generate action by state: before a result (#2:13),
+  // after one (#2:33), and while the API error shows (#27:78).
+  startActionLabel: "ランダム生成する",
+  regenerateActionLabel: "もう一度、波に乗る",
+  retryActionLabel: "再試行する",
   copyLabel: "郵便番号をコピー",
-  resultHeading: "生成結果",
+  resultHeading: "波が運んできた場所",
   loadingAnnouncement: "郵便番号を生成しています",
   resultAnnouncement: (displayedPostalCode: string) =>
     `郵便番号 ${displayedPostalCode} を生成しました`,

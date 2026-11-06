@@ -11,13 +11,28 @@ type LinesProps = {
   lines: readonly string[];
 };
 
-// Figma sets the headline and body with deliberate line breaks.
+// Figma sets the body with deliberate line breaks.
 const Lines = ({ lines }: LinesProps) =>
   lines.map((line, index) => (
     <Fragment key={line}>
       {index > 0 && <br />}
       {line}
     </Fragment>
+  ));
+
+/*
+ * Figma sets the headline with a deliberate break too, but the h1's accessible
+ * name has to be exactly the headline (Issue #97), and a <br>, like any
+ * element that is not inline, reads as a space in an accessible name. Each
+ * line is an inline span that cannot wrap inside itself instead, so the
+ * headline breaks between Figma's lines when the width calls for it and
+ * nowhere else.
+ */
+const HeadlineLines = ({ lines }: LinesProps) =>
+  lines.map((line) => (
+    <span key={line} className={"whitespace-nowrap"}>
+      {line}
+    </span>
   ));
 
 const { startHeadline, startBody } = postalGeneratorText;
@@ -29,15 +44,15 @@ const bodyClass =
  * The generator's page heading and introduction.
  *
  * tabIndex on the h1: RootLayout focuses a screen's own h1 after a
- * client-side route change (Issue #16 AC-5), and a plain heading is not in
- * the focusable area without one.
+ * client-side route change (Issue #16 AC-5), and a plain heading is not in the
+ * focusable area without one.
  *
- * The h1 is named after the product (Issue #6) and shows Figma's headline: the
- * product name is visually hidden text inside it, so the accessible name is
- * "Zipnami" followed by the visible words, which WCAG 2.5.3 allows for a
- * heading as it does for a control. Figma's copy differs per width, so the
- * variants for the other widths are not rendered (display: none) rather than
- * merely clipped.
+ * Before a result the h1 is Figma's headline and nothing else, so its
+ * accessible name is the words a visitor reads. Figma's copy differs per
+ * width, so the variants for the other widths are not rendered (display: none)
+ * rather than merely clipped. Once a result is on screen the page keeps one
+ * h1, named after the product, visually hidden: the result section has its
+ * own headline.
  */
 export const GeneratorHero = ({ hasResult }: GeneratorHeroProps) => {
   if (hasResult) {
@@ -60,15 +75,14 @@ export const GeneratorHero = ({ hasResult }: GeneratorHeroProps) => {
       <h1
         tabIndex={-1}
         className={
-          "mt-4 text-display-sm font-bold text-balance text-ink md:text-display-md lg:text-display"
+          "mx-auto mt-4 max-w-[720px] text-display-sm font-bold text-ink md:text-display-md lg:text-display"
         }
       >
-        <span className={"sr-only"}>{`${siteText.name} `}</span>
         <span className={"md:hidden"}>
-          <Lines lines={startHeadline.compact} />
+          <HeadlineLines lines={startHeadline.compact} />
         </span>
         <span className={"hidden md:inline"}>
-          <Lines lines={startHeadline.regular} />
+          <HeadlineLines lines={startHeadline.regular} />
         </span>
       </h1>
       <p className={`${bodyClass} md:hidden`}>

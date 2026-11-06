@@ -23,7 +23,7 @@ export const AppErrorView = () => {
     <AppFrame
       wordmark={
         <a className={wordmarkClass} href={"/"}>
-          {siteText.name}
+          {siteText.wordmark}
         </a>
       }
       privacyLink={

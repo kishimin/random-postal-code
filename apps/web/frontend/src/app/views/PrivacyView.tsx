@@ -1,24 +1,19 @@
 import { useDocumentTitle } from "../../hooks/use-document-title";
 import { pageTitle, siteText } from "../site-text";
-import { linkClass } from "../styles";
-import { privacyText } from "./privacy-text";
-
-const FIRST_PARTY_HEADING_ID = "privacy-first-party-heading";
-const THIRD_PARTY_HEADING_ID = "privacy-third-party-heading";
+import { privacySections } from "./privacy-text";
 
 const sectionClass = "flex flex-col gap-3 rounded-card bg-card p-6";
 const sectionHeadingClass = "text-heading font-bold text-ink";
 const paragraphClass = "text-body-sm text-ink-muted";
 
 /**
- * Privacy screen (Issue #10).
+ * Privacy screen (Issue #10, laid out as Figma's node 46:165 by Issue #97).
  *
- * design.md section 8: "/privacy distinguishes data stored by Zipnami from
- * data processed by Google Maps, AdSense, and consent services." Two
- * `section`s carry that distinction to a screen reader as two separately
- * named regions, each labelled by its own visible heading (aria-labelledby)
- * rather than an invisible aria-label — the same pattern AdvertisingRegion
- * uses for its labelled region.
+ * design.md section 8 requires the disclosure to tell what Zipnami stores
+ * from what third-party services process. Figma's four section headings carry
+ * that: each `section` is a separately named region, labelled by its own
+ * visible heading (aria-labelledby) rather than an invisible aria-label -- the
+ * same pattern AdvertisingRegion uses for its labelled region.
  */
 export const PrivacyView = () => {
   useDocumentTitle(pageTitle(siteText.privacyLabel));
@@ -32,56 +27,22 @@ export const PrivacyView = () => {
         {siteText.privacyLabel}
       </h1>
 
-      <section
-        aria-labelledby={FIRST_PARTY_HEADING_ID}
-        className={sectionClass}
-      >
-        <h2 id={FIRST_PARTY_HEADING_ID} className={sectionHeadingClass}>
-          {privacyText.firstParty.heading}
-        </h2>
-        <p className={paragraphClass}>
-          {privacyText.firstParty.browserLocalHistory}
-        </p>
-        <p className={paragraphClass}>
-          {privacyText.firstParty.noLocationCollection}
-        </p>
-        <p className={paragraphClass}>
-          {privacyText.firstParty.noOwnUserIdentifier}
-        </p>
-        <p className={paragraphClass}>
-          {privacyText.firstParty.noStoredAdvertisingIdentifier}
-        </p>
-      </section>
-
-      <section
-        aria-labelledby={THIRD_PARTY_HEADING_ID}
-        className={sectionClass}
-      >
-        <h2 id={THIRD_PARTY_HEADING_ID} className={sectionHeadingClass}>
-          {privacyText.thirdParty.heading}
-        </h2>
-        <p className={paragraphClass}>{privacyText.thirdParty.googleMaps}</p>
-        <p className={paragraphClass}>{privacyText.thirdParty.googleAdSense}</p>
-        <p className={paragraphClass}>
-          {privacyText.thirdParty.googleAnalytics}
-        </p>
-        <p className={paragraphClass}>
-          {privacyText.thirdParty.googleAnalyticsConsent}
-        </p>
-        <p className={paragraphClass}>
-          {privacyText.thirdParty.googleAnalyticsOptOut}
-        </p>
-        <p className={paragraphClass}>{privacyText.thirdParty.consent}</p>
-      </section>
-
-      <p>
-        <a
-          className={`${linkClass} text-body-sm text-ink`}
-          href={privacyText.contactHref}
+      {privacySections.map((section) => (
+        <section
+          key={section.headingId}
+          aria-labelledby={section.headingId}
+          className={sectionClass}
         >
-          {privacyText.contactLabel}
-        </a>
-      </p>
+          <h2 id={section.headingId} className={sectionHeadingClass}>
+            {section.heading}
+          </h2>
+          {section.paragraphs.map((paragraph) => (
+            <p key={paragraph} className={paragraphClass}>
+              {paragraph}
+            </p>
+          ))}
+        </section>
+      ))}
     </div>
   );
 };

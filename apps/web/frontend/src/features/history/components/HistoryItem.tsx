@@ -1,7 +1,4 @@
 import type { Address, PostalCode } from "@zipnami/shared";
-import { useState } from "react";
-import { historyText } from "../site-text";
-import { tapTargetClass } from "../styles";
 
 type HistoryItemProps = {
   entry: PostalCode;
@@ -17,50 +14,25 @@ const addressText = (address: Address) =>
   `${address.prefecture}${address.city}${address.town}`;
 
 /**
- * One entry in the Web generation history (ui-design.md section 5.4): its
- * postal code, always visible, and its addresses behind an explicit expand
- * control.
- *
- * Every address is collapsed by default, not only the ones past the first --
- * a design choice, not the letter of ui-design.md section 5.4, needed so a
- * superseded generation's address never sits in the page unless a visitor
- * asks for it. random-postal-code-experience.medium.test.ts (Issue #6) polls
- * the whole page for a superseded result's address to be gone once a new one
- * replaces it; a history that showed an old entry's primary address by
- * default would leave that assertion permanently false once this feature
- * exists alongside it.
+ * One entry in the opened Web generation history (ui-design.md sections 5.4
+ * and 9.2): its postal code and every address that code covers. The entry has
+ * no control of its own; the list is opened as a whole by HistoryList.
  */
-export const HistoryItem = ({ entry }: HistoryItemProps) => {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <li
-      className={
-        "rounded-field border border-card-border bg-card px-4 py-3 text-body-sm text-ink"
-      }
-    >
-      <p className={"text-body font-bold tabular-nums"}>
-        {displayPostalCode(entry.postalCode)}
-      </p>
-      {expanded && (
-        <ul className={"mt-2 flex flex-col gap-1 text-ink-muted"}>
-          {entry.addresses.map((address) => (
-            <li key={`${address.prefecture}-${address.city}-${address.town}`}>
-              {addressText(address)}
-            </li>
-          ))}
-        </ul>
-      )}
-      <button
-        type={"button"}
-        className={`${tapTargetClass} font-semibold underline`}
-        aria-expanded={expanded}
-        onClick={() => setExpanded((current) => !current)}
-      >
-        {expanded
-          ? historyText.collapseAddressesLabel
-          : historyText.expandAddressesLabel}
-      </button>
-    </li>
-  );
-};
+export const HistoryItem = ({ entry }: HistoryItemProps) => (
+  <li
+    className={
+      "rounded-field border border-card-border bg-card px-4 py-3 text-body-sm text-ink"
+    }
+  >
+    <p className={"text-body font-bold tabular-nums"}>
+      {displayPostalCode(entry.postalCode)}
+    </p>
+    <ul className={"mt-2 flex flex-col gap-1 text-ink-muted"}>
+      {entry.addresses.map((address) => (
+        <li key={`${address.prefecture}-${address.city}-${address.town}`}>
+          {addressText(address)}
+        </li>
+      ))}
+    </ul>
+  </li>
+);

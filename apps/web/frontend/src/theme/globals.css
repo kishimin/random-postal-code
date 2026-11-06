@@ -25,13 +25,14 @@
   --color-card: #ffffff;
   --color-ink: #091f33;
   --color-ink-muted: #526b78;
-  --color-brand: #148cc7;
+  --color-brand: #0f6e9e;
   --color-accent-surface: #e5f7f7;
   --color-error: #cc292e;
   --color-error-surface: #fff0f0;
   --color-card-border: #d1e3e5;
   --color-map-surface: #e8ede3;
   --color-map-pin: #e04d40;
+  --color-ad-surface: #f5f5f0;
 
   --text-display: 52px;
   --text-display--line-height: 68px;

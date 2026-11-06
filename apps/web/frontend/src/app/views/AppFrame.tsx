@@ -44,8 +44,8 @@ export const AppFrame = ({
       <div
         className={`${frameInnerClass} flex flex-col items-center gap-1 text-center`}
       >
-        <p className={footerTextClass}>{siteText.attribution}</p>
         {privacyLink}
+        <p className={footerTextClass}>{siteText.attribution}</p>
         <p className={footerTextClass}>{siteText.copyright}</p>
       </div>
     </footer>

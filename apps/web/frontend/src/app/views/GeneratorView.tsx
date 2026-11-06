@@ -14,6 +14,7 @@ import { CurrentResult } from "../../features/postal-generator/components/Curren
 import { GenerateAction } from "../../features/postal-generator/components/GenerateAction";
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
 import { MysteryPlaceholder } from "../../features/postal-generator/components/MysteryPlaceholder";
+import { generateActionLabel } from "../../features/postal-generator/generate-action-label";
 import { useGenerator } from "../../features/postal-generator/hooks/use-generator";
 import { useDocumentTitle } from "../../hooks/use-document-title";
 import { parseAppEnv } from "../schemas/env.schema";
@@ -104,6 +105,7 @@ export const GeneratorView = () => {
           </div>
           <div className={hasResult ? "mt-6" : "mx-auto mt-8 max-w-[280px]"}>
             <GenerateAction
+              label={generateActionLabel(state)}
               onGenerate={generate}
               isGenerating={state.status === "loading"}
             />

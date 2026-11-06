@@ -21,6 +21,11 @@ const RESULT_HEADING_ID = "current-result-heading";
  * The postal code and addresses currently on screen (ui-design.md section
  * 5.3), plus the action that copies the postal code's canonical value.
  *
+ * The section is titled by Figma's headline, 波が運んできた場所, at every
+ * width. The phone frame draws no such headline (its headline is the postal
+ * code), but the section still needs its heading (WCAG 1.3.1), so below the
+ * `md` breakpoint it is only visually hidden.
+ *
  * `copyFeedback` renders as its own polite status region immediately after
  * the copy action, before the address list -- ui-design.md section 5.3:
  * "Copy failure leaves the result usable and offers a concise error near the
@@ -40,23 +45,12 @@ export const CurrentResult = ({
   selectedAddress,
 }: CurrentResultProps) => (
   <section aria-labelledby={RESULT_HEADING_ID} className={"text-left"}>
-    <p className={`${eyebrowClass} hidden md:block`}>
-      {postalGeneratorText.resultEyebrow}
-    </p>
-    {/* The heading keeps its accessible name "生成結果"; Figma's headline is
-        what a sighted visitor reads beside it. The phone frame has no such
-        headline, since its headline is the postal code, so there the heading
-        carries the eyebrow instead: a heading with no visible text has no
-        box, and a heading nobody can see is not a heading a sighted visitor
-        can find. */}
-    <h2 id={RESULT_HEADING_ID} className={"text-title font-bold text-ink"}>
-      <span className={"sr-only"}>{postalGeneratorText.resultHeading}</span>
-      <span className={`${eyebrowClass} md:hidden`}>
-        {postalGeneratorText.resultEyebrow}
-      </span>
-      <span className={"hidden md:inline"}>
-        {postalGeneratorText.resultHeadline}
-      </span>
+    <p className={eyebrowClass}>{postalGeneratorText.resultEyebrow}</p>
+    <h2
+      id={RESULT_HEADING_ID}
+      className={"sr-only text-title font-bold text-ink md:not-sr-only"}
+    >
+      {postalGeneratorText.resultHeading}
     </h2>
     <p
       className={
