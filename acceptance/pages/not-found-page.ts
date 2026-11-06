@@ -14,18 +14,24 @@ export const createNotFoundPage = (page: Page) => {
   const heading = () =>
     page.getByRole("heading", {
       name: chromeSelectors.notFoundHeading,
+      exact: true,
       level: 1,
     });
 
   const backToGeneratorLink = () =>
-    page.getByRole("link", { name: chromeSelectors.backToGenerator });
+    page.getByRole("link", {
+      name: chromeSelectors.backToGenerator,
+      exact: true,
+    });
 
   const header = () => page.getByRole("banner");
 
   const footer = () => page.getByRole("contentinfo");
 
   const attribution = () =>
-    page.getByRole("contentinfo").getByText(chromeSelectors.attribution);
+    page
+      .getByRole("contentinfo")
+      .getByText(chromeSelectors.attribution, { exact: true });
 
   const hasHorizontalOverflow = () =>
     page.evaluate(

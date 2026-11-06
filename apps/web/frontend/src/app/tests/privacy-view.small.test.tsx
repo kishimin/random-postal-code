@@ -4,164 +4,160 @@ import { PrivacyView } from "../views/PrivacyView";
 
 /*
  * Component-level counterpart to acceptance/privacy-and-attribution.medium.test.ts
- * (Issue #10). The acceptance test is the source of truth for the contract;
- * these Small tests exercise the same structural contract against the
- * component alone, without a browser, for fast feedback while it is built.
+ * (Issue #10, rewritten for Issue #97). The acceptance test is the source of
+ * truth for the contract; these Small tests exercise the same structural
+ * contract against the component alone, without a browser, for fast feedback
+ * while it is built.
  *
- * Regex patterns mirror acceptance/selectors/privacy-selectors.ts by intent
- * (subject plus, where the criterion is a denial, a negative ending within one
- * sentence) rather than by import: application source does not depend on the
- * acceptance/ directory, which is Playwright-only and owned by a different
- * role in this repository's ATDD workflow.
+ * The page takes Figma's four section headings; the sentences under them are
+ * the application's own accurate disclosure, moved under the matching heading
+ * (owner decision on Issue #97, 2026-11-06). Regex patterns mirror
+ * acceptance/selectors/privacy-selectors.ts by intent (subject plus, where the
+ * criterion is a denial, a negative ending within one sentence) rather than by
+ * import: application source does not depend on the acceptance/ directory,
+ * which is Playwright-only and owned by a different role in this repository's
+ * ATDD workflow.
  */
+const headings = {
+  collectedInformation: "1. 取得する情報",
+  purposeOfUse: "2. 利用目的",
+  advertisingAndAnalytics: "3. 広告とアクセス解析",
+  history: "4. 履歴",
+} as const;
+
+const sectionOf = (name: string) => screen.getByRole("region", { name });
+
 describe("PrivacyView", () => {
-  test("separates what Zipnami stores from what third-party services process", () => {
+  test("has Figma's four section headings, each heading its own region, under the page's one h1", () => {
     render(<PrivacyView />);
 
     // ui-design.md section 8: one h1 per page. The disclosure's own sections
     // sit under the page title rather than beside it.
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "プライバシーポリシー" }),
+    ).toBeInTheDocument();
 
-    const firstPartySection = screen.getByRole("region", {
-      name: /Zipnami.*(?:保存|記録)/,
-    });
-    const thirdPartySection = screen.getByRole("region", {
-      name: /第三者|サードパーティ|外部サービス/,
-    });
-
-    expect(firstPartySection).toBeVisible();
-    expect(thirdPartySection).toBeVisible();
-
-    // "Contains its own content" alone would also be satisfied by a page that
-    // duplicated every sentence into both sections, which would still pass
-    // every "contains" assertion in this file while failing what AC-2 asks
-    // for: distinguishing the two. These negative assertions are what close
-    // that gap (TR-001).
-    expect(firstPartySection).not.toHaveTextContent(
-      /Google\s*(?:Maps|マップ)/i,
-    );
-    expect(firstPartySection).not.toHaveTextContent(/AdSense|アドセンス/i);
-    expect(firstPartySection).not.toHaveTextContent(/同意|コンセント|Consent/i);
-
-    expect(thirdPartySection).not.toHaveTextContent(
-      /履歴[^。]*(?:ブラウザ|端末)|(?:ブラウザ|端末)[^。]*履歴/,
-    );
-    expect(thirdPartySection).not.toHaveTextContent(
-      /位置情報[^。]*(?:しません|していません|ありません|ない)/,
-    );
-    expect(thirdPartySection).not.toHaveTextContent(
-      /(?:独自|自前|Zipnami)[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
-    );
-    expect(thirdPartySection).not.toHaveTextContent(
-      /広告[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
-    );
+    for (const name of Object.values(headings)) {
+      expect(
+        screen.getByRole("heading", { level: 2, name }),
+      ).toBeInTheDocument();
+      expect(sectionOf(name)).toBeVisible();
+    }
   });
 
-  test("the third-party section documents Google Maps, Google AdSense, and consent", () => {
+  test("lists the sections in Figma's order", () => {
     render(<PrivacyView />);
 
-    const thirdPartySection = screen.getByRole("region", {
-      name: /第三者|サードパーティ|外部サービス/,
-    });
+    const names = screen
+      .getAllByRole("heading", { level: 2 })
+      .map((heading) => heading.textContent);
 
-    expect(thirdPartySection).toHaveTextContent(/Google\s*(?:Maps|マップ)/i);
-    expect(thirdPartySection).toHaveTextContent(/AdSense|アドセンス/i);
-    expect(thirdPartySection).toHaveTextContent(/同意|コンセント|Consent/i);
+    expect(names).toEqual(Object.values(headings));
+  });
+
+  test("1. 取得する情報 states that no location, own identifier, or stored advertising identifier is collected", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.collectedInformation);
+
+    expect(section).toHaveTextContent(
+      /位置情報[^。]*(?:しません|していません|ありません|ない)/,
+    );
+    expect(section).toHaveTextContent(
+      /(?:独自|自前|Zipnami)[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
+    );
+    expect(section).toHaveTextContent(
+      /広告[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
+    );
+    // Each disclosure sits in the section it belongs to, not in all of them.
+    expect(section).not.toHaveTextContent(/Google\s*(?:Maps|マップ)/i);
+    expect(section).not.toHaveTextContent(/AdSense|アドセンス/i);
+  });
+
+  test("2. 利用目的 documents what Google Maps receives and when", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.purposeOfUse);
+
+    expect(section).toHaveTextContent(/Google\s*(?:Maps|マップ)/i);
     // Issue #8 embeds the map, so the disclosure must describe it as in use.
     // It said "not yet implemented" until then, which would understate what
     // reaches Google from the moment a deployment supplies a key.
-    expect(thirdPartySection).not.toHaveTextContent(/未実装|導入します/);
-    expect(thirdPartySection).toHaveTextContent(/住所[^。]*Google[^。]*送信/);
+    expect(section).not.toHaveTextContent(/未実装|導入します/);
+    expect(section).toHaveTextContent(/住所[^。]*Google[^。]*送信/);
+    // Each disclosure sits in the section it belongs to, not in all of them.
+    expect(section).not.toHaveTextContent(/AdSense|Analytics|アドセンス/i);
+    expect(section).not.toHaveTextContent(/履歴|位置情報/);
   });
 
   // Issue #92: design.md section 8 names Google Analytics among the services
   // /privacy distinguishes from what Zipnami itself stores.
-  test("the third-party section documents Google Analytics: what is sent, its cookies, consent regions, and opting out", () => {
+  test("3. 広告とアクセス解析 documents AdSense, Google Analytics, and consent", () => {
     render(<PrivacyView />);
 
-    const thirdPartySection = screen.getByRole("region", {
-      name: /第三者|サードパーティ|外部サービス/,
-    });
+    const section = sectionOf(headings.advertisingAndAnalytics);
 
-    expect(thirdPartySection).toHaveTextContent(/Google\s*Analytics/);
+    expect(section).toHaveTextContent(/AdSense|アドセンス/i);
+    expect(section).toHaveTextContent(/同意|コンセント|Consent/i);
+    expect(section).toHaveTextContent(/Google\s*Analytics/);
     // What is sent: pages visited, where the visit came from, device, region.
-    expect(thirdPartySection).toHaveTextContent(
+    expect(section).toHaveTextContent(
       /(?:ページ|閲覧)[^。]*(?:参照元|リファラ)[^。]*(?:端末|デバイス)[^。]*(?:地域|国)/,
     );
-    expect(thirdPartySection).toHaveTextContent(/_ga\b/);
-    expect(thirdPartySection).toHaveTextContent(/Cookie|クッキー/i);
+    expect(section).toHaveTextContent(/_ga\b/);
+    expect(section).toHaveTextContent(/Cookie|クッキー/i);
     // The AdSense consent sentence also names these regions and consent, so
     // the measurement's own behavior there is told apart by its cookies.
-    expect(thirdPartySection).toHaveTextContent(
+    expect(section).toHaveTextContent(
       /欧州経済領域[^。]*英国[^。]*スイス[^。]*同意[^。]*Cookie/,
     );
-    expect(thirdPartySection).toHaveTextContent(/オプトアウト/);
+    expect(section).toHaveTextContent(/オプトアウト/);
+    // Each disclosure sits in the section it belongs to, not in all of them.
+    expect(section).not.toHaveTextContent(/Google\s*(?:Maps|マップ)/i);
+    expect(section).not.toHaveTextContent(/履歴|位置情報/);
   });
 
-  test("the Zipnami section documents the browser-local history and that no location is collected", () => {
+  test("4. 履歴 documents that the history is saved in the browser and never sent to the server", () => {
     render(<PrivacyView />);
 
-    const firstPartySection = screen.getByRole("region", {
-      name: /Zipnami.*(?:保存|記録)/,
-    });
+    const section = sectionOf(headings.history);
 
     // Both halves of the history statement are required within one sentence:
     // "履歴" alone would be satisfied by a page that never says where the
     // history lives.
-    expect(firstPartySection).toHaveTextContent(
+    expect(section).toHaveTextContent(
       /履歴[^。]*(?:ブラウザ|端末)|(?:ブラウザ|端末)[^。]*履歴/,
-    );
-    expect(firstPartySection).toHaveTextContent(
-      /位置情報[^。]*(?:しません|していません|ありません|ない)/,
     );
     // Issue #7 ships the history, so the disclosure must describe it as in
     // use. The production /privacy still called it "not yet implemented"
     // while the deployed site kept history (Issue #21's deployed check).
     // Banning the old phrases alone would let another "not available yet"
     // wording through, so the sentence must also say it is saved now.
-    expect(firstPartySection).not.toHaveTextContent(/未実装|実装後/);
-    expect(firstPartySection).toHaveTextContent(
+    expect(section).not.toHaveTextContent(/未実装|実装後/);
+    expect(section).toHaveTextContent(
       /履歴[^。]*ブラウザ[^。]*保存し(?!ていません|ません)/,
     );
     // The other half of the promise: history-storage.ts only touches
     // localStorage, so nothing of it reaches the Worker.
-    expect(firstPartySection).toHaveTextContent(
+    expect(section).toHaveTextContent(
       /履歴[^。]*(?:サーバー|サーバ)[^。]*送信し(?:ません|ない)/,
     );
+    // Each disclosure sits in the section it belongs to, not in all of them.
+    expect(section).not.toHaveTextContent(/AdSense|Analytics|アドセンス/i);
+    expect(section).not.toHaveTextContent(/Google\s*(?:Maps|マップ)|Cookie/i);
   });
 
-  test("the Zipnami section states that no identifier of its own is issued and no advertising identifier is stored", () => {
+  // The contact section is V2 work (Issue #105), so the MVP page carries no
+  // contact link and no section for one.
+  test("has no contact section or link in the MVP", () => {
     render(<PrivacyView />);
 
-    const firstPartySection = screen.getByRole("region", {
-      name: /Zipnami.*(?:保存|記録)/,
-    });
-
-    expect(firstPartySection).toHaveTextContent(
-      /(?:独自|自前|Zipnami)[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
-    );
-    expect(firstPartySection).toHaveTextContent(
-      /広告[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
-    );
-  });
-
-  test("offers a contact method a keyboard user can reach and operate", () => {
-    render(<PrivacyView />);
-
-    const contactLink = screen.getByRole("link", {
-      name: /(?:お)?問(?:い)?合(?:わ)?せ|連絡先|Contact/i,
-    });
-
-    // A destination rather than a placeholder: without this, `href="#"`
-    // would satisfy "provides a contact method".
-    expect(contactLink).toHaveAttribute(
-      "href",
-      expect.stringMatching(/^(?:mailto:|https:\/\/)\S/),
-    );
-
-    // Not removed from the tab order (a positive tabIndex is also disallowed
-    // by this repository's accessibility contract; a native link's default
-    // tabIndex of 0 already keeps it keyboard-reachable).
-    expect(contactLink.tabIndex).toBeGreaterThan(-1);
+    expect(
+      screen.queryByRole("link", { name: /問い合わせ|連絡先|Contact/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: /お問い合わせ/ }),
+    ).not.toBeInTheDocument();
   });
 });

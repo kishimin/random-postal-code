@@ -1,7 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 import type { Address } from "@zipnami/shared";
 import {
-  externalMapLinkSelector,
+  externalMapHostSelector,
   googleMapsRequestPattern,
   mapAddressQuery,
   mapSelectors,
@@ -106,23 +106,41 @@ export const createAddressMapPage = (page: Page) => {
   // viewport it can start below the fold and a deferred frame would not load.
   // Scrolling toward it is what a visitor does to look at it.
   const revealMap = () =>
-    page.getByRole("region", { name: /地図/ }).scrollIntoViewIfNeeded();
+    page
+      .getByRole("region", { name: mapSelectors.mapRegion, exact: true })
+      .scrollIntoViewIfNeeded();
 
   const mapSelectionAction = (address: Address) =>
-    generator
-      .addressEntry(address)
-      .getByRole("button", { name: mapSelectors.selectMapTarget });
+    generator.addressEntry(address).getByRole("button", {
+      name: mapSelectors.selectMapTarget(address),
+      exact: true,
+    });
 
-  const anyMapSelectionAction = () =>
-    page
-      .getByRole("main")
-      .getByRole("button", { name: mapSelectors.selectMapTarget });
+  /**
+   * Every map selection control in main, one per address given.
+   *
+   * Built from the addresses rather than from a fragment of the label, so a
+   * control whose name lacks its address is not counted.
+   * @param addresses - The addresses whose controls to look for.
+   */
+  const anyMapSelectionAction = (addresses: readonly Address[]) =>
+    addresses
+      .map((address) =>
+        page.getByRole("main").getByRole("button", {
+          name: mapSelectors.selectMapTarget(address),
+          exact: true,
+        }),
+      )
+      .reduce((all, next) => all.or(next));
 
   const selectMapTarget = (address: Address) =>
     mapSelectionAction(address).click();
 
   const externalMapLink = (address: Address) =>
-    generator.addressEntry(address).locator(externalMapLinkSelector);
+    generator.addressEntry(address).getByRole("link", {
+      name: mapSelectors.externalMapLink(address),
+      exact: true,
+    });
 
   /*
    * The `href` values exactly as written, before the browser decodes anything.

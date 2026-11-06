@@ -1,13 +1,14 @@
 /*
  * What the production tests (Issue #104) locate the deployed site by.
  *
- * These are the names the deployed site shows today. Issue #97 changes every
- * control name to the Figma wording; when it lands, the production tests
- * should follow the same constants the acceptance tests use, so a copy change
- * stays one edit (ADR-0054).
+ * The generate action reads differently in each state (Issue #97), so it is
+ * matched by any of Figma's three labels, as whole strings. The other names
+ * are matched on their subject, so the sentence around them stays the
+ * page's own.
  */
 export const productionSelectors = {
-  generateAction: /生成/,
+  generateAction: /^(?:ランダム生成する|もう一度、波に乗る|再試行する)$/,
+  expandHistory: "履歴を展開",
   copyAction: /コピー/,
   mapRegion: /地図/,
   privacyLink: /プライバシー/,

@@ -160,10 +160,24 @@ export const createProductionSitePage = (page: Page) => {
     page.evaluate<string>("navigator.clipboard.readText()");
 
   /*
+   * Opens the history list the way a visitor does, through 履歴を展開
+   * (ui-design.md section 9.2). A list already open is left as it is.
+   */
+  const openHistory = async () => {
+    const control = page.getByRole("button", {
+      name: productionSelectors.expandHistory,
+    });
+    if ((await control.getAttribute("aria-expanded")) !== "true") {
+      await control.click();
+    }
+  };
+
+  /*
    * The canonical codes the history lists, newest first. An entry is a list
    * item carrying a postal code; the result's own address rows carry none.
    */
   const historyPostalCodes = async () => {
+    await openHistory();
     const entryTexts = await page
       .getByRole("main")
       .getByRole("listitem")

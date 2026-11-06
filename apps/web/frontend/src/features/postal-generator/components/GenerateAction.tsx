@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
-import { postalGeneratorText } from "../site-text";
-import { tapTargetClass } from "../styles";
+import { primaryButtonClass } from "../styles";
 
 type GenerateActionProps = {
+  /** Figma labels the action by state, so the caller picks the label. */
+  label: string;
   onGenerate: () => void;
   isGenerating: boolean;
 };
@@ -30,6 +31,7 @@ type GenerateActionProps = {
  * button would silently cancel that navigation.
  */
 export const GenerateAction = ({
+  label,
   onGenerate,
   isGenerating,
 }: GenerateActionProps) => {
@@ -54,11 +56,11 @@ export const GenerateAction = ({
     <button
       ref={buttonRef}
       type={"button"}
-      className={tapTargetClass}
+      className={primaryButtonClass}
       disabled={isGenerating}
       onClick={handleClick}
     >
-      {postalGeneratorText.generateLabel}
+      {label}
     </button>
   );
 };

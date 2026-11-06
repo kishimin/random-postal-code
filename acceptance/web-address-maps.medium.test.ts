@@ -124,9 +124,9 @@ test.describe("Issue #8: Google Maps on the Web result", () => {
 
     // One control per address, not one for the result: a screen offering a
     // single map action for the whole list satisfies every assertion above.
-    await expect(addressMapPage.anyMapSelectionAction()).toHaveCount(
-      result.addresses.length,
-    );
+    await expect(
+      addressMapPage.anyMapSelectionAction(result.addresses),
+    ).toHaveCount(result.addresses.length);
   });
 
   test("the first address is the embedded map's target before any selection", async ({

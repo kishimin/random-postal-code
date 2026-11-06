@@ -106,7 +106,7 @@ describe("application composition", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: /Zipnami/, level: 1 }),
+      await screen.findByRole("heading", { name: /波に乗って/, level: 1 }),
     ).toBeInTheDocument();
   });
 

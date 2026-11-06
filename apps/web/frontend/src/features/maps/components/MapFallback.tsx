@@ -12,10 +12,11 @@ type MapFallbackProps = {
  * map when it has no usable key or failed to load.
  */
 export const MapFallback = ({ address }: MapFallbackProps) => (
-  <div>
+  <div className={"text-body-sm text-ink"}>
     <p>{mapsText.fallbackMessage}</p>
-    <p>{fullAddressText(address)}</p>
+    <p className={"mt-2 font-semibold"}>{fullAddressText(address)}</p>
     <a
+      className={"inline-flex min-h-11 items-center underline"}
       href={buildExternalMapHref(address)}
       target={"_blank"}
       rel={"noreferrer"}

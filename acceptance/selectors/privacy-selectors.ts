@@ -1,10 +1,13 @@
+import { figmaCopy } from "./figma-copy.ts";
+
 /*
  * What the Issue #10 acceptance test locates the privacy and attribution
  * disclosure by.
  *
- * ui-design.md section 12 leaves the exact Japanese copy and the contact
- * destination to the Issue that builds the screen, so each expression below
- * fixes only what a visitor needs in order to recognise the disclosure — the
+ * The sections, the links, and the credit are found by their exact words
+ * (figma-copy.ts, approved on Issue #97). The statements inside the sections
+ * are the page's body, which stays the application's own accurate text, so
+ * each statement expression fixes only what the disclosure has to say — the
  * subject and, where the criterion is about a denial, its negative form. The
  * sentence around it stays the implementation's. Holding them here rather than
  * in the Page Object keeps a copy change to one edit (ADR-0054); the MVP ships
@@ -13,21 +16,21 @@
  */
 export const privacySelectors = {
   /*
-   * The two sections the disclosure is divided into.
+   * The four sections the disclosure is divided into, by Figma's headings.
    *
-   * "It distinguishes data stored by Zipnami from data processed by
-   * third-party services" is a criterion about structure, not about wording,
-   * so it is held as two separately named regions rather than as one page of
-   * prose that happens to mention both. A region is how that structure reaches
-   * a screen reader (ui-design.md section 8), which is why the test may depend
-   * on it at all (ADR-0012).
+   * Each is held as a separately named region rather than as one page of
+   * prose, so that where a statement sits is something a test can read: a
+   * region is how a section reaches a screen reader (ui-design.md section 8),
+   * which is why the test may depend on it at all (ADR-0012). Each region is
+   * found by its heading's exact words.
    *
-   * The two expressions are written so that one accessible name cannot satisfy
-   * both: the first-party name has to join Zipnami to what it keeps, and the
-   * third-party name has to say that the processor is somebody else.
+   * This replaces the earlier split into "data stored by Zipnami" and "data
+   * processed by third parties", and the contact link that came after them:
+   * the owner chose Figma's headings and moved contact to V2 (Issue #105),
+   * approved as an acceptance-test rewrite on Issue #97,
+   * https://github.com/kishimin/random-postal-code/issues/97#issuecomment-6670298264.
    */
-  firstPartySectionLabel: /Zipnami.*(?:保存|記録)/,
-  thirdPartySectionLabel: /第三者|サードパーティ|外部サービス/,
+  sectionHeadings: figmaCopy.privacySections,
 
   /*
    * The third parties the disclosure has to name.
@@ -76,9 +79,6 @@ export const privacySelectors = {
   noStoredAdvertisingIdentifier:
     /広告[^。]*(?:識別子|ID)[^。]*(?:しません|していません|ありません|ない)/i,
 
-  /* How a visitor recognises the contact affordance. */
-  contactLabel: /(?:お)?問(?:い)?合(?:わ)?せ|連絡先|Contact/i,
-
   /*
    * The link that leads into the disclosure from the rest of the application.
    *
@@ -86,25 +86,15 @@ export const privacySelectors = {
    * without knowing the address, so the link is located by the words a visitor
    * would look for rather than by where the frame happens to put it.
    */
-  disclosureLink: /プライバシー/,
+  disclosureLink: figmaCopy.privacyLink,
 
   /*
-   * The Japan Post credit.
-   *
-   * "日本郵便" alone would be matched by a page that merely mentions the
-   * company, so the expression also requires the word that makes it a credit:
-   * the data is published or provided by them. That is the same sentence which
+   * The Japan Post credit: Figma's footer sentence, which is the one that
    * keeps the product from presenting the addresses as its own.
    */
-  japanPostCredit: /日本郵便[^。]*(?:公開|提供)/,
+  japanPostCredit: figmaCopy.attribution,
 } as const;
 
-/*
- * What a usable contact destination looks like.
- *
- * ui-design.md section 12 leaves the destination itself open, so this fixes
- * only that the link leads somewhere a visitor can actually reach — a mail
- * address or a page on the web. Without it, `href="#"` would satisfy "provides
- * a contact method".
- */
-export const contactDestinationPattern = /^(?:mailto:|https:\/\/)\S/;
+/** One of the disclosure's section headings. */
+export type PrivacySectionHeading =
+  (typeof privacySelectors.sectionHeadings)[keyof typeof privacySelectors.sectionHeadings];

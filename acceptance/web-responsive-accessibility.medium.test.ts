@@ -1,4 +1,4 @@
-import type { PostalCode } from "@zipnami/shared";
+import type { Address, PostalCode } from "@zipnami/shared";
 import { expect, test as shellTest } from "./fixtures";
 import { normalizedPostalCodes } from "./fixtures/postal-code-dataset.ts";
 import {
@@ -20,15 +20,17 @@ import {
   type PrivacyDisclosurePage,
 } from "./pages/privacy-disclosure-page.ts";
 import {
-  copySuccessText,
   documentTitleSelectors,
-  failureText,
-  loadingText,
   representativeViewports,
-  resultHeadingName,
 } from "./selectors/accessibility-selectors.ts";
 import { advertisingSelectors } from "./selectors/advertising-selectors.ts";
 import { chromeSelectors, unknownPath } from "./selectors/chrome-selectors.ts";
+import {
+  applicationCopy,
+  figmaCopy,
+  openInGoogleMapsName,
+  showOnMapName,
+} from "./selectors/figma-copy.ts";
 import { displayedPostalCode } from "./selectors/generator-selectors.ts";
 
 /*
@@ -42,7 +44,8 @@ import { displayedPostalCode } from "./selectors/generator-selectors.ts";
  *   AC-1  Web works at representative mobile, tablet, and desktop widths
  *         without hidden primary controls or horizontal content loss.
  *   AC-2  Web primary actions are keyboard operable with visible focus.
- *   AC-3  Buttons and links have meaningful accessible names.
+ *   AC-3  Buttons and links have meaningful accessible names. Held as each
+ *         screen's exact list of Figma names (approved on Issue #97).
  *   AC-4  Status, loading, result, and error information is not conveyed by
  *         color alone.
  *   AC-5  Dynamic results and errors are announced appropriately.
@@ -209,7 +212,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
         accessibilityPage.linkNamed(chromeSelectors.siteHeader),
         postalCodeGeneratorPage.navigationLink(),
         accessibilityPage.visibleTextInMain(
-          new RegExp(displayedPostalCode(longAddressResult.postalCode)),
+          displayedPostalCode(longAddressResult.postalCode),
         ),
         advertisingPage.advertisingRegion(),
       ]) {
@@ -240,7 +243,9 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
       await postalCodeGeneratorPage.navigate();
       await postalCodeGeneratorPage.generate();
 
-      const failure = accessibilityPage.visibleTextInMain(failureText);
+      const failure = accessibilityPage.visibleTextInMain(
+        figmaCopy.apiErrorHeading,
+      );
       await expect(failure).toBeVisible();
 
       expect(await accessibilityPage.hasHorizontalOverflow()).toBe(false);
@@ -254,7 +259,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
       ).toBe(true);
     });
 
-    test(`AC-1 at ${viewport.name}, the privacy page's sections and contact method stay within the visible width`, async ({
+    test(`AC-1 at ${viewport.name}, the privacy page's sections and links stay within the visible width`, async ({
       accessibilityPage,
       privacyDisclosurePage,
     }) => {
@@ -264,11 +269,14 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
       await expect(privacyDisclosurePage.heading()).toBeVisible();
       expect(await accessibilityPage.hasHorizontalOverflow()).toBe(false);
 
+      // Every one of Figma's four sections, and both of the page's links. The
+      // contact link this list used to carry went to V2 with its section
+      // (Issue #105; approved on Issue #97, issuecomment-6670298264).
       for (const element of [
         privacyDisclosurePage.heading(),
-        privacyDisclosurePage.firstPartySection(),
-        privacyDisclosurePage.thirdPartySection(),
-        privacyDisclosurePage.contactLink(),
+        ...privacyDisclosurePage.sectionHeadings.map((name) =>
+          privacyDisclosurePage.section(name),
+        ),
         accessibilityPage.linkNamed(chromeSelectors.siteHeader),
         privacyDisclosurePage.disclosureLink(),
       ]) {
@@ -391,8 +399,12 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     expect(await accessibilityPage.elementsAheadOfDocumentOrder()).toBe(0);
 
     await privacyDisclosurePage.navigate();
+    // The footer's privacy link: with no contact link in the MVP, it is the
+    // control the privacy page itself carries in its frame.
     expect(
-      await accessibilityPage.tabIndexOf(privacyDisclosurePage.contactLink()),
+      await accessibilityPage.tabIndexOf(
+        privacyDisclosurePage.disclosureLink(),
+      ),
     ).toBeGreaterThanOrEqual(0);
     expect(await accessibilityPage.elementsAheadOfDocumentOrder()).toBe(0);
 
@@ -428,7 +440,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     await privacyDisclosurePage.navigate();
     expect(
       await accessibilityPage.showsFocusIndicator(
-        privacyDisclosurePage.contactLink(),
+        privacyDisclosurePage.disclosureLink(),
       ),
     ).toBe(true);
 
@@ -440,7 +452,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     ).toBe(true);
   });
 
-  test("AC-3 every button and link on each screen and state has a meaningful accessible name", async ({
+  test("AC-3 every button and link on each screen and state has exactly the name Figma gives it", async ({
     accessibilityPage,
     advertisingPage,
     notFoundPage,
@@ -449,51 +461,122 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
   }) => {
     await advertisingPage.failEveryAdvertisingRequest();
     await postalCodeGeneratorPage.stubRandomEndpoint([
+      respondUnavailable(),
       respondWith(result),
       respondUnavailable(),
     ]);
 
     /*
-     * Every control has to carry one of the names a visitor recognises it by.
-     * Counting all of them against the named ones means an unnamed or
-     * generically named control — an icon button with no label, a link
-     * reading "こちら" — leaves the two counts different. The link count is
-     * required to be non-zero so the equality cannot hold for a screen that
-     * failed to render at all.
+     * Each screen's buttons and links are compared with the whole list of
+     * names that screen is expected to carry, each name exact (figma-copy.ts,
+     * approved on Issue #97). Every expected name has to be there as often as
+     * it is listed, and the total has to match, so a missing control, an
+     * extra one, and an unnamed or generically named one ("ボタン", an icon
+     * with no label, a link reading "こちら") all fail. That is stricter than
+     * the earlier check, which accepted any name carrying one of a few words.
      */
-    const expectEveryControlNamed = async () => {
-      const linkCount = await accessibilityPage.links().count();
-      expect(linkCount).toBeGreaterThan(0);
-      await expect(accessibilityPage.namedLinks()).toHaveCount(linkCount);
-      await expect(accessibilityPage.namedButtons()).toHaveCount(
-        await accessibilityPage.buttons().count(),
-      );
+    const expectControls = async (
+      role: "button" | "link",
+      expectedNames: readonly string[],
+    ) => {
+      const tally = new Map<string, number>();
+      for (const name of expectedNames) {
+        tally.set(name, (tally.get(name) ?? 0) + 1);
+      }
+      for (const [name, count] of tally) {
+        await expect
+          .soft(
+            accessibilityPage.controlsNamed(role, name),
+            `${role} named exactly ${JSON.stringify(name)}`,
+          )
+          .toHaveCount(count);
+      }
+      await expect(
+        accessibilityPage.controls(role),
+        `every ${role} on the screen, against ${JSON.stringify(expectedNames)}`,
+      ).toHaveCount(expectedNames.length);
     };
 
-    // Idle.
+    // The frame every screen shares: the wordmark home, and the footer's
+    // privacy link (Figma removed the header's "このアプリについて").
+    const frameLinks = (between: readonly string[]) => [
+      figmaCopy.wordmark,
+      ...between,
+      figmaCopy.privacyLink,
+    ];
+
+    // A shown result adds the copy action, each address's map control and
+    // Google Maps link (named with the address, AA over Figma), and the
+    // history's 履歴を展開, the list itself staying closed.
+    const resultButtons = (action: string, addresses: readonly Address[]) => [
+      action,
+      figmaCopy.copyAction,
+      ...addresses.map(showOnMapName),
+      figmaCopy.expandHistory,
+    ];
+    /*
+     * Without a Maps key the embedded map falls back to a link to its target,
+     * the first address (Issue #8), and with one it embeds a map instead. A
+     * build may be either, so the map region may hold at most that one link,
+     * under the same exact name as the first address's own link.
+     */
+    const resultLinks = async (addresses: readonly Address[]) => {
+      const mapFallbackLinks = await accessibilityPage
+        .regionNamed(applicationCopy.mapHeading)
+        .getByRole("link")
+        .count();
+      expect(mapFallbackLinks).toBeLessThanOrEqual(1);
+      const target = addresses.slice(0, mapFallbackLinks);
+
+      return frameLinks([
+        ...addresses.map(openInGoogleMapsName),
+        ...target.map(openInGoogleMapsName),
+      ]);
+    };
+
+    // Start.
     await postalCodeGeneratorPage.navigate();
-    await expect(postalCodeGeneratorPage.generateAction()).toBeVisible();
-    await expectEveryControlNamed();
+    await expect(postalCodeGeneratorPage.startAction()).toBeVisible();
+    await expectControls("button", [figmaCopy.startAction]);
+    await expectControls("link", frameLinks([]));
 
-    // Success, where the copy action joins the screen.
+    // The API error from the start screen (Figma #27:72, #27:93).
     await postalCodeGeneratorPage.generate();
-    await expect(postalCodeGeneratorPage.copyAction()).toBeVisible();
-    await expectEveryControlNamed();
+    await expect(postalCodeGeneratorPage.retryAction()).toBeVisible();
+    await expectControls("button", [figmaCopy.retryAction]);
+    await expectControls("link", frameLinks([]));
 
-    // Error, where the previous result stays and the retry is offered.
+    // A result, reached by retrying.
     await postalCodeGeneratorPage.generate();
-    await expect(
-      accessibilityPage.visibleTextInMain(failureText),
-    ).toBeVisible();
-    await expectEveryControlNamed();
+    await expect(postalCodeGeneratorPage.regenerateAction()).toBeVisible();
+    await expectControls(
+      "button",
+      resultButtons(figmaCopy.regenerateAction, result.addresses),
+    );
+    await expectControls("link", await resultLinks(result.addresses));
+
+    // The API error again, where the previous result stays and the retry is
+    // offered in place of もう一度、波に乗る.
+    await postalCodeGeneratorPage.generate();
+    await expect(postalCodeGeneratorPage.retryAction()).toBeVisible();
+    await expectControls(
+      "button",
+      resultButtons(figmaCopy.retryAction, result.addresses),
+    );
+    await expectControls("link", await resultLinks(result.addresses));
 
     await privacyDisclosurePage.navigate();
-    await expect(privacyDisclosurePage.contactLink()).toBeVisible();
-    await expectEveryControlNamed();
+    for (const name of privacyDisclosurePage.sectionHeadings) {
+      await expect(privacyDisclosurePage.section(name), name).toBeVisible();
+    }
+    await expectControls("button", []);
+    // Only the frame's links: the contact link went to V2 (Issue #105).
+    await expectControls("link", frameLinks([]));
 
     await notFoundPage.navigate();
     await expect(notFoundPage.backToGeneratorLink()).toBeVisible();
-    await expectEveryControlNamed();
+    await expectControls("button", []);
+    await expectControls("link", frameLinks([figmaCopy.backToTop]));
   });
 
   test("AC-4 loading is stated in visible text and a busy state, not only by a greyed-out action", async ({
@@ -510,7 +593,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
 
     await expect(postalCodeGeneratorPage.generateAction()).toBeDisabled();
     await expect(
-      accessibilityPage.visibleTextInMain(loadingText),
+      accessibilityPage.visibleTextInMain(applicationCopy.loadingAnnouncement),
     ).toBeVisible();
     // ui-design.md section 8: aria-busy on the result region during
     // generation, which is how assistive technology learns the region is
@@ -536,7 +619,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     await postalCodeGeneratorPage.generate();
 
     await expect(
-      accessibilityPage.visibleTextInMain(failureText),
+      accessibilityPage.visibleTextInMain(figmaCopy.apiErrorHeading),
     ).toBeVisible();
   });
 
@@ -553,13 +636,15 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
 
     await expect(
       accessibilityPage.visibleTextInMain(
-        new RegExp(displayedPostalCode(result.postalCode)),
+        displayedPostalCode(result.postalCode),
       ),
     ).toBeVisible();
 
     await postalCodeGeneratorPage.copy();
     await expect(
-      accessibilityPage.visibleTextInMain(copySuccessText),
+      accessibilityPage.visibleTextInMain(
+        applicationCopy.copySuccessAnnouncement,
+      ),
     ).toBeVisible();
   });
 
@@ -592,7 +677,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     );
     await expect
       .poll(() => accessibilityPage.announcementText())
-      .toMatch(loadingText);
+      .toContain(applicationCopy.loadingAnnouncement);
 
     postalCodeGeneratorPage.releaseResponses();
     await expect
@@ -625,7 +710,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
 
     await expect
       .poll(() => accessibilityPage.announcementText())
-      .toMatch(failureText);
+      .toContain(applicationCopy.serviceUnavailableAnnouncement);
 
     // ui-design.md section 8 moves focus to an error summary only when
     // immediate action is required. A failed generation is retried by the
@@ -657,7 +742,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
 
     await expect
       .poll(() => accessibilityPage.announcementText())
-      .toMatch(copySuccessText);
+      .toContain(applicationCopy.copySuccessAnnouncement);
   });
 
   test("AC-5 arriving at another page from the keyboard is perceivable, and the document title names that page", async ({
@@ -736,6 +821,13 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     await expectOneOfEachLandmark();
   });
 
+  /*
+   * The result heading is 波が運んできた場所 at every width. Figma's mobile
+   * result frame (#11:7) draws no such headline, but the section still needs
+   * its heading (WCAG 1.3.1, ui-design.md section 8), so on a phone it may be
+   * visually hidden while keeping this name. A visually hidden heading still
+   * has a box, which is what toBeVisible asks of it (approved on Issue #97).
+   */
   test("AC-6 the result is a section titled by a second-level heading, and its addresses are a list", async ({
     accessibilityPage,
     advertisingPage,
@@ -747,11 +839,11 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     await postalCodeGeneratorPage.generate();
 
     await expect(
-      accessibilityPage.sectionHeadingNamed(resultHeadingName),
+      accessibilityPage.sectionHeadingNamed(figmaCopy.resultHeading),
     ).toBeVisible();
-    await expect(accessibilityPage.regionNamed(resultHeadingName)).toHaveCount(
-      1,
-    );
+    await expect(
+      accessibilityPage.regionNamed(figmaCopy.resultHeading),
+    ).toHaveCount(1);
 
     for (const address of result.addresses) {
       await expect(postalCodeGeneratorPage.addressEntry(address)).toHaveCount(
@@ -815,7 +907,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     ).toHaveCount(0);
     await expect(
       accessibilityPage.regionInside(
-        accessibilityPage.regionNamed(resultHeadingName),
+        accessibilityPage.regionNamed(figmaCopy.resultHeading),
         advertisingSelectors.regionLabel,
       ),
     ).toHaveCount(0);
@@ -867,7 +959,9 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     await postalCodeGeneratorPage.generate();
     await postalCodeGeneratorPage.copy();
     await expect(
-      accessibilityPage.visibleTextInMain(copySuccessText),
+      accessibilityPage.visibleTextInMain(
+        applicationCopy.copySuccessAnnouncement,
+      ),
     ).toBeVisible();
 
     expect(await accessibilityPage.scanForViolations()).toEqual([]);
@@ -883,7 +977,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     await postalCodeGeneratorPage.navigate();
     await postalCodeGeneratorPage.generate();
     await expect(
-      accessibilityPage.visibleTextInMain(failureText),
+      accessibilityPage.visibleTextInMain(figmaCopy.apiErrorHeading),
     ).toBeVisible();
 
     expect(await accessibilityPage.scanForViolations()).toEqual([]);
@@ -894,7 +988,9 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     privacyDisclosurePage,
   }) => {
     await privacyDisclosurePage.navigate();
-    await expect(privacyDisclosurePage.contactLink()).toBeVisible();
+    for (const name of privacyDisclosurePage.sectionHeadings) {
+      await expect(privacyDisclosurePage.section(name), name).toBeVisible();
+    }
 
     expect(await accessibilityPage.scanForViolations()).toEqual([]);
   });

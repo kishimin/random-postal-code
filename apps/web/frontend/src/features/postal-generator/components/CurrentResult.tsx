@@ -2,7 +2,7 @@ import type { Address, PostalCode } from "@zipnami/shared";
 import type { ReactNode } from "react";
 import { formatPostalCode } from "../format-postal-code";
 import { postalGeneratorText } from "../site-text";
-import { tapTargetClass } from "../styles";
+import { eyebrowClass, secondaryButtonClass } from "../styles";
 import { AddressList } from "./AddressList";
 
 type CurrentResultProps = {
@@ -11,6 +11,8 @@ type CurrentResultProps = {
   copyFeedback: string;
   /** Forwarded to AddressList -- see that component for why this exists. */
   renderAddressExtra?: (address: Address) => ReactNode;
+  /** Forwarded to AddressList, which draws it on the accent surface. */
+  selectedAddress?: Address;
 };
 
 const RESULT_HEADING_ID = "current-result-heading";
@@ -18,6 +20,11 @@ const RESULT_HEADING_ID = "current-result-heading";
 /**
  * The postal code and addresses currently on screen (ui-design.md section
  * 5.3), plus the action that copies the postal code's canonical value.
+ *
+ * The section is titled by Figma's headline, 波が運んできた場所, at every
+ * width. The phone frame draws no such headline (its headline is the postal
+ * code), but the section still needs its heading (WCAG 1.3.1), so below the
+ * `md` breakpoint it is only visually hidden.
  *
  * `copyFeedback` renders as its own polite status region immediately after
  * the copy action, before the address list -- ui-design.md section 5.3:
@@ -35,19 +42,55 @@ export const CurrentResult = ({
   onCopy,
   copyFeedback,
   renderAddressExtra,
+  selectedAddress,
 }: CurrentResultProps) => (
-  <section aria-labelledby={RESULT_HEADING_ID}>
-    <h2 id={RESULT_HEADING_ID}>{postalGeneratorText.resultHeading}</h2>
-    <p>{formatPostalCode(result.postalCode)}</p>
-    <button type={"button"} className={tapTargetClass} onClick={onCopy}>
-      {postalGeneratorText.copyLabel}
-    </button>
-    <p role={"status"} data-testid={"copy-feedback"}>
-      {copyFeedback}
+  <section aria-labelledby={RESULT_HEADING_ID} className={"text-left"}>
+    <p className={eyebrowClass}>{postalGeneratorText.resultEyebrow}</p>
+    <h2
+      id={RESULT_HEADING_ID}
+      className={"sr-only text-title font-bold text-ink md:not-sr-only"}
+    >
+      {postalGeneratorText.resultHeading}
+    </h2>
+    <p
+      className={
+        "mt-4 hidden text-eyebrow font-semibold text-ink-muted md:block"
+      }
+    >
+      {postalGeneratorText.postalCodeLabel}
     </p>
+    <p
+      className={
+        "mt-2 text-display-sm font-bold tabular-nums text-ink lg:text-display-md"
+      }
+    >
+      <span aria-hidden={"true"}>{"〒"}</span>
+      {/* Its own element, so the code is a text of its own: the mark beside it
+          is decoration, and a reader or a test looks for NNN-NNNN alone. */}
+      <span>{formatPostalCode(result.postalCode)}</span>
+    </p>
+    <p className={"mt-2 text-caption text-ink-muted lg:text-eyebrow"}>
+      <span className={"hidden lg:inline"}>
+        {postalGeneratorText.addressCountPrefix}
+      </span>
+      {postalGeneratorText.addressCount(result.addresses.length)}
+    </p>
+    <div className={"mt-4 flex flex-wrap items-center gap-3"}>
+      <button type={"button"} className={secondaryButtonClass} onClick={onCopy}>
+        {postalGeneratorText.copyLabel}
+      </button>
+      <p
+        role={"status"}
+        data-testid={"copy-feedback"}
+        className={"text-caption text-ink-muted"}
+      >
+        {copyFeedback}
+      </p>
+    </div>
     <AddressList
       addresses={result.addresses}
       renderAddressExtra={renderAddressExtra}
+      selectedAddress={selectedAddress}
     />
   </section>
 );

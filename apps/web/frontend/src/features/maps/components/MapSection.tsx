@@ -24,8 +24,16 @@ export const MapSection = ({
   if (!result || !selectedAddress) return null;
 
   return (
-    <section aria-labelledby={MAP_HEADING_ID}>
-      <h2 id={MAP_HEADING_ID}>{mapsText.mapHeading}</h2>
+    <section
+      aria-labelledby={MAP_HEADING_ID}
+      className={"rounded-card bg-map-surface p-4 lg:p-6"}
+    >
+      <h2
+        id={MAP_HEADING_ID}
+        className={"mb-3 text-eyebrow font-semibold text-ink-muted"}
+      >
+        {mapsText.mapHeading}
+      </h2>
       <AddressMap address={selectedAddress} apiKey={apiKey} />
     </section>
   );

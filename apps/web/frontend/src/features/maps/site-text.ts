@@ -3,19 +3,24 @@ import type { Address } from "@zipnami/shared";
 const fullAddressText = (address: Address): string =>
   `${address.prefecture}${address.city}${address.town}`;
 
+// Figma's labels for the two per-address controls (the address rows of the
+// result frames). They repeat on every address, so each control's accessible
+// name puts the address in front of them (ui-design.md sections 8 and 9.2).
+const SELECT_MAP_TARGET_TEXT = "地図に表示";
+const EXTERNAL_MAP_LINK_TEXT = "Google マップで開く";
+
 /**
  * Japanese strings the maps feature shows (ui-design.md section 9: Japanese
  * display strings live in UI-owned resources; the MVP ships Japanese only).
  */
 export const mapsText = {
   mapHeading: "地図",
-  // acceptance/selectors/map-selectors.ts matches this control by /地図/, and
-  // ui-design.md section 8 asks every address map action for a unique
-  // accessible name carrying address context.
+  selectMapTargetText: SELECT_MAP_TARGET_TEXT,
+  externalMapLinkText: EXTERNAL_MAP_LINK_TEXT,
   selectMapTargetLabel: (address: Address) =>
-    `${fullAddressText(address)}を地図に表示`,
+    `${fullAddressText(address)}を${SELECT_MAP_TARGET_TEXT}`,
   externalMapLinkLabel: (address: Address) =>
-    `${fullAddressText(address)}をGoogleマップで開く`,
+    `${fullAddressText(address)}を${EXTERNAL_MAP_LINK_TEXT}`,
   embedTitle: (address: Address) => `${fullAddressText(address)}の地図`,
   fallbackMessage: "地図を表示できませんでした。",
 } as const;

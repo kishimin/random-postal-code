@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useDocumentTitle } from "../../hooks/use-document-title";
 import { pageTitle, siteText } from "../site-text";
-import { linkClass } from "../styles";
+import { primaryActionClass } from "../styles";
 
 // Reused for both the visible heading and the document title, so the two
 // never drift into two different phrasings of the same failure.
@@ -44,14 +44,19 @@ export const AppErrorContent = () => {
   }, []);
 
   return (
-    <>
+    <div className={"flex flex-col items-center gap-4 py-12 text-center"}>
       <div ref={summaryRef} role={"alert"} tabIndex={-1}>
-        <h1>{HEADING}</h1>
-        <p>{"画面を表示できませんでした。時間をおいて再度お試しください。"}</p>
+        <p aria-hidden={"true"} className={"text-mystery font-bold text-error"}>
+          {"!"}
+        </p>
+        <h1 className={"mt-2 text-headline font-bold text-ink"}>{HEADING}</h1>
+        <p className={"mt-3 text-body-sm text-ink-muted"}>
+          {"時間をおいて、もう一度お試しください。"}
+        </p>
       </div>
-      <a className={linkClass} href={"/"}>
+      <a className={`${primaryActionClass} mt-4`} href={"/"}>
         {siteText.backToGenerator}
       </a>
-    </>
+    </div>
   );
 };

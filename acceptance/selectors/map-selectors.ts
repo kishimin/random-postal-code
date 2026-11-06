@@ -1,11 +1,13 @@
+import type { Address } from "@zipnami/shared";
+import {
+  applicationCopy,
+  openInGoogleMapsName,
+  showOnMapName,
+} from "./figma-copy.ts";
+
 /*
- * What the Issue #8 acceptance test locates map behavior by.
- *
- * ui-design.md section 9 keeps Japanese display strings in UI-owned resources
- * and the MVP ships Japanese only, so each expression below fixes only the word
- * a visitor recognises the control by, not the sentence around it. Holding them
- * here rather than in the Page Object keeps a copy change to one edit
- * (ADR-0054).
+ * What the Issue #8 acceptance test locates map behavior by: the exact names
+ * from figma-copy.ts (approved on Issue #97).
  */
 export const mapSelectors = {
   /*
@@ -15,22 +17,30 @@ export const mapSelectors = {
    * before ARIA alternatives. Choosing which address the embedded map shows
    * changes the current page rather than navigating away from it, so the
    * control is a button, and the same section requires its accessible name to
-   * carry address context — which is why the Page Object scopes this pattern to
-   * one address entry instead of matching it page-wide.
+   * carry address context -- which is why the name is built from the address.
    */
-  selectMapTarget: /地図/,
+  selectMapTarget: (address: Address) => showOnMapName(address),
+
+  /*
+   * The per-address link that hands the visitor off to Google Maps. Where it
+   * goes is still asserted from its `href`; the name is how it is found.
+   */
+  externalMapLink: (address: Address) => openInGoogleMapsName(address),
+
+  // The embedded map's region, named by its heading.
+  mapRegion: applicationCopy.mapHeading,
 } as const;
 
 /*
- * A link that hands the visitor off to Google Maps.
+ * Where an external map link has to lead: a Google host.
  *
- * Matched on where it goes rather than on how it reads: the criterion it serves
- * is about the URL the visitor receives, so the locator and the assertion about
- * it stay the same fact. Google publishes more than one shape for this URL
- * (`/maps/search/?api=1&query=` and `maps.google.com/?q=` among them) and no
- * repository contract picks one, so only the host family is fixed here.
+ * The links are found by their exact names, and this narrows them to the ones
+ * whose `href` points at Google. A name alone would also accept a link that
+ * hands the visitor to another map service, which the Issue #8 criterion of an
+ * external Google Maps link rules out. The rewrite approved on Issue #97 kept
+ * what each test checks, so this host check stays alongside the exact name.
  */
-export const externalMapLinkSelector = 'a[href*="google."]';
+export const externalMapHostSelector = 'a[href*="google."]';
 
 /*
  * Every request the embedded map makes to Google.

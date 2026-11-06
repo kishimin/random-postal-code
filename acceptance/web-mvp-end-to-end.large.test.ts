@@ -8,10 +8,8 @@ import {
   createWebMvpJourneyPage,
   type WebMvpJourneyPage,
 } from "./pages/web-mvp-journey-page.ts";
-import {
-  loadingText,
-  representativeViewports,
-} from "./selectors/accessibility-selectors.ts";
+import { representativeViewports } from "./selectors/accessibility-selectors.ts";
+import { applicationCopy } from "./selectors/figma-copy.ts";
 
 /*
  * Acceptance test for Issue #21: Verify the Zipnami Web MVP end to end.
@@ -469,7 +467,9 @@ test.describe("Issue #21: the Web MVP end to end on a local production stack", (
      * failures on a stub.
      */
     const isFailureAnnouncement = (text: string) =>
-      text !== "" && text !== announcedOnSuccess && !loadingText.test(text);
+      text !== "" &&
+      text !== announcedOnSuccess &&
+      !text.includes(applicationCopy.loadingAnnouncement);
     await expect
       .poll(async () =>
         isFailureAnnouncement(await journeyPage.announcementText()),

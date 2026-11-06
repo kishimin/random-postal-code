@@ -57,7 +57,7 @@ describe("route-change focus", () => {
     const user = userEvent.setup();
     renderAppAt("/");
 
-    await screen.findByRole("heading", { name: /Zipnami/, level: 1 });
+    await screen.findByRole("heading", { name: /波に乗って/, level: 1 });
 
     await user.click(screen.getByRole("link", { name: siteText.privacyLabel }));
 
@@ -93,7 +93,7 @@ describe("route-change focus", () => {
       </AppProviders>,
     );
 
-    await screen.findByRole("heading", { name: /Zipnami/, level: 1 });
+    await screen.findByRole("heading", { name: /波に乗って/, level: 1 });
 
     history.push("/no-such-route");
 

@@ -18,10 +18,10 @@ The Web UI owns presentation, client state, browser-local history, map actions, 
 
 ### 3.1 Web Routes
 
-| Route      | Page      | Purpose                                                                       |
-| ---------- | --------- | ----------------------------------------------------------------------------- |
-| `/`        | Generator | Generate, inspect, copy, map, and revisit results                             |
-| `/privacy` | Privacy   | Explain first-party storage, third-party processing, attribution, and contact |
+| Route      | Page      | Purpose                                                                |
+| ---------- | --------- | ---------------------------------------------------------------------- |
+| `/`        | Generator | Generate, inspect, copy, map, and revisit results                      |
+| `/privacy` | Privacy   | Explain what is collected, why, advertising and analytics, and history |
 
 Two further destinations have no route of their own.
 
@@ -107,7 +107,7 @@ type UiError =
 +------------------------------------------------------+
 | Reserved advertisement region                       |
 +------------------------------------------------------+
-| Japan Post attribution | Privacy | Contact           |
+| Japan Post attribution | Privacy | © kishimin 2026   |
 +------------------------------------------------------+
 ```
 
@@ -149,7 +149,7 @@ Copy success is announced in a polite status region and does not move focus. Cop
 
 Each history entry stores the canonical `PostalCode`, all addresses, and no server identifier. New successful generations are prepended, duplicates are retained, and entries beyond 20 are removed from the end. Corrupt or unsupported persisted data is discarded or migrated without blocking generation.
 
-History entries are initially collapsed to postal code plus primary address when space is constrained, but every stored address remains reachable through an explicit expand control. Expanding history must not change the current map selection unless the user explicitly chooses a map action from that entry.
+The history is one list, closed until the `履歴を展開` control opens it. The control keeps that visible label and reports its state with `aria-expanded` (and `aria-controls` once the list is mounted), and a chevron beside the label turns over while the list is open. An opened entry shows its postal code and every stored address, so every stored address stays reachable. Expanding history must not change the current map selection unless the user explicitly chooses a map action from that entry.
 
 ## 6. Android V2 Boundary
 
@@ -185,7 +185,7 @@ Advertising uses a dedicated region labeled as advertising where required. An un
 
 ### 9.1 Figma Source and Screen Map
 
-The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the sixteen screens below. Each row names the screen, its Figma node id, and the issue that owns its behavior — or marks the row `V2` or an open gap when no issue owns it yet.
+The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the seventeen screens below. Where Figma and an accessibility requirement (WCAG 2.2 AA) disagree, AA wins and Figma is corrected, not the implementation (owner decision on Issue #97, 2026-11-05). Each row names the screen, its Figma node id, and the issue that owns its behavior — or marks the row `V2` or an open gap when no issue owns it yet.
 
 | #   | Screen                      | Node     | Owner                               |
 | --- | --------------------------- | -------- | ----------------------------------- |
@@ -205,6 +205,9 @@ The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the sixt
 | 14  | 404 / Mobile                | `27:112` | #26                                 |
 | 15  | Global Error / Desktop      | `27:123` | #26                                 |
 | 16  | Global Error / Mobile       | `27:131` | #26                                 |
+| 17  | Privacy Policy / Desktop    | `46:165` | #10, #97                            |
+
+Figma draws no mobile frame for the privacy page (row 17). At mobile widths it follows the desktop frame's order and headings, with the side margins and footer of the other mobile frames (rows 05 and 06).
 
 Screens 09 and 10 (Field Error) are an open gap, not covered by any issue: Figma shows one address among several failing to load inside an otherwise successful result, but the Web API (Issues #3, #4) answers a request as a whole — a rejected dataset entry empties the dataset rather than producing a partial address list — and the frontend's `UiError` model (section 4 above) has only whole-request kinds (`offline`, `service-unavailable`, `invalid-response`, `unexpected`), not a partial-failure kind. Issue #25's own Notes section named screens 13 through 16 (404 and Global Error) as the uncovered ones instead; that claim is now stale, since Issue #26 (closed) covers both and is attributed to it above.
 
@@ -212,13 +215,66 @@ Screens 09 and 10 (Field Error) are an open gap, not covered by any issue: Figma
 
 The Figma file fixes these values per screen; recording them here makes that existing design decision legible without opening Figma.
 
-**Color.** Page/frame surface `#FAFBFA`; header/card surface `#FFFFFF`; text primary `#091F33`; text secondary `#526B78`; brand/accent `#148CC7`; accent surface (the "Mystery card") `#E5F7F7`; error text/icon `#CC292E`; error surface `#FFF0F0`; address-card border `#D1E3E5`; map panel surface `#E8EDE3`; map pin `#E04D40`. (Figma's own canvas backdrop behind each screen's frame — `#F0F5F7` on some screens, `#FFFFFF` on others — is a board color, not a screen surface, and is not listed.)
+**Color.** Page/frame surface `#FAFBFA`; header/card surface `#FFFFFF`; text primary `#091F33`; text secondary `#526B78`; brand/accent `#0F6E9E` (primary action surfaces, outline-button strokes and labels, and small accent text such as the eyebrow; Figma used `#148CC7` until 2026-11-05 and was changed to meet AA); accent surface (the "Mystery card") `#E5F7F7`; error text/icon `#CC292E`; error surface `#FFF0F0`; address-card border `#D1E3E5`; map panel surface `#E8EDE3`; map pin `#E04D40`; advertising slot surface `#F5F5F0`. (Figma's own canvas backdrop behind each screen's frame — `#F0F5F7` on some screens, `#FFFFFF` on others — is a board color, not a screen surface, and is not listed.)
 
-**Type.** Font family `Inter` at weights 400 (regular), 600 (semibold), and 700 (bold). Representative sizes: desktop display headline 52px with 68px line-height, desktop body 17px with 28px line-height, mobile display headline 34px with 46px line-height, mobile body 14px with 22px line-height, button label 16px, eyebrow label 11-13px (mobile 11px, desktop 13px), footer/caption 11-12px (varies by screen). `Inter` has no Japanese glyphs, and every screen's body is Japanese (section 2); the Figma file's text styles name only `Inter` and do not specify a CJK fallback, so which Japanese-capable family renders that text is deliberately not fixed here — it is a choice the UI foundation issues still have to make (section 12).
+**Type.** Font family `Inter` at weights 400 (regular), 600 (semibold), and 700 (bold). Representative sizes: desktop display headline 52px with 68px line-height, desktop body 17px with 28px line-height, mobile display headline 34px with 46px line-height, mobile body 14px with 22px line-height, button label 16px, eyebrow label 11-13px (mobile 11px, desktop 13px), footer/caption 11-12px (varies by screen). `Inter` has no Japanese glyphs, and every screen's body is Japanese (section 2); the Figma file's text styles name only `Inter` and do not specify a CJK fallback, so which Japanese-capable family renders that text is chosen in section 9.3.
 
-**Copy.** Two literal strings are fixed on every screen: the brand wordmark `"ZIPNAMI"` and the footer attribution `"© kishimin 2026"`. Per-screen headline and body copy is deliberately not fixed in this document; it is left to the mapped Figma node in section 9.1, because transcribing that literal Japanese text here would create a second source of truth that can drift from Figma without anything catching it — the same reason this repository's `CLAUDE.md` gives for not duplicating acceptance criteria into `docs/ACCEPTANCE.md`.
+**Copy.** The literal strings fixed on every screen are the brand wordmark `"ZIPNAMI"`, the footer's privacy link `"プライバシーポリシー"`, the Japan Post attribution, and `"© kishimin 2026"`. Per-screen headline, body, and control copy is deliberately not fixed in this document; it is left to the mapped Figma node in section 9.1, because transcribing that literal Japanese text here would create a second source of truth that can drift from Figma without anything catching it — the same reason this repository's `CLAUDE.md` gives for not duplicating acceptance criteria into `docs/ACCEPTANCE.md`. Every control's visible label is its Figma text, and the acceptance tests find controls by that text exactly.
 
-The Figma design already fixes the color, typography, and copy values recorded in 9.2 above; elevation tokens are not yet fixed by that design. Adopting the fixed values into CSS or theme code remains the separate job of the UI foundation issues (section 12), which also still owns the per-screen copy and other values this document deliberately leaves open, and must be documented without changing the information hierarchy in this file.
+**Where Figma is not taken literally** (owner decisions on Issue #97, 2026-11-05):
+
+- The privacy page (row 17) takes its layout and its four section headings from Figma (`1. 取得する情報`, `2. 利用目的`, `3. 広告とアクセス解析`, `4. 履歴`), but the sentences under them are the application's own accurate disclosure (section 7), moved under the matching heading: the Figma body names no service and promises a history deletion the application does not have. Figma's `5. お問い合わせ` is not in the MVP; a contact section is V2 work (Issue #105). Owner decision on Issue #97, 2026-11-06.
+- `地図に表示` and `Google マップで開く` repeat on every address in Figma. Their visible labels are Figma's, and their accessible names include the address (for example `沖縄県宜野湾市大山 1丁目を地図に表示`), so a screen reader can tell them apart (section 8).
+- The history's `履歴を展開` opens the list. An opened entry shows every address of its postal code, so every stored address stays reachable (section 5).
+- `広告掲載エリア` inside the advertising slot is a placeholder in the mock, not copy; the slot shows the ad, or collapses (section 7).
+
+The Figma design already fixes the color, typography, and copy values recorded in 9.2 above; elevation tokens are not yet fixed by that design. Section 9.3 records how those values are adopted into theme code.
+
+### 9.3 Theme Tokens and Font Stack
+
+Issue #97 adopts the section 9.2 values as Tailwind v4 theme tokens, declared in an `@theme` block of `apps/web/frontend/src/theme/globals.css`. Components reach colors and type sizes only through the utilities those tokens generate (`bg-page`, `text-ink`, `text-display`, and so on); a raw hex value, a Tailwind default palette color, a Tailwind default font size, or an arbitrary `text-[17px]` in a component is a defect. The table rows below pair each section 9.2 value with the token that holds it.
+
+**Font stack.** The font token is `--font-sans`. The stack is `Inter` first, then `Hiragino Sans`, `Hiragino Kaku Gothic ProN`, `Yu Gothic`, `Noto Sans JP`, `Meiryo`, and the generic `sans-serif`. `Inter` is self-hosted: the `@fontsource-variable/inter` package is bundled by Vite and serves weights 400, 600, and 700 from the site's own origin. The Japanese families are the ones the operating systems ship (Hiragino on Apple platforms, Yu Gothic and Meiryo on Windows, Noto Sans JP on Android and Linux), so Japanese text needs no web font and no third-party font host; the privacy page lists third-party processing, and a font CDN would add to it.
+
+| Role                 | Token         | Stack                                                                                                      |
+| -------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
+| Font family (all UI) | `--font-sans` | `Inter`, `Hiragino Sans`, `Hiragino Kaku Gothic ProN`, `Yu Gothic`, `Noto Sans JP`, `Meiryo`, `sans-serif` |
+
+**Color tokens.** One color per row.
+
+| Role                                | Value     | Token                    | Utility suffix   |
+| ----------------------------------- | --------- | ------------------------ | ---------------- |
+| Page/frame surface                  | `#FAFBFA` | `--color-page`           | `page`           |
+| Header/card surface                 | `#FFFFFF` | `--color-card`           | `card`           |
+| Text primary                        | `#091F33` | `--color-ink`            | `ink`            |
+| Text secondary                      | `#526B78` | `--color-ink-muted`      | `ink-muted`      |
+| Brand/accent                        | `#0F6E9E` | `--color-brand`          | `brand`          |
+| Accent surface (the "Mystery card") | `#E5F7F7` | `--color-accent-surface` | `accent-surface` |
+| Error text/icon                     | `#CC292E` | `--color-error`          | `error`          |
+| Error surface                       | `#FFF0F0` | `--color-error-surface`  | `error-surface`  |
+| Address-card border                 | `#D1E3E5` | `--color-card-border`    | `card-border`    |
+| Map panel surface                   | `#E8EDE3` | `--color-map-surface`    | `map-surface`    |
+| Map pin                             | `#E04D40` | `--color-map-pin`        | `map-pin`        |
+| Advertising slot surface            | `#F5F5F0` | `--color-ad-surface`     | `ad-surface`     |
+
+**Type-scale tokens.** Each size is a `--text-*` token with its `--text-*--line-height` where section 9.2 gives one. The responsive pairs switch at the `lg` breakpoint (`1024px`, the same point where section 5.1 changes the layout); below it, the mobile size applies.
+
+| Role                                      | Size        | Token               |
+| ----------------------------------------- | ----------- | ------------------- |
+| Desktop display headline                  | 52px / 68px | `--text-display`    |
+| Desktop body                              | 17px / 28px | `--text-body`       |
+| Mobile display headline                   | 34px / 46px | `--text-display-sm` |
+| Mobile body                               | 14px / 22px | `--text-body-sm`    |
+| Button label                              | 16px        | `--text-button`     |
+| Desktop eyebrow label                     | 13px        | `--text-eyebrow`    |
+| Footer/caption                            | 12px        | `--text-caption`    |
+| Mobile eyebrow label and smallest caption | 11px        | `--text-caption-sm` |
+
+Sizes the Figma nodes use that section 9.2 does not list are tokens too, so a component still never carries a one-off size: `--text-giant` (72px, the 404 numeral), `--text-mystery` (48px, the start card's placeholder code and the error mark), `--text-display-md` (42px / 56px, the tablet headline and the desktop result code), `--text-title` (36px, the result headline), `--text-headline` (30px, the 404 and global error headlines), `--text-heading` (24px, the desktop wordmark and the error panel headline), and `--text-action` (19px, the primary action label and the small-screen wordmark).
+
+**Contrast.** White (`#FFFFFF`) on the brand color (`#0F6E9E`) is 5.61:1, and the brand color on the page surface (`#FAFBFA`) is 5.41:1, so both pass WCAG 2.2 AA (1.4.3) for normal text. A primary action's label and a small eyebrow therefore use the sizes and the color Figma draws; no departure is needed for contrast.
+
+**Wordmark and footer.** The wordmark is the markup text `ZIPNAMI`, Figma's literal, so the header link's accessible name is the word a visitor reads. The footer shows `© kishimin 2026` as its own line on every screen, including the global error screen, whose Figma frame draws no wordmark but whose acceptance criterion requires one.
 
 ## 10. Responsive Verification
 
@@ -260,13 +316,13 @@ Classify tests by actual dependencies, not by component, integration, or E2E lab
 
 ## 12. Unresolved Implementation Details
 
+Resolved by Issue #97 (section 9.3): adopting section 9.2's Figma-fixed design tokens into theme code, and the Japanese-capable font stack that renders every screen's body text. Only the light theme exists; a dark theme is out of scope.
+
 The UI foundation Issues resolve:
 
-- adopting section 9.2's Figma-fixed design tokens into CSS or theme code, and supported theme behavior;
-- the Japanese-capable font family or fallback stack that renders every screen's body text (section 9.2 fixes only `Inter`, which has no Japanese glyphs);
 - the component library, if any;
 - browser persistence adapters and version keys;
-- per-screen Japanese copy (left to the Figma nodes in section 9.1) and the contact destination;
+- per-screen Japanese copy (left to the Figma nodes in section 9.1);
 - clipboard output with or without the display hyphen; and
 - SDK-specific empty-ad and consent presentation.
 

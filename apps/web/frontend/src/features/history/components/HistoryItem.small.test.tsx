@@ -1,8 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { userEvent } from "@testing-library/user-event";
 import type { PostalCode } from "@zipnami/shared";
 import { describe, expect, test } from "vitest";
-import { historyText } from "../site-text";
 import { HistoryItem } from "./HistoryItem";
 
 const entry: PostalCode = {
@@ -14,47 +12,24 @@ const entry: PostalCode = {
 };
 
 describe("HistoryItem", () => {
-  // ui-design.md section 5.4: every stored address stays reachable through an
-  // explicit expand control, collapsed by default. Collapsing the postal
-  // code's own address too (not only the addresses beyond the first) keeps a
-  // superseded entry's address out of the DOM until a visitor asks for it --
-  // random-postal-code-experience.medium.test.ts's own "regenerating" case
-  // asserts a superseded address is gone from the whole page, which a
-  // history that showed it by default would contradict.
-  test("shows the postal code and hides every address until the expand control is activated", () => {
+  // Figma opens the whole list with 履歴を展開, and an opened entry shows every
+  // address of its postal code (ui-design.md section 9.2), so the entry has no
+  // expand control of its own and every stored address is reachable.
+  test("shows the postal code and every address of the entry", () => {
     render(<HistoryItem entry={entry} />);
 
     expect(screen.getByText("980-0000")).toBeInTheDocument();
-    expect(screen.queryByText(/仙台市青葉区/)).not.toBeInTheDocument();
-
-    const expandControl = screen.getByRole("button", {
-      name: historyText.expandAddressesLabel,
-    });
-    expect(expandControl).toHaveAttribute("aria-expanded", "false");
-  });
-
-  test("reveals every address once the expand control is activated", async () => {
-    const user = userEvent.setup();
-    render(<HistoryItem entry={entry} />);
-
-    await user.click(
-      screen.getByRole("button", { name: historyText.expandAddressesLabel }),
-    );
-
     for (const address of entry.addresses) {
       expect(
         screen.getByText(`${address.prefecture}${address.city}${address.town}`),
       ).toBeInTheDocument();
     }
-    expect(
-      screen.getByRole("button", { name: historyText.collapseAddressesLabel }),
-    ).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   // Issue #99: an empty town, where Japan Post wrote a placeholder, reads as
   // prefecture and city only. HistoryItem composes its own address string.
-  test("shows an address with an empty town as prefecture and city, with no separator after them", async () => {
-    const user = userEvent.setup();
+  test("shows an address with an empty town as prefecture and city, with no separator after them", () => {
     render(
       <HistoryItem
         entry={{
@@ -64,22 +39,8 @@ describe("HistoryItem", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: /住所/ }));
-
     // The entry itself is a listitem too; the address is the list inside it.
     const addressList = screen.getByRole("list");
     expect(addressList.textContent).toBe("埼玉県草加市");
-  });
-
-  test("collapses the addresses again when the expand control is activated a second time", async () => {
-    const user = userEvent.setup();
-    render(<HistoryItem entry={entry} />);
-    const toggle = () => screen.getByRole("button", { name: /住所/ });
-
-    await user.click(toggle());
-    await user.click(toggle());
-
-    expect(toggle()).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText(/仙台市青葉区/)).not.toBeInTheDocument();
   });
 });

@@ -31,9 +31,8 @@ const withoutId = ({ postalCode, addresses }: HistoryEntry): PostalCode => ({
  * limit, and persisted so it survives a reload.
  *
  * Ids are assigned here rather than persisted -- they exist only so each
- * rendered entry keeps its own component identity (and therefore its own
- * expand/collapse state) as new entries are prepended in front of it, not to
- * identify anything server-side.
+ * rendered entry keeps a stable React key as new entries are prepended in
+ * front of it, not to identify anything server-side.
  */
 export const useHistory = (): UseHistoryResult => {
   const [entries, setEntries] = useState<readonly HistoryEntry[]>(() =>

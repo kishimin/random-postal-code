@@ -1,9 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 import {
-  applicationLinkNames,
   focusIndicatorMargin,
-  generatorButtonNames,
   type RepresentativeViewport,
   wcagTags,
 } from "../selectors/accessibility-selectors.ts";
@@ -61,51 +59,57 @@ export const createAccessibilityPage = (page: Page) => {
   const topLevelHeadingInsideMain = () =>
     mains().getByRole("heading", { level: 1 });
 
-  const buttons = () => page.getByRole("button");
+  /**
+   * Every control of one role on the page, whatever it is called.
+   * @param role - `button` or `link`.
+   */
+  const controls = (role: "button" | "link") => page.getByRole(role);
 
-  const namedButtons = () =>
-    page.getByRole("button", { name: generatorButtonNames });
-
-  const links = () => page.getByRole("link");
-
-  const namedLinks = () =>
-    page.getByRole("link", { name: applicationLinkNames });
+  /**
+   * The controls of one role whose accessible name is exactly this.
+   * @param role - `button` or `link`.
+   * @param name - The whole accessible name.
+   */
+  const controlsNamed = (role: "button" | "link", name: string) =>
+    page.getByRole(role, { name, exact: true });
 
   /**
    * The one link carrying this name.
-   * @param name - The accessible name to locate the link by.
+   * @param name - The whole accessible name to locate the link by.
    */
-  const linkNamed = (name: RegExp) => page.getByRole("link", { name });
+  const linkNamed = (name: string) =>
+    page.getByRole("link", { name, exact: true });
 
   /**
    * A labelled region — a `section` named by its heading or label.
-   * @param name - The accessible name to locate the region by.
+   * @param name - The whole accessible name to locate the region by.
    */
-  const regionNamed = (name: RegExp) => page.getByRole("region", { name });
+  const regionNamed = (name: string) =>
+    page.getByRole("region", { name, exact: true });
 
   /**
    * A second-level heading, which is where ui-design.md section 8 puts the
    * result, map, and history headings under the page's one `h1`.
-   * @param name - The accessible name to locate the heading by.
+   * @param name - The whole accessible name to locate the heading by.
    */
-  const sectionHeadingNamed = (name: RegExp) =>
-    page.getByRole("heading", { level: 2, name });
+  const sectionHeadingNamed = (name: string) =>
+    page.getByRole("heading", { level: 2, name, exact: true });
 
   /**
    * Visible text inside a given element.
    * @param container - Where to look.
-   * @param text - What the visitor has to be able to read.
+   * @param text - The whole text the visitor has to be able to read.
    */
-  const visibleTextInside = (container: Locator, text: RegExp) =>
-    container.getByText(text).first();
+  const visibleTextInside = (container: Locator, text: string) =>
+    container.getByText(text, { exact: true }).first();
 
   /**
    * A labelled region nested inside another element.
    * @param container - Where to look.
-   * @param name - The accessible name of the nested region.
+   * @param name - The whole accessible name of the nested region.
    */
-  const regionInside = (container: Locator, name: RegExp) =>
-    container.getByRole("region", { name });
+  const regionInside = (container: Locator, name: string) =>
+    container.getByRole("region", { name, exact: true });
 
   const liveRegions = () => page.locator(liveRegionSelector);
 
@@ -120,9 +124,10 @@ export const createAccessibilityPage = (page: Page) => {
    * The first match is taken because a text locator also matches every
    * ancestor holding the text; the question is whether a sighted visitor can
    * read it, not how many elements contain it.
-   * @param text - What the visitor has to be able to read.
+   * @param text - The whole text the visitor has to be able to read.
    */
-  const visibleTextInMain = (text: RegExp) => mains().getByText(text).first();
+  const visibleTextInMain = (text: string) =>
+    mains().getByText(text, { exact: true }).first();
 
   // ui-design.md section 8: "Set aria-busy on the result region during
   // generation." aria-busy is an accessibility state, not markup, which is why
@@ -357,10 +362,8 @@ export const createAccessibilityPage = (page: Page) => {
     contentInfos,
     topLevelHeadings,
     topLevelHeadingInsideMain,
-    buttons,
-    namedButtons,
-    links,
-    namedLinks,
+    controls,
+    controlsNamed,
     linkNamed,
     regionNamed,
     sectionHeadingNamed,

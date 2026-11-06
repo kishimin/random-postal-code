@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { worker } from "../../api/mocks/browser";
 import { HISTORY_STORAGE_KEY } from "../../features/history/storage/history-storage";
 import { postalGeneratorText } from "../../features/postal-generator/site-text";
+import { generateActionName } from "../../tests/generator-controls";
 import { createAppRouter } from "../routes/app-router";
 
 /*
@@ -62,6 +63,17 @@ const historyPostalCodes = () =>
     .map((item) => item.textContent?.match(/\d{3}-\d{4}/)?.at(0))
     .filter((code): code is string => code !== undefined);
 
+type User = ReturnType<typeof userEvent.setup>;
+
+// Figma keeps the list closed behind 履歴を展開 (ui-design.md section 9.2), so
+// a test reads it after opening it the way a visitor does.
+const openHistory = async (user: User) => {
+  const control = await screen.findByRole("button", { name: "履歴を展開" });
+  if (control.getAttribute("aria-expanded") !== "true") {
+    await user.click(control);
+  }
+};
+
 // Scoped to the current-result region rather than the whole page: once
 // history renders, the same postal code legitimately appears a second time
 // as a history entry (HistoryItem always shows its own postal code), and an
@@ -78,11 +90,14 @@ describe("the generation history experience", () => {
     queueRandomResponses([firstResult, secondResult]);
     renderAt("/");
 
-    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    await user.click(
+      await screen.findByRole("button", { name: generateActionName }),
+    );
     expect(await currentResultText("100-0001")).toBeInTheDocument();
+    await openHistory(user);
     expect(historyPostalCodes()).toEqual(["100-0001"]);
 
-    await user.click(screen.getByRole("button", { name: /生成/ }));
+    await user.click(screen.getByRole("button", { name: generateActionName }));
     await currentResultText("530-0001");
 
     expect(historyPostalCodes()).toEqual(["530-0001", "100-0001"]);
@@ -94,9 +109,12 @@ describe("the generation history experience", () => {
     queueRandomResponses([firstResult, firstResult]);
     renderAt("/");
 
-    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    await user.click(
+      await screen.findByRole("button", { name: generateActionName }),
+    );
     await currentResultText("100-0001");
-    await user.click(screen.getByRole("button", { name: /生成/ }));
+    await user.click(screen.getByRole("button", { name: generateActionName }));
+    await openHistory(user);
 
     // Both entries render with the same text, so waiting for the count to
     // settle at two is what distinguishes a real second entry from the
@@ -115,13 +133,16 @@ describe("the generation history experience", () => {
     queueRandomResponses([firstResult, secondResult]);
     const { unmount } = renderAt("/");
 
-    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    await user.click(
+      await screen.findByRole("button", { name: generateActionName }),
+    );
     await currentResultText("100-0001");
-    await user.click(screen.getByRole("button", { name: /生成/ }));
+    await user.click(screen.getByRole("button", { name: generateActionName }));
     await currentResultText("530-0001");
     unmount();
 
     renderAt("/");
+    await openHistory(user);
 
     await expect
       .poll(() => historyPostalCodes())
@@ -136,7 +157,9 @@ describe("the generation history experience", () => {
     queueRandomResponses([firstResult]);
     renderAt("/");
 
-    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    await user.click(
+      await screen.findByRole("button", { name: generateActionName }),
+    );
     await currentResultText("100-0001");
 
     worker.use(
@@ -147,13 +170,14 @@ describe("the generation history experience", () => {
         ),
       ),
     );
-    await user.click(screen.getByRole("button", { name: /生成/ }));
+    await user.click(screen.getByRole("button", { name: generateActionName }));
     await waitFor(() => {
       expect(
         screen.getByTestId("generation-announcer").textContent?.trim(),
       ).toBe(postalGeneratorText.failureAnnouncement["service-unavailable"]);
     });
 
+    await openHistory(user);
     expect(historyPostalCodes()).toEqual(["100-0001"]);
   });
 
@@ -166,9 +190,12 @@ describe("the generation history experience", () => {
     queueRandomResponses([firstResult]);
     renderAt("/");
 
-    await user.click(await screen.findByRole("button", { name: /生成/ }));
+    await user.click(
+      await screen.findByRole("button", { name: generateActionName }),
+    );
     await currentResultText("100-0001");
 
+    await openHistory(user);
     expect(historyPostalCodes()).toEqual(["100-0001"]);
   });
 
@@ -188,11 +215,16 @@ describe("the generation history experience", () => {
       queueRandomResponses([firstResult, secondResult]);
       renderAt("/");
 
-      await user.click(await screen.findByRole("button", { name: /生成/ }));
+      await user.click(
+        await screen.findByRole("button", { name: generateActionName }),
+      );
       await currentResultText("100-0001");
-      await user.click(screen.getByRole("button", { name: /生成/ }));
+      await user.click(
+        screen.getByRole("button", { name: generateActionName }),
+      );
       await currentResultText("530-0001");
 
+      await openHistory(user);
       expect(historyPostalCodes()).toEqual(["530-0001", "100-0001"]);
     });
   });

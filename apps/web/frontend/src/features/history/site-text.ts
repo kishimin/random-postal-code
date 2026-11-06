@@ -1,10 +1,9 @@
 /**
- * Japanese strings the Web generation history shows. ui-design.md section 12
- * leaves the exact copy to this Issue; the MVP ships Japanese only (section
- * 9), so there is no locale to select between.
+ * Japanese strings the Web generation history shows, as Figma writes them
+ * (#46:59 and #46:64). The MVP ships Japanese only (ui-design.md section 9),
+ * so there is no locale to select between.
  */
 export const historyText = {
-  heading: "生成履歴",
-  expandAddressesLabel: "住所をすべて表示",
-  collapseAddressesLabel: "住所をたたむ",
+  heading: "生成の履歴",
+  expandLabel: "履歴を展開",
 } as const;

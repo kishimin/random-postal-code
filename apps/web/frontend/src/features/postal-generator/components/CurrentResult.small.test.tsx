@@ -65,6 +65,46 @@ describe("CurrentResult", () => {
     ).toBe(true);
   });
 
+  // Figma's result frames state how many addresses the code covers.
+  test("states how many addresses the postal code corresponds to", () => {
+    render(
+      <CurrentResult
+        result={{
+          postalCode: "5300001",
+          addresses: [
+            { prefecture: "大阪府", city: "大阪市北区", town: "梅田" },
+            { prefecture: "大阪府", city: "大阪市北区", town: "中之島" },
+          ],
+        }}
+        onCopy={() => undefined}
+        copyFeedback={""}
+      />,
+    );
+
+    expect(
+      screen.getByText("対応する住所 2件", { exact: false }),
+    ).toBeInTheDocument();
+  });
+
+  // WCAG 1.3.1: the section keeps a heading at every width, named by Figma's
+  // headline (Issue #97). On a phone it is only visually hidden.
+  test("names the result section after Figma's headline", () => {
+    render(
+      <CurrentResult
+        result={result}
+        onCopy={() => undefined}
+        copyFeedback={""}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "波が運んできた場所" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "波が運んできた場所" }),
+    ).toBeInTheDocument();
+  });
+
   // Issue #8 places a per-address map action inside AddressList's own
   // entries; CurrentResult sits between GeneratorView and AddressList, so it
   // has to pass the slot through rather than swallow it.

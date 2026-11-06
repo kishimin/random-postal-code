@@ -1,12 +1,10 @@
 /*
  * What the Issue #16 acceptance test locates and measures by.
  *
- * ui-design.md section 12 leaves the exact Japanese copy to the Issue that
- * builds each screen, so every expression below fixes only what a visitor
- * needs to recognise, not the sentence around it. Holding them here rather
- * than in the Page Object keeps a copy change to one edit (ADR-0054); the MVP
- * ships Japanese only (ui-design.md section 9), so there is no locale to
- * select between.
+ * The names and texts the test finds controls and statuses by are the exact
+ * strings in figma-copy.ts (approved on Issue #97). What remains here is how
+ * the screens are measured. Holding it here rather than in the Page Object
+ * keeps a change to one edit (ADR-0054).
  */
 
 /** One viewport the responsive criterion is verified at. */
@@ -53,59 +51,6 @@ export const documentTitleSelectors = {
   privacy: /プライバシー/,
   notFound: /見つかりません/,
 } as const;
-
-/*
- * Every accessible name a button on the generator screen is allowed to have.
- *
- * "Buttons and links have meaningful accessible names" is held by counting:
- * every button on the screen has to be one of these, so a button with an
- * empty or generic name ("ボタン", an icon with no label) leaves the two counts
- * different. Each alternative is the word a visitor recognises the action by,
- * not its full label. 住所 is the history's expand control, which ui-design.md
- * requires so every stored address stays reachable (Issue #7). 地図 is the
- * address-to-map selection that ui-design.md sections 7 and 8 require
- * (Issue #8).
- */
-export const generatorButtonNames = /生成|コピー|住所|地図/;
-
-/*
- * Every accessible name a link on any Web screen is allowed to have: the
- * header's way home, the footer's privacy link, the privacy page's contact
- * method, the not-found screen's way back, and the result's links that open
- * an address in Google Maps (Issue #8).
- */
-export const applicationLinkNames =
-  /Zipnami|プライバシー|(?:お)?問(?:い)?合(?:わ)?せ|連絡先|Contact|トップへ戻る|Google\s*マップ/i;
-
-/*
- * Visible words that say a generation is in progress.
- *
- * ui-design.md section 8 forbids conveying loading by colour alone. A disabled
- * button is usually shown only as greyed-out, which is a colour, so the
- * loading state also has to be stated in text a sighted visitor can read.
- */
-export const loadingText = /生成しています|生成中|読み込(?:み|んで)/;
-
-/*
- * Visible words that say a generation failed and can be tried again.
- *
- * Every failure message this screen shows ends by inviting another attempt
- * (ui-design.md section 4: "Error shows an understandable retry action"), so
- * the invitation is what the test recognises a failure by, independent of
- * which failure it was.
- */
-export const failureText = /もう一度|再度|やり直/;
-
-/*
- * The name of the current result's section heading.
- *
- * ui-design.md section 8 asks for hierarchical headings for the result, map,
- * and history regions; the word is what identifies which of them this is.
- */
-export const resultHeadingName = /結果/;
-
-/* Visible words that say the postal code was copied. */
-export const copySuccessText = /コピーしました/;
 
 /*
  * The WCAG levels the automated scan checks.

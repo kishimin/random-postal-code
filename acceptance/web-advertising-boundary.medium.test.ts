@@ -12,7 +12,7 @@ import {
   respondWith,
   type PostalCodeGeneratorPage,
 } from "./pages/postal-code-generator-page.ts";
-import { generatorSelectors } from "./selectors/generator-selectors.ts";
+import { figmaCopy } from "./selectors/figma-copy.ts";
 
 /*
  * Acceptance test for Issue #9: Integrate Google AdSense without blocking Web
@@ -189,10 +189,14 @@ test.describe("Issue #9: the advertising and consent boundary", () => {
      * the advertisement that a visitor would activate expecting the
      * application to answer. None of the application's actions may live there.
      */
+    // Every label the generate action takes, not only the one this state
+    // shows: an advertisement holding 再試行する would be the same confusion.
     for (const action of [
-      generatorSelectors.generateAction,
-      generatorSelectors.copyAction,
-      generatorSelectors.navigationLink,
+      figmaCopy.startAction,
+      figmaCopy.regenerateAction,
+      figmaCopy.retryAction,
+      figmaCopy.copyAction,
+      figmaCopy.privacyLink,
     ]) {
       await expect(
         advertisingPage.applicationActionInsideAdvertisingRegion(action),

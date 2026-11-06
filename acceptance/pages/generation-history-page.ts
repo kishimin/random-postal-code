@@ -1,10 +1,7 @@
 import type { Page, Request } from "@playwright/test";
 import type { Address, PostalCode } from "@zipnami/shared";
 import { anyDisplayedPostalCode } from "../selectors/generator-selectors.ts";
-import {
-  expandControlSelector,
-  historySelectors,
-} from "../selectors/history-selectors.ts";
+import { historySelectors } from "../selectors/history-selectors.ts";
 import {
   createPostalCodeGeneratorPage,
   respondWith,
@@ -75,7 +72,32 @@ export const createGenerationHistoryPage = (page: Page) => {
   const reload = () => page.reload();
 
   const historyHeading = () =>
-    page.getByRole("heading", { name: historySelectors.historyHeading });
+    page.getByRole("heading", {
+      name: historySelectors.historyHeading,
+      exact: true,
+    });
+
+  const expandHistoryControl = () =>
+    page.getByRole("button", {
+      name: historySelectors.expandHistory,
+      exact: true,
+    });
+
+  /*
+   * Opens the history list the way a visitor does, through its 履歴を展開
+   * control (ui-design.md section 9.2). A list that is already open, or one
+   * the design shows without a control, is left as it is, so this can run
+   * before every read.
+   */
+  const openHistory = async () => {
+    const control = expandHistoryControl();
+    if ((await control.count()) === 0) {
+      return;
+    }
+    if ((await control.getAttribute("aria-expanded")) !== "true") {
+      await control.click();
+    }
+  };
 
   /*
    * The history entries, newest first, as a visitor reads them.
@@ -102,6 +124,7 @@ export const createGenerationHistoryPage = (page: Page) => {
    * string, so a failure shows what was actually on screen.
    */
   const historyPostalCodes = async () => {
+    await openHistory();
     const entryTexts = await historyEntries().allTextContents();
 
     return entryTexts.map((entryText) => {
@@ -122,29 +145,15 @@ export const createGenerationHistoryPage = (page: Page) => {
       .filter({ hasText: address.city })
       .filter({ hasText: address.town });
 
-  const expandControls = () => historyEntries().locator(expandControlSelector);
-
   /*
-   * Opens every collapsed history entry.
+   * Makes every stored address readable.
    *
-   * ui-design.md section 5.4 collapses an entry to its postal code and primary
-   * address "when space is constrained" and requires the rest to stay reachable
-   * through an explicit expand control -- so an entry that shows everything
-   * already and has no control is equally correct, and this does nothing for
-   * it. Controls that are already expanded are left alone rather than toggled
-   * shut.
+   * ui-design.md section 9.2: 履歴を展開 opens the list, and an opened entry
+   * shows every address of its postal code. Nothing per entry is expanded on
+   * top of that, so an entry that still hides an address fails the check
+   * that follows.
    */
-  const revealEveryAddress = async () => {
-    const controls = expandControls();
-    const controlCount = await controls.count();
-
-    for (let index = 0; index < controlCount; index += 1) {
-      const control = controls.nth(index);
-      if ((await control.getAttribute("aria-expanded")) === "false") {
-        await control.click();
-      }
-    }
-  };
+  const revealEveryAddress = () => openHistory();
 
   /**
    * Generates once and waits for the result to reach the screen.
@@ -177,6 +186,8 @@ export const createGenerationHistoryPage = (page: Page) => {
     navigate,
     reload,
     historyHeading,
+    expandHistoryControl,
+    openHistory,
     historyEntries,
     historyPostalCodes,
     historyEntryCount,

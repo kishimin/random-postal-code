@@ -1,9 +1,69 @@
+/*
+ * Inter is bundled and served from the site's own origin. A font CDN would be
+ * one more third party for the privacy page to disclose (ui-design.md
+ * section 9.3). The package registers the family as "Inter Variable", which is
+ * why the font token below names it after "Inter".
+ */
+@import "@fontsource-variable/inter/wght.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 
 /*
- * Design tokens (color, typography, elevation) are fixed by the UI foundation
- * work in Issue #5 and Issue #16, not here. ui-design.md section 9 requires them
- * to be documented without changing the information hierarchy it defines, so
- * this file intentionally carries no token values yet.
+ * Design tokens: the Figma values of ui-design.md section 9.2, under the names
+ * section 9.3 maps them to. Components use the utilities these generate
+ * (bg-page, text-ink, text-display) and never a raw value; the acceptance test
+ * for Issue #97 scans for the ways a raw value gets in.
+ *
+ * Elevation is not here: Figma does not fix it (section 9.2).
  */
+@theme {
+  --font-sans:
+    "Inter", "Inter Variable", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Yu Gothic", "Noto Sans JP", Meiryo, sans-serif;
+
+  --color-page: #fafbfa;
+  --color-card: #ffffff;
+  --color-ink: #091f33;
+  --color-ink-muted: #526b78;
+  --color-brand: #0f6e9e;
+  --color-accent-surface: #e5f7f7;
+  --color-error: #cc292e;
+  --color-error-surface: #fff0f0;
+  --color-card-border: #d1e3e5;
+  --color-map-surface: #e8ede3;
+  --color-map-pin: #e04d40;
+  --color-ad-surface: #f5f5f0;
+
+  --text-display: 52px;
+  --text-display--line-height: 68px;
+  --text-body: 17px;
+  --text-body--line-height: 28px;
+  --text-display-sm: 34px;
+  --text-display-sm--line-height: 46px;
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 22px;
+  --text-button: 16px;
+  --text-eyebrow: 13px;
+  --text-caption: 12px;
+  --text-caption-sm: 11px;
+
+  /* Sizes Figma uses that section 9.2 does not list (section 9.3). */
+  --text-giant: 72px;
+  --text-mystery: 48px;
+  --text-display-md: 42px;
+  --text-display-md--line-height: 56px;
+  --text-title: 36px;
+  --text-headline: 30px;
+  --text-heading: 24px;
+  --text-action: 19px;
+
+  --radius-card: 28px;
+  --radius-panel: 32px;
+  --radius-field: 14px;
+}
+
+@layer base {
+  body {
+    @apply bg-page text-ink;
+  }
+}

@@ -163,12 +163,15 @@ export const createAnalyticsPage = (page: Page) => {
   // Moving between screens the way a visitor does: through the links.
   const followPrivacyLink = () =>
     page
-      .getByRole("link", { name: shellSelectors.privacyHeading })
+      .getByRole("link", { name: shellSelectors.privacyLink, exact: true })
       .first()
       .click();
 
   const followHomeLink = () =>
-    page.getByRole("link", { name: shellSelectors.siteName }).first().click();
+    page
+      .getByRole("link", { name: shellSelectors.siteHeader, exact: true })
+      .first()
+      .click();
 
   const goBack = () => page.goBack();
 

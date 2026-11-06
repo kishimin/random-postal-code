@@ -29,9 +29,15 @@ describe("MapAddressActions", () => {
       />,
     );
 
-    const button = screen.getByRole("button", { name: /地図/ });
-    expect(button.textContent).toContain(address.town);
-    expect(button.textContent).not.toContain(otherAddress.town);
+    const button = screen.getByRole("button", {
+      name: "東京都千代田区千代田を地図に表示",
+    });
+    expect(button).toHaveTextContent("地図に表示");
+    expect(
+      screen.queryByRole("button", {
+        name: `東京都千代田区${otherAddress.town}を地図に表示`,
+      }),
+    ).not.toBeInTheDocument();
   });
 
   test("activating the map-selection button reports this address as selected", async () => {
@@ -45,7 +51,9 @@ describe("MapAddressActions", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: /地図/ }));
+    await user.click(
+      screen.getByRole("button", { name: "東京都千代田区千代田を地図に表示" }),
+    );
 
     expect(onSelect).toHaveBeenCalledTimes(1);
   });
@@ -61,7 +69,10 @@ describe("MapAddressActions", () => {
       />,
     );
 
-    const link = screen.getByRole("link");
+    const link = screen.getByRole("link", {
+      name: "東京都千代田区千代田をGoogle マップで開く",
+    });
+    expect(link).toHaveTextContent("Google マップで開く");
     const href = link.getAttribute("href") ?? "";
 
     expect(new URL(href).searchParams.get("query")).toContain(address.town);
@@ -79,9 +90,8 @@ describe("MapAddressActions", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: /地図/ })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(
+      screen.getByRole("button", { name: "東京都千代田区千代田を地図に表示" }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 });

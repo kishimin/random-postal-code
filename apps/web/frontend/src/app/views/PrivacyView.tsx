@@ -1,54 +1,47 @@
 import { useDocumentTitle } from "../../hooks/use-document-title";
 import { pageTitle, siteText } from "../site-text";
-import { linkClass } from "../styles";
-import { privacyText } from "./privacy-text";
+import { privacySections } from "./privacy-text";
 
-const FIRST_PARTY_HEADING_ID = "privacy-first-party-heading";
-const THIRD_PARTY_HEADING_ID = "privacy-third-party-heading";
+const sectionClass = "flex flex-col gap-3 rounded-card bg-card p-6";
+const sectionHeadingClass = "text-heading font-bold text-ink";
+const paragraphClass = "text-body-sm text-ink-muted";
 
 /**
- * Privacy screen (Issue #10).
+ * Privacy screen (Issue #10, laid out as Figma's node 46:165 by Issue #97).
  *
- * design.md section 8: "/privacy distinguishes data stored by Zipnami from
- * data processed by Google Maps, AdSense, and consent services." Two
- * `section`s carry that distinction to a screen reader as two separately
- * named regions, each labelled by its own visible heading (aria-labelledby)
- * rather than an invisible aria-label — the same pattern AdvertisingRegion
- * uses for its labelled region.
+ * design.md section 8 divides the page into Figma's four sections: each
+ * `section` is a separately named region, labelled by its own
+ * visible heading (aria-labelledby) rather than an invisible aria-label -- the
+ * same pattern AdvertisingRegion uses for its labelled region.
  */
 export const PrivacyView = () => {
   useDocumentTitle(pageTitle(siteText.privacyLabel));
 
   return (
-    <>
+    <div className={"mx-auto flex max-w-[720px] flex-col gap-6"}>
       {/* tabIndex: RootLayout focuses a screen's own h1 after a client-side
           route change (Issue #16 AC-5), and a plain heading is not in the
           focusable area without one. */}
-      <h1 tabIndex={-1}>{siteText.privacyLabel}</h1>
+      <h1 tabIndex={-1} className={"text-headline font-bold text-ink"}>
+        {siteText.privacyLabel}
+      </h1>
 
-      <section aria-labelledby={FIRST_PARTY_HEADING_ID}>
-        <h2 id={FIRST_PARTY_HEADING_ID}>{privacyText.firstParty.heading}</h2>
-        <p>{privacyText.firstParty.browserLocalHistory}</p>
-        <p>{privacyText.firstParty.noLocationCollection}</p>
-        <p>{privacyText.firstParty.noOwnUserIdentifier}</p>
-        <p>{privacyText.firstParty.noStoredAdvertisingIdentifier}</p>
-      </section>
-
-      <section aria-labelledby={THIRD_PARTY_HEADING_ID}>
-        <h2 id={THIRD_PARTY_HEADING_ID}>{privacyText.thirdParty.heading}</h2>
-        <p>{privacyText.thirdParty.googleMaps}</p>
-        <p>{privacyText.thirdParty.googleAdSense}</p>
-        <p>{privacyText.thirdParty.googleAnalytics}</p>
-        <p>{privacyText.thirdParty.googleAnalyticsConsent}</p>
-        <p>{privacyText.thirdParty.googleAnalyticsOptOut}</p>
-        <p>{privacyText.thirdParty.consent}</p>
-      </section>
-
-      <p>
-        <a className={linkClass} href={privacyText.contactHref}>
-          {privacyText.contactLabel}
-        </a>
-      </p>
-    </>
+      {privacySections.map((section) => (
+        <section
+          key={section.headingId}
+          aria-labelledby={section.headingId}
+          className={sectionClass}
+        >
+          <h2 id={section.headingId} className={sectionHeadingClass}>
+            {section.heading}
+          </h2>
+          {section.paragraphs.map((paragraph) => (
+            <p key={paragraph} className={paragraphClass}>
+              {paragraph}
+            </p>
+          ))}
+        </section>
+      ))}
+    </div>
   );
 };

@@ -6,14 +6,36 @@ import { useHistory } from "../../features/history/hooks/use-history";
 import { MapAddressActions } from "../../features/maps/components/MapAddressActions";
 import { MapSection } from "../../features/maps/components/MapSection";
 import { useMapSelection } from "../../features/maps/hooks/use-map-selection";
+import {
+  announcementTones,
+  type AnnouncementTone,
+} from "../../features/postal-generator/announcement-tones";
 import { CurrentResult } from "../../features/postal-generator/components/CurrentResult";
 import { GenerateAction } from "../../features/postal-generator/components/GenerateAction";
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
+import { MysteryPlaceholder } from "../../features/postal-generator/components/MysteryPlaceholder";
+import { generateActionLabel } from "../../features/postal-generator/generate-action-label";
+import type { GeneratorState } from "../../features/postal-generator/hooks/generator-state";
 import { useGenerator } from "../../features/postal-generator/hooks/use-generator";
-import { postalGeneratorText } from "../../features/postal-generator/site-text";
 import { useDocumentTitle } from "../../hooks/use-document-title";
 import { parseAppEnv } from "../schemas/env.schema";
-import { pageTitle, siteText } from "../site-text";
+import { pageTitle } from "../site-text";
+import { GeneratorHero } from "./GeneratorHero";
+
+const toneByStatus = {
+  idle: announcementTones.quiet,
+  loading: announcementTones.loading,
+  success: announcementTones.quiet,
+  error: announcementTones.error,
+} as const satisfies Record<GeneratorState["status"], AnnouncementTone>;
+
+// Figma's start card is the accent-surface "Mystery card"; once a result
+// exists the same box becomes the white "Address panel". It is one element
+// that changes its look, not two, so the generate action keeps its place in
+// the document and its focus across a generation.
+const startCardClass =
+  "mx-auto mt-8 max-w-[660px] rounded-panel bg-accent-surface px-6 py-10 text-center lg:mt-12";
+const resultCardClass = "rounded-card bg-card p-6 lg:p-8";
 
 /**
  * Generator screen (Issue #6, extended by Issue #8's maps region): the
@@ -41,43 +63,62 @@ export const GeneratorView = () => {
 
   useDocumentTitle(pageTitle());
 
+  const hasResult = currentResult !== undefined;
+
   return (
     <>
-      {/* tabIndex: RootLayout focuses a screen's own h1 after a client-side
-          route change (Issue #16 AC-5), and a plain heading is not in the
-          focusable area without one. */}
-      <h1 tabIndex={-1}>{siteText.name}</h1>
-      <p>{postalGeneratorText.explanation}</p>
-      <GenerateAction
-        onGenerate={generate}
-        isGenerating={state.status === "loading"}
+      <GeneratorHero hasResult={hasResult} />
+      <GeneratorAnnouncer
+        announcement={announcement}
+        tone={toneByStatus[state.status]}
       />
-      {/* ui-design.md section 8: "Set aria-busy on the result region during
-          generation." Wrapped rather than set on CurrentResult itself so the
-          attribute is present even on a first generation, before any result
-          exists to render. */}
-      <div data-testid={"result-region"} aria-busy={state.status === "loading"}>
-        {currentResult && (
-          <CurrentResult
-            result={currentResult}
-            onCopy={copy}
-            copyFeedback={copyFeedback}
-            renderAddressExtra={(address) => (
-              <MapAddressActions
-                address={address}
-                isSelected={address === selectedAddress}
-                onSelect={() => selectAddress(address)}
+      <div
+        className={
+          hasResult
+            ? "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[560px_1fr] lg:items-start"
+            : undefined
+        }
+      >
+        <div className={hasResult ? resultCardClass : startCardClass}>
+          {!hasResult && <MysteryPlaceholder />}
+          {/* ui-design.md section 8: "Set aria-busy on the result region
+              during generation." Wrapped rather than set on CurrentResult
+              itself so the attribute is present even on a first generation,
+              before any result exists to render. */}
+          <div
+            data-testid={"result-region"}
+            aria-busy={state.status === "loading"}
+          >
+            {currentResult && (
+              <CurrentResult
+                result={currentResult}
+                onCopy={copy}
+                copyFeedback={copyFeedback}
+                selectedAddress={selectedAddress}
+                renderAddressExtra={(address) => (
+                  <MapAddressActions
+                    address={address}
+                    isSelected={address === selectedAddress}
+                    onSelect={() => selectAddress(address)}
+                  />
+                )}
               />
             )}
-          />
-        )}
+          </div>
+          <div className={hasResult ? "mt-6" : "mx-auto mt-8 max-w-[280px]"}>
+            <GenerateAction
+              label={generateActionLabel(state)}
+              onGenerate={generate}
+              isGenerating={state.status === "loading"}
+            />
+          </div>
+        </div>
+        <MapSection
+          result={currentResult}
+          selectedAddress={selectedAddress}
+          apiKey={env.mapsApiKey}
+        />
       </div>
-      <MapSection
-        result={currentResult}
-        selectedAddress={selectedAddress}
-        apiKey={env.mapsApiKey}
-      />
-      <GeneratorAnnouncer announcement={announcement} />
       <HistoryList entries={entries} />
       {/* ui-design.md section 5.1: the reserved advertisement region sits
           after the current result and before the footer, so it never

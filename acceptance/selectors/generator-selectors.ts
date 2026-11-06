@@ -1,24 +1,18 @@
+import { figmaCopy } from "./figma-copy.ts";
+
 /*
  * What the Issue #6 acceptance test locates by on the generator screen.
  *
- * ui-design.md section 12 leaves the exact Japanese copy to the Issue that
- * builds the screen, so each expression below fixes only the word a visitor
- * needs to recognise the control by — not the sentence around it. Holding them
- * here rather than in the Page Object keeps a copy change to one edit
- * (ADR-0054); the MVP ships Japanese only (ui-design.md section 9), so there is
- * no locale to select between.
+ * Each name is the exact string a visitor reads, taken from figma-copy.ts
+ * (approved on Issue #97). The generate action is not here: its label
+ * depends on the screen's state, so the Page Object chooses among
+ * figmaCopy.startAction, regenerateAction, and retryAction.
  */
 export const generatorSelectors = {
-  siteName: /Zipnami/,
-  // The idle screen's explanation. Matched on the domain word, because the
-  // generate action's own label contains it too; the paragraph role is what
-  // separates the two, not the wording.
-  explanation: /郵便番号/,
-  generateAction: /生成/,
-  copyAction: /コピー/,
+  copyAction: figmaCopy.copyAction,
   // Footer navigation. This is the unrelated control that must stay usable
   // while a generation is in flight.
-  navigationLink: /プライバシー/,
+  navigationLink: figmaCopy.privacyLink,
 } as const;
 
 /*
