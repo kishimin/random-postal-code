@@ -65,7 +65,9 @@ export const CurrentResult = ({
       }
     >
       <span aria-hidden={"true"}>{"〒"}</span>
-      {formatPostalCode(result.postalCode)}
+      {/* Its own element, so the code is a text of its own: the mark beside it
+          is decoration, and a reader or a test looks for NNN-NNNN alone. */}
+      <span>{formatPostalCode(result.postalCode)}</span>
     </p>
     <p className={"mt-2 text-caption text-ink-muted lg:text-eyebrow"}>
       <span className={"hidden lg:inline"}>
