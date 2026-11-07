@@ -26,10 +26,20 @@ export const primaryActionClass =
 export const headerClass = "bg-card";
 
 /**
- * The 1200px container of ui-design.md section 5.1. Its horizontal padding is
- * what keeps content off the edges at a 320px viewport.
+ * The header's and the footer's container. Its horizontal padding is what
+ * keeps content off the edges at a 320px viewport.
  */
 export const frameInnerClass = "mx-auto w-full max-w-[1200px] px-5 lg:px-12";
+
+/**
+ * Main's container: ui-design.md section 5.1's 1312px content width, with
+ * 64px side margins at a 1440px viewport (Figma node 1:4, Issue #111). The
+ * maximum includes the padding, so wider screens keep the same 1312px.
+ *
+ * Not shared with the header: its logo and wordmark sit nearer the edge in
+ * Figma, and the header logo is a separate Issue (#113).
+ */
+export const mainInnerClass = "mx-auto w-full max-w-[1440px] px-5 lg:px-16";
 
 /** The wordmark: markup text `ZIPNAMI`, Figma's literal (section 9.3). */
 export const wordmarkClass = `${tapTargetClass} text-action font-bold tracking-wider text-ink lg:text-heading`;

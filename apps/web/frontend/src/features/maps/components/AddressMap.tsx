@@ -27,13 +27,15 @@ export const MAP_LOAD_TIMEOUT_MS = 8000;
 // than sized to its content: the frame mounts only on scroll, which is exactly
 // when a visitor is reaching for the history below, and an empty box that grew
 // by the frame's height at that moment moved the history out from under the
-// tap so the map took it instead.
-const mapFrameClass = "h-72 w-full";
+// tap so the map took it instead. At `lg` the box takes the map panel's
+// height, which the result card beside it sets (Issue #111): still fixed by
+// the layout, never by the frame's content.
+const mapFrameClass = "h-72 w-full lg:h-full";
 
 // The same height as a minimum, not a fixed one: the fallback's link repeats
 // the full address, and an unusually long one must push the history down
 // rather than spill over it, where it would take taps the same way.
-const mapFallbackClass = "min-h-72 w-full";
+const mapFallbackClass = "min-h-72 w-full lg:h-full";
 
 /**
  * The embedded map for the selected address (ui-design.md section 7).

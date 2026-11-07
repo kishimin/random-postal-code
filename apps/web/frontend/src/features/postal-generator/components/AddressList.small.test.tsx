@@ -46,4 +46,18 @@ describe("AddressList", () => {
     expect(items[0]).toHaveTextContent("extra:千代田");
     expect(items[1]).toHaveTextContent("extra:梅田");
   });
+
+  // Issue #111: each address reads as its text first, then its actions.
+  test("puts the address text before the extra content", () => {
+    render(
+      <AddressList
+        addresses={addresses}
+        renderAddressExtra={(address) => <span>{`extra:${address.town}`}</span>}
+      />,
+    );
+
+    expect(screen.getAllByRole("listitem")[0]?.textContent).toBe(
+      "東京都千代田区千代田extra:千代田",
+    );
+  });
 });

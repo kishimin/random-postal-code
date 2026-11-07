@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import type { PostalCode } from "@zipnami/shared";
 import { describe, expect, test } from "vitest";
 import { postalGeneratorText } from "../site-text";
@@ -86,9 +86,66 @@ describe("CurrentResult", () => {
     ).toBeInTheDocument();
   });
 
-  // WCAG 1.3.1: the section keeps a heading at every width, named by Figma's
-  // headline (Issue #97). On a phone it is only visually hidden.
-  test("names the result section after Figma's headline", () => {
+  // Issue #111: Figma draws an area line under the postal code. Which
+  // components it joins is sharedArea's rule; this holds where it goes.
+  test("shows the shared area under the postal code, before the address count", () => {
+    render(
+      <CurrentResult
+        result={{
+          postalCode: "9012223",
+          addresses: [
+            { prefecture: "沖縄県", city: "宜野湾市", town: "大山1丁目" },
+            { prefecture: "沖縄県", city: "宜野湾市", town: "大山2丁目" },
+          ],
+        }}
+        onCopy={() => undefined}
+        copyFeedback={""}
+      />,
+    );
+
+    const postalCode = screen.getByText("901-2223");
+    const areaLine = screen.getByText("沖縄県宜野湾市");
+    const count = screen.getByText("対応する住所 2件", { exact: false });
+
+    expect(
+      Boolean(
+        postalCode.compareDocumentPosition(areaLine) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+    ).toBe(true);
+    expect(
+      Boolean(
+        areaLine.compareDocumentPosition(count) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+    ).toBe(true);
+  });
+
+  test("shows no area line when the addresses share no prefecture", () => {
+    render(
+      <CurrentResult
+        result={{
+          postalCode: "4980000",
+          addresses: [
+            { prefecture: "愛知県", city: "弥富市", town: "鍋田町" },
+            { prefecture: "三重県", city: "桑名郡木曽岬町", town: "源緑輪中" },
+          ],
+        }}
+        onCopy={() => undefined}
+        copyFeedback={""}
+      />,
+    );
+
+    // Every text naming a prefecture is one of the list's own.
+    const prefecture = /愛知県|三重県/;
+    expect(screen.getAllByText(prefecture)).toHaveLength(
+      within(screen.getByRole("list")).getAllByText(prefecture).length,
+    );
+  });
+
+  // The headline moved above both the card and the map (Issue #111), so it
+  // is ResultHeadline's, not this component's.
+  test("carries no heading of its own", () => {
     render(
       <CurrentResult
         result={result}
@@ -97,12 +154,7 @@ describe("CurrentResult", () => {
       />,
     );
 
-    expect(
-      screen.getByRole("heading", { level: 2, name: "波が運んできた場所" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("region", { name: "波が運んできた場所" }),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
   });
 
   // Issue #8 places a per-address map action inside AddressList's own

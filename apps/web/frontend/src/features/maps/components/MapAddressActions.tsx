@@ -19,13 +19,19 @@ type MapAddressActionsProps = {
  * of that text (ui-design.md section 9.2). The visible words stay inside the
  * name, so a speech-recognition user who says what they read is understood
  * (WCAG 2.5.3).
+ *
+ * The pair sits on its own line, right-aligned under the address (Figma node
+ * 1:4, Issue #111). The button is Figma's outline button, except that the
+ * selected address's stays filled: the accent surface behind the selected
+ * entry is too close to white to show the selection without color (WCAG
+ * 1.4.1), and ui-design.md section 9.1 lets AA win over Figma.
  */
 export const MapAddressActions = ({
   address,
   isSelected,
   onSelect,
 }: MapAddressActionsProps) => (
-  <span className={"flex flex-wrap items-center gap-x-4"}>
+  <span className={"flex flex-wrap items-center justify-end gap-x-3 gap-y-1"}>
     <button
       type={"button"}
       aria-pressed={isSelected}
