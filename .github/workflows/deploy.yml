@@ -58,7 +58,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      actions: read
+      deployments: read
     outputs:
       frontend: ${{ steps.plan.outputs.frontend }}
       backend: ${{ steps.plan.outputs.backend }}
@@ -69,17 +69,18 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
-          # The diff reaches back to the previous verified commit.
+          # The diff reaches back to the commit each half last deployed.
           fetch-depth: 0
 
+      # Compares with the deploy records the Worker and Pages jobs leave, so
+      # each half is planned against what it actually has live.
       - name: Pick the halves that changed
         id: plan
         if: github.event_name == 'workflow_run'
         env:
           GH_TOKEN: ${{ github.token }}
-          CI_RUN_ID: ${{ github.event.workflow_run.id }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: node .github/scripts/plan-deploy.mjs
+        run: node .github/scripts/plan-deploy.mjs plan
 
   backend:
     name: Deploy Worker
@@ -94,6 +95,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
+    permissions:
+      contents: read
+      deployments: write
 
     steps:
       # On workflow_run, github.sha is main's newest commit, which CI may not
@@ -117,6 +121,13 @@ jobs:
       # do not pass secrets with --var, use `wrangler secret` instead.
       # Unquoted is safe: the step above has already proven the value is one
       # https origin, so it holds no space or glob character.
+      - name: Record the Worker deploy as started
+        id: record
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: node .github/scripts/plan-deploy.mjs record-start backend
+
       - name: Deploy Worker
         working-directory: apps/web/backend
         env:
@@ -124,6 +135,16 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PAGES_ORIGIN: ${{ vars.ZIPNAMI_PAGES_ORIGIN }}
         run: bunx wrangler deploy --var ALLOWED_ORIGINS:$PAGES_ORIGIN
+
+      # always(): a failed or cancelled deploy must be recorded as such, or the
+      # next plan would trust it as live.
+      - name: Record the Worker deploy's outcome
+        if: ${{ always() && steps.record.outputs.id != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYMENT_ID: ${{ steps.record.outputs.id }}
+          OUTCOME: ${{ job.status }}
+        run: node .github/scripts/plan-deploy.mjs record-finish
 
   frontend:
     name: Deploy Pages
@@ -137,6 +158,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
+    permissions:
+      contents: read
+      deployments: write
 
     steps:
       - name: Check out repository
@@ -172,6 +196,13 @@ jobs:
       # --branch main makes this a production deployment, provided the
       # project's production branch is main (docs/deployment.md creates it
       # that way).
+      - name: Record the Pages deploy as started
+        id: record
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: node .github/scripts/plan-deploy.mjs record-start frontend
+
       - name: Deploy Pages
         working-directory: apps/web/frontend
         env:
@@ -180,6 +211,14 @@ jobs:
           PAGES_PROJECT: ${{ vars.ZIPNAMI_PAGES_PROJECT }}
           DEPLOYED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: bunx wrangler pages deploy dist --project-name "$PAGES_PROJECT" --branch main --commit-hash "$DEPLOYED_SHA"
+
+      - name: Record the Pages deploy's outcome
+        if: ${{ always() && steps.record.outputs.id != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYMENT_ID: ${{ steps.record.outputs.id }}
+          OUTCOME: ${{ job.status }}
+        run: node .github/scripts/plan-deploy.mjs record-finish
 
   production-tests:
     name: Production tests
