@@ -184,6 +184,8 @@ Before completing a code branch, run every repository-defined formatter, type ch
 - Frontend: deploy `apps/web/frontend` statically to Cloudflare Pages.
 - Backend: deploy `apps/web/backend` as an independent Cloudflare Worker.
 - Deploy and roll back Pages and Workers independently.
+- Deploy automatically once `CI (Push)` succeeds for a push to `main`, deploying the commit CI verified (Issue #108). Each half deploys only when it changed since the commit that half last deployed successfully, as recorded by every deploy; documentation and acceptance tests deploy nothing, and anything shared deploys both. A half never automatically receives a commit older than the one it has live. A manual dispatch remains.
+- Report a failed deploy or failed production tests to Discord with the rollback command. Nothing rolls back automatically.
 - Run the production tests (Large, Issue #104) from Pages through Workers.
 - Do not print secrets in deployment logs.
 - Ensure Web advertising declarations and consent configuration match the production build.
