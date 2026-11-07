@@ -111,7 +111,9 @@ type UiError =
 +------------------------------------------------------+
 ```
 
-Below `1024px`, result and map stack in one column. At and above `1024px`, they use two columns with the result first in DOM and reading order. The content container is fluid with a maximum width of `1200px`; no primary content or action may require horizontal scrolling at a `320px` viewport. History remains below the current result so older entries never compete with the primary action.
+Once a result exists, its eyebrow (`TODAY'S DESTINATION`) and its headline (`波が運んできた場所`) come first in DOM and reading order, outside the result card. Below `1024px`, they sit above the result, and result and map stack in one column. At and above `1024px`, they span both columns above the result card and the map; the result and the map use two columns split `560:720`, with the result first in DOM and reading order, and the map panel's top and bottom edges line up with the result card's (Figma node `1:4`, owner decision on Issue #111, 2026-11-07). The result card holds the postal code, the area line, the address count, the copy action, the addresses, and the generate action.
+
+The content container is fluid with a maximum width of `1312px`, which leaves `64px` side margins at a `1440px` viewport (Issue #111); no primary content or action may require horizontal scrolling at a `320px` viewport. History remains below the current result so older entries never compete with the primary action.
 
 ### 5.2 Web Components and Ownership
 
@@ -227,6 +229,12 @@ The Figma file fixes these values per screen; recording them here makes that exi
 - `地図に表示` and `Google マップで開く` repeat on every address in Figma. Their visible labels are Figma's, and their accessible names include the address (for example `沖縄県宜野湾市大山 1丁目を地図に表示`), so a screen reader can tell them apart (section 8).
 - The history's `履歴を展開` opens the list. An opened entry shows every address of its postal code, so every stored address stays reachable (section 5).
 - `広告掲載エリア` inside the advertising slot is a placeholder in the mock, not copy; the slot shows the ad, or collapses (section 7).
+
+**Result screen** (owner decisions on Issue #111, 2026-11-07):
+
+- The area line under the postal code (Figma `#2:24`) is built from the addresses, not copied from Figma. It joins the leading address components that every address of the postal code shares, compared field by field: prefecture, then city, then town. A component that differs in any address, and every component after it, is left out. With one address, the line is that address. When not even the prefecture is shared, the line is not shown. Figma's example reads `沖縄県宜野湾市大山`; for its three addresses (`大山1丁目` to `大山3丁目`) the rule gives `沖縄県宜野湾市`, because the owner chose the component rule over cutting town names.
+- Each address is two lines: the address, then `地図に表示` and `Google マップで開く`, right-aligned (Figma `1:4`). `地図に表示` is Figma's outline button, and the selected address keeps the accent surface. The selected address's `地図に表示` also stays filled: the accent surface differs from white by too little luminance to show the selection without color (WCAG 1.4.1, section 8), and AA wins over Figma (section 9.1).
+- `郵便番号をコピー` keeps its position inside the result card, under the postal code. Figma puts it at the right of the headline row; the owner decided not to move it.
 
 The Figma design already fixes the color, typography, and copy values recorded in 9.2 above; elevation tokens are not yet fixed by that design. Section 9.3 records how those values are adopted into theme code.
 
