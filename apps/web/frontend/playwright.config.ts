@@ -30,6 +30,7 @@ export default defineConfig({
     "acceptance/web-google-analytics.medium.test.ts",
     "acceptance/production-tests-third-party-block.medium.test.ts",
     "acceptance/web-result-layout.medium.test.ts",
+    "acceptance/privacy-footer-home.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,

@@ -21,6 +21,16 @@ export const RootLayout = () => {
   const pathname = useRouterState({
     select: (state) => state.resolvedLocation?.pathname,
   });
+  // Decided by the route the router matched, not by comparing the path: the
+  // router also shows the privacy screen at /privacy/ (document-title.ts),
+  // and a string comparison left the footer linking to itself there. The
+  // matches are the screen on display, so the footer changes with it.
+  // "/privacy" is the privacy route's id; app-router.tsx cannot be imported
+  // here, since it imports this layout.
+  const isPrivacyScreen = useRouterState({
+    select: (state) =>
+      state.matches.some((match) => match.routeId === "/privacy"),
+  });
   const mainRef = useRef<HTMLElement>(null);
   const previousPathname = useRef<string | undefined>(undefined);
 
@@ -58,9 +68,18 @@ export const RootLayout = () => {
         </Link>
       }
       privacyLink={
-        <Link className={privacyLinkClass} to={"/privacy"}>
-          {siteText.privacyLabel}
-        </Link>
+        // On /privacy the footer would link to the page the visitor is on, so
+        // it goes home there instead and says so (ui-design.md section 9.2,
+        // Issue #112). It keeps the privacy link's look.
+        isPrivacyScreen ? (
+          <Link className={privacyLinkClass} to={"/"}>
+            {siteText.homeLabel}
+          </Link>
+        ) : (
+          <Link className={privacyLinkClass} to={"/privacy"}>
+            {siteText.privacyLabel}
+          </Link>
+        )
       }
     >
       <Outlet />
