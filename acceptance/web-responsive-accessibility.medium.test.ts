@@ -32,6 +32,7 @@ import {
   showOnMapName,
 } from "./selectors/figma-copy.ts";
 import { displayedPostalCode } from "./selectors/generator-selectors.ts";
+import { privacyFooterSelectors } from "./selectors/privacy-footer-selectors.ts";
 
 /*
  * Acceptance test for Issue #16: Meet Web responsive and accessibility
@@ -271,14 +272,16 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
 
       // Every one of Figma's four sections, and both of the page's links. The
       // contact link this list used to carry went to V2 with its section
-      // (Issue #105; approved on Issue #97, issuecomment-6670298264).
+      // (Issue #105; approved on Issue #97, issuecomment-6670298264). The
+      // footer's link here is ホームに戻る, not プライバシーポリシー (Issue
+      // #112; approved there, issuecomment-6700995872).
       for (const element of [
         privacyDisclosurePage.heading(),
         ...privacyDisclosurePage.sectionHeadings.map((name) =>
           privacyDisclosurePage.section(name),
         ),
         accessibilityPage.linkNamed(chromeSelectors.siteHeader),
-        privacyDisclosurePage.disclosureLink(),
+        accessibilityPage.linkNamed(privacyFooterSelectors.homeLink),
       ]) {
         expect(await accessibilityPage.liesWithinVisibleWidth(element)).toBe(
           true,
@@ -399,11 +402,12 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     expect(await accessibilityPage.elementsAheadOfDocumentOrder()).toBe(0);
 
     await privacyDisclosurePage.navigate();
-    // The footer's privacy link: with no contact link in the MVP, it is the
-    // control the privacy page itself carries in its frame.
+    // The footer's ホームに戻る: with no contact link in the MVP, it is the
+    // control the privacy page itself carries in its frame (Issue #112;
+    // approved there, issuecomment-6700995872).
     expect(
       await accessibilityPage.tabIndexOf(
-        privacyDisclosurePage.disclosureLink(),
+        accessibilityPage.linkNamed(privacyFooterSelectors.homeLink),
       ),
     ).toBeGreaterThanOrEqual(0);
     expect(await accessibilityPage.elementsAheadOfDocumentOrder()).toBe(0);
@@ -440,7 +444,7 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     await privacyDisclosurePage.navigate();
     expect(
       await accessibilityPage.showsFocusIndicator(
-        privacyDisclosurePage.disclosureLink(),
+        accessibilityPage.linkNamed(privacyFooterSelectors.homeLink),
       ),
     ).toBe(true);
 
@@ -570,8 +574,13 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
       await expect(privacyDisclosurePage.section(name), name).toBeVisible();
     }
     await expectControls("button", []);
-    // Only the frame's links: the contact link went to V2 (Issue #105).
-    await expectControls("link", frameLinks([]));
+    // Only the frame's links: the contact link went to V2 (Issue #105), and
+    // the footer reads ホームに戻る here, not プライバシーポリシー (Issue #112;
+    // approved there, issuecomment-6700995872).
+    await expectControls("link", [
+      figmaCopy.wordmark,
+      privacyFooterSelectors.homeLink,
+    ]);
 
     await notFoundPage.navigate();
     await expect(notFoundPage.backToGeneratorLink()).toBeVisible();
