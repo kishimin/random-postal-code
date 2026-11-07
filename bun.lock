@@ -26,7 +26,7 @@
     },
     "apps/web/backend": {
       "name": "@zipnami/web-backend",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@zipnami/shared": "workspace:*",
         "hono": "^4.12.23",
@@ -46,7 +46,7 @@
     },
     "apps/web/frontend": {
       "name": "@zipnami/web-frontend",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@fontsource-variable/inter": "^5.3.0",
         "@tailwindcss/vite": "^4.3.3",
@@ -117,7 +117,7 @@
     },
     "packages/postal-data": {
       "name": "@zipnami/postal-data",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "devDependencies": {
         "@types/node": "^24.13.3",
         "@vitest/coverage-v8": "4.1.10",
@@ -130,7 +130,7 @@
     },
     "packages/shared": {
       "name": "@zipnami/shared",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "zod": "^4.4.3",
       },
