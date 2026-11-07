@@ -21,10 +21,15 @@ export const RootLayout = () => {
   const pathname = useRouterState({
     select: (state) => state.resolvedLocation?.pathname,
   });
-  // The footer follows the location the router is showing or about to show,
-  // so it is right from the first render, before any navigation resolves.
+  // Decided by the route the router matched, not by comparing the path: the
+  // router also shows the privacy screen at /privacy/ (document-title.ts),
+  // and a string comparison left the footer linking to itself there. The
+  // matches are the screen on display, so the footer changes with it.
+  // "/privacy" is the privacy route's id; app-router.tsx cannot be imported
+  // here, since it imports this layout.
   const isPrivacyScreen = useRouterState({
-    select: (state) => state.location.pathname === "/privacy",
+    select: (state) =>
+      state.matches.some((match) => match.routeId === "/privacy"),
   });
   const mainRef = useRef<HTMLElement>(null);
   const previousPathname = useRef<string | undefined>(undefined);
