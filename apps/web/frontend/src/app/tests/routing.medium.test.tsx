@@ -41,6 +41,21 @@ describe("application routes", () => {
     expect(screen.getByRole("main")).toBeInTheDocument();
   });
 
+  // Issue #112: the privacy page does not link to itself. Its footer link
+  // goes home instead, and says so.
+  test("the privacy screen's footer links home as ホームに戻る, not to itself", async () => {
+    renderAt("/privacy");
+    await screen.findByRole("heading", { name: /プライバシー/, level: 1 });
+
+    expect(screen.getByRole("link", { name: "ホームに戻る" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    expect(
+      screen.queryByRole("link", { name: "プライバシーポリシー" }),
+    ).not.toBeInTheDocument();
+  });
+
   test("a path no route claims renders the not-found screen, not the generator", async () => {
     renderAt("/this-path-does-not-exist");
 
@@ -53,5 +68,9 @@ describe("application routes", () => {
     expect(
       screen.queryByRole("heading", { name: /波に乗って/, level: 1 }),
     ).not.toBeInTheDocument();
+    // Only /privacy swaps its footer link (Issue #112).
+    expect(
+      screen.getByRole("link", { name: "プライバシーポリシー" }),
+    ).toHaveAttribute("href", "/privacy");
   });
 });

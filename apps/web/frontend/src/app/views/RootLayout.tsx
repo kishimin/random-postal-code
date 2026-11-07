@@ -21,6 +21,11 @@ export const RootLayout = () => {
   const pathname = useRouterState({
     select: (state) => state.resolvedLocation?.pathname,
   });
+  // The footer follows the location the router is showing or about to show,
+  // so it is right from the first render, before any navigation resolves.
+  const isPrivacyScreen = useRouterState({
+    select: (state) => state.location.pathname === "/privacy",
+  });
   const mainRef = useRef<HTMLElement>(null);
   const previousPathname = useRef<string | undefined>(undefined);
 
@@ -58,9 +63,18 @@ export const RootLayout = () => {
         </Link>
       }
       privacyLink={
-        <Link className={privacyLinkClass} to={"/privacy"}>
-          {siteText.privacyLabel}
-        </Link>
+        // On /privacy the footer would link to the page the visitor is on, so
+        // it goes home there instead and says so (ui-design.md section 9.2,
+        // Issue #112). It keeps the privacy link's look.
+        isPrivacyScreen ? (
+          <Link className={privacyLinkClass} to={"/"}>
+            {siteText.homeLabel}
+          </Link>
+        ) : (
+          <Link className={privacyLinkClass} to={"/privacy"}>
+            {siteText.privacyLabel}
+          </Link>
+        )
       }
     >
       <Outlet />

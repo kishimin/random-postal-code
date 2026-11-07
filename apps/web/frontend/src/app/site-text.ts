@@ -13,6 +13,8 @@ export const siteText = {
   attribution:
     "郵便番号データは日本郵便株式会社が公開するデータを利用しています。",
   privacyLabel: "プライバシーポリシー",
+  // The footer's link on /privacy itself (owner decision on Issue #112).
+  homeLabel: "ホームに戻る",
   backToGenerator: "トップへ戻る",
   // The header's tagline and the footer's attribution, both fixed by the
   // Figma frames (ui-design.md section 9.2).
