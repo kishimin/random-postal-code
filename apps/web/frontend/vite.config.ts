@@ -14,6 +14,7 @@ import {
 // Extension included because this file is type checked under module: nodenext,
 // where an extensionless relative specifier does not resolve.
 import { createApiClient } from "./src/api/api-client.ts";
+import { adsTxtFor } from "./src/app/deployment/ads-txt.ts";
 import { fillCspReportEndpoint } from "./src/app/deployment/csp-headers.ts";
 import { parseAppEnv } from "./src/app/schemas/env.schema.ts";
 
@@ -89,6 +90,31 @@ const writeCspReportEndpoint = (): Plugin => {
   };
 };
 
+/*
+ * Writes ads.txt from the AdSense client ID the bundle is built with. Not a
+ * static file in public/: the publisher is known only per build, and a build
+ * without a real one (the development placeholder) publishes none. Without
+ * the file, the SPA fallback in public/_redirects answers /ads.txt with
+ * index.html, which AdSense reports as a missing ads.txt.
+ */
+const writeAdsTxt = (): Plugin => {
+  const target = { file: "", contents: null as string | null };
+
+  return {
+    name: "zipnami:ads-txt",
+    apply: "build",
+    configResolved: (config) => {
+      target.file = path.resolve(config.root, config.build.outDir, "ads.txt");
+      target.contents = adsTxtFor(
+        parseAppEnv(config.env).googleAdsenseClientId,
+      );
+    },
+    closeBundle: () => {
+      if (target.contents !== null) writeFileSync(target.file, target.contents);
+    },
+  };
+};
+
 const dirname =
   typeof __dirname !== "undefined"
     ? __dirname
@@ -116,6 +142,7 @@ export default defineConfig({
     tailwindcss(),
     validateBuildEnvironment(),
     writeCspReportEndpoint(),
+    writeAdsTxt(),
   ],
   resolve: {
     alias: {
