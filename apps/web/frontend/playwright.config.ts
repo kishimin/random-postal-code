@@ -31,6 +31,7 @@ export default defineConfig({
     "acceptance/production-tests-third-party-block.medium.test.ts",
     "acceptance/web-result-layout.medium.test.ts",
     "acceptance/privacy-footer-home.medium.test.ts",
+    "acceptance/header-logo.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,
