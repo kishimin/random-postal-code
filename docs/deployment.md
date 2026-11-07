@@ -149,8 +149,14 @@ unattended loop makes: they pass the same CI gate.
 - **What it deploys**: the commit that CI verified
   (`github.event.workflow_run.head_sha`), not whatever is newest on `main`
   by the time the deploy starts.
-- **Which halves**: the "Plan deploy" job compares that commit with the
-  commit of the previous successful `CI (Push)` run, and
+- **Deploy records**: every Worker and Pages deploy, automatic or by hand,
+  records the commit it shipped as a GitHub deployment in the
+  `production-release` environment (task `deploy:backend` or
+  `deploy:frontend`), finished as `success`, `failure`, or `error` (cancelled).
+  This environment holds no secrets and needs no setup; GitHub creates it on
+  the first record.
+- **Which halves**: the "Plan deploy" job compares that commit, half by half,
+  with the commit that half last deployed successfully, and
   `.github/scripts/plan-deploy.mjs` picks the halves from the changed files:
 
   | Changed                                         | Deploys |
@@ -160,10 +166,13 @@ unattended loop makes: they pass the same CI gate.
   | `docs/`, `acceptance/`, any `*.md`, `LICENSE`   | nothing |
   | anything else (shared code, lockfile, workflow) | both    |
 
-  Both halves deploy when the previous run of `deploy.yml` did not succeed
-  (it failed, or a newer deploy replaced it while it waited), or when the
-  previous verified commit can't be found. A change that was never deployed
-  is therefore not skipped.
+  A half also deploys when its latest deploy did not succeed, or when it has
+  no record yet. A failed deploy never moves a half's last success, so a
+  change that never reached production is not skipped.
+
+  A half never receives a commit at or behind the one it last deployed: a
+  re-run of an old `CI (Push)` run deploys nothing. Going back is a rollback,
+  and a person decides that.
 
 - **Afterwards**: the production tests run if either half deployed. A
   documentation-only merge deploys nothing and runs no production test.
