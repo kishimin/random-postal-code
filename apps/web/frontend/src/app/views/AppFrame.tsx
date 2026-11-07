@@ -1,6 +1,11 @@
 import type { ReactNode, Ref } from "react";
 import { siteText } from "../site-text";
-import { footerTextClass, frameInnerClass, headerClass } from "../styles";
+import {
+  footerTextClass,
+  frameInnerClass,
+  headerClass,
+  mainInnerClass,
+} from "../styles";
 
 type AppFrameProps = {
   /** The wordmark link; the caller picks a router Link or a plain anchor. */
@@ -36,7 +41,7 @@ export const AppFrame = ({
       </div>
     </header>
 
-    <main ref={mainRef} className={`${frameInnerClass} flex-1 py-8 lg:py-12`}>
+    <main ref={mainRef} className={`${mainInnerClass} flex-1 py-8 lg:py-12`}>
       {children}
     </main>
 

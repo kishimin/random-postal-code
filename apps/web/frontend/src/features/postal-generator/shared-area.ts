@@ -18,10 +18,8 @@ const components = [
  * @param addresses - Every address of the postal code, in source order.
  * @returns The joined components, or `undefined` when none is shared.
  */
-export const sharedArea = ([
-  first,
-  ...rest
-]: PostalCode["addresses"]): string | undefined => {
+export const sharedArea = ([first, ...rest]: PostalCode["addresses"]):
+  string | undefined => {
   const shared: string[] = [];
 
   for (const component of components) {

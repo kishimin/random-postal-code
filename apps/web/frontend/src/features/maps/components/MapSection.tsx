@@ -15,6 +15,9 @@ const MAP_HEADING_ID = "map-heading";
  * result exists, so a first visit never shows an empty iframe, and showing
  * the embedded map for whichever address is currently selected once one
  * does.
+ *
+ * At `lg` and wider the panel stretches to the result card's height, and the
+ * map fills what its heading leaves (ui-design.md section 5.1, Issue #111).
  */
 export const MapSection = ({
   result,
@@ -26,7 +29,7 @@ export const MapSection = ({
   return (
     <section
       aria-labelledby={MAP_HEADING_ID}
-      className={"rounded-card bg-map-surface p-4 lg:p-6"}
+      className={"rounded-card bg-map-surface p-4 lg:flex lg:flex-col lg:p-6"}
     >
       <h2
         id={MAP_HEADING_ID}
@@ -34,7 +37,9 @@ export const MapSection = ({
       >
         {mapsText.mapHeading}
       </h2>
-      <AddressMap address={selectedAddress} apiKey={apiKey} />
+      <div className={"lg:flex-1"}>
+        <AddressMap address={selectedAddress} apiKey={apiKey} />
+      </div>
     </section>
   );
 };

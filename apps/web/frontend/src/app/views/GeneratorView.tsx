@@ -14,6 +14,10 @@ import { CurrentResult } from "../../features/postal-generator/components/Curren
 import { GenerateAction } from "../../features/postal-generator/components/GenerateAction";
 import { GeneratorAnnouncer } from "../../features/postal-generator/components/GeneratorAnnouncer";
 import { MysteryPlaceholder } from "../../features/postal-generator/components/MysteryPlaceholder";
+import {
+  RESULT_HEADING_ID,
+  ResultHeadline,
+} from "../../features/postal-generator/components/ResultHeadline";
 import { generateActionLabel } from "../../features/postal-generator/generate-action-label";
 import type { GeneratorState } from "../../features/postal-generator/hooks/generator-state";
 import { useGenerator } from "../../features/postal-generator/hooks/use-generator";
@@ -32,7 +36,10 @@ const toneByStatus = {
 // Figma's start card is the accent-surface "Mystery card"; once a result
 // exists the same box becomes the white "Address panel". It is one element
 // that changes its look, not two, so the generate action keeps its place in
-// the document and its focus across a generation.
+// the document and its focus across a generation. For the same reason the
+// box is a <section> in both states: it becomes the region the result
+// headline names once there is a result, and is an unnamed section, which is
+// no region at all, before that.
 const startCardClass =
   "mx-auto mt-8 max-w-[660px] rounded-panel bg-accent-surface px-6 py-10 text-center lg:mt-12";
 const resultCardClass = "rounded-card bg-card p-6 lg:p-8";
@@ -52,6 +59,12 @@ const resultCardClass = "rounded-card bg-card p-6 lg:p-8";
  * "Which address is selected" is lifted to this level because AddressList's
  * per-address action and the map region are siblings in the tree below --
  * CurrentResult and MapSection -- with no other shared ancestor to hold it.
+ *
+ * Once a result exists, the eyebrow and the headline come first and span
+ * both columns above the result card and the map, which split 560:720 at
+ * `lg` and stretch to the same height (ui-design.md section 5.1, Issue #111).
+ * The headline is a sibling inserted ahead of the card, not a wrapper around
+ * it, so the card keeps its place among its siblings and is not remounted.
  */
 export const GeneratorView = () => {
   const [env] = useState(() => parseAppEnv(import.meta.env));
@@ -75,11 +88,19 @@ export const GeneratorView = () => {
       <div
         className={
           hasResult
-            ? "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[560px_1fr] lg:items-start"
+            ? "mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,560fr)_minmax(0,720fr)] lg:gap-8"
             : undefined
         }
       >
-        <div className={hasResult ? resultCardClass : startCardClass}>
+        {hasResult && (
+          <div className={"lg:col-span-2"}>
+            <ResultHeadline />
+          </div>
+        )}
+        <section
+          aria-labelledby={hasResult ? RESULT_HEADING_ID : undefined}
+          className={hasResult ? resultCardClass : startCardClass}
+        >
           {!hasResult && <MysteryPlaceholder />}
           {/* ui-design.md section 8: "Set aria-busy on the result region
               during generation." Wrapped rather than set on CurrentResult
@@ -112,7 +133,7 @@ export const GeneratorView = () => {
               isGenerating={state.status === "loading"}
             />
           </div>
-        </div>
+        </section>
         <MapSection
           result={currentResult}
           selectedAddress={selectedAddress}

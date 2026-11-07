@@ -737,4 +737,40 @@ describe("the generator experience", () => {
       screen.getByRole("region", { name: "波が運んできた場所" }),
     ).toBeInTheDocument();
   });
+
+  // Issue #111: Figma puts the eyebrow and the headline above both the card
+  // and the map. The card is still the region the headline names.
+  test("the headline sits outside the result card it names, before the card and the map", async () => {
+    const user = userEvent.setup();
+    queueRandomResponses([{ outcome: "success", result: firstResult }]);
+    renderAt("/");
+
+    await user.click(
+      await screen.findByRole("button", { name: "ランダム生成する" }),
+    );
+    await currentResultText("100-0001");
+
+    const heading = screen.getByRole("heading", {
+      level: 2,
+      name: "波が運んできた場所",
+    });
+    const card = screen.getByRole("region", { name: "波が運んできた場所" });
+    const map = screen.getByRole("region", { name: "地図" });
+
+    expect(card).not.toContainElement(heading);
+    expect(
+      within(card).getByRole("button", { name: "もう一度、波に乗る" }),
+    ).toBeInTheDocument();
+    expect(
+      Boolean(
+        heading.compareDocumentPosition(card) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+    ).toBe(true);
+    expect(
+      Boolean(
+        card.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+    ).toBe(true);
+  });
 });

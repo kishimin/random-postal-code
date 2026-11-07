@@ -24,6 +24,9 @@ type AddressListProps = {
  * multiple addresses into a summary."). A native `<ul>`/`<li>` pair is used
  * instead of an ARIA list role so assistive technology gets list semantics
  * for free (ui-design.md section 8).
+ *
+ * Each entry is two lines, as Figma node 1:4 draws it (Issue #111): the
+ * address first, then whatever `renderAddressExtra` adds on a line of its own.
  */
 export const AddressList = ({
   addresses,
@@ -36,9 +39,9 @@ export const AddressList = ({
       // before this ever renders, so the triple itself is already a unique key.
       <li
         key={`${address.prefecture}-${address.city}-${address.town}`}
-        className={`flex flex-wrap items-center wrap-anywhere justify-between gap-x-4 gap-y-1 rounded-field border border-card-border px-4 py-2 text-body-sm font-semibold text-ink ${address === selectedAddress ? "bg-accent-surface" : "bg-card"}`}
+        className={`flex flex-col gap-1 wrap-anywhere rounded-field border border-card-border px-4 py-3 text-body-sm font-semibold text-ink ${address === selectedAddress ? "bg-accent-surface" : "bg-card"}`}
       >
-        {`${address.prefecture}${address.city}${address.town}`}
+        <span>{`${address.prefecture}${address.city}${address.town}`}</span>
         {renderAddressExtra?.(address)}
       </li>
     ))}

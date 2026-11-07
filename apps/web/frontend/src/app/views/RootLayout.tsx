@@ -8,9 +8,9 @@ import { AppFrame } from "./AppFrame";
  * Frame shared by every route.
  *
  * The landmarks live here rather than in each screen, so a route added later
- * cannot ship without them. The container is fluid up to the 1200px maximum
- * ui-design.md section 5.1 sets, and its horizontal padding is what keeps
- * content off the edges at a 320px viewport.
+ * cannot ship without them. Main's container is fluid up to the 1312px
+ * content width ui-design.md section 5.1 sets, and its horizontal padding is
+ * what keeps content off the edges at a 320px viewport.
  */
 export const RootLayout = () => {
   // resolvedLocation, not location: location updates as soon as a navigation
