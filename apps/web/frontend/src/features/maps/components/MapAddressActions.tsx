@@ -31,7 +31,7 @@ export const MapAddressActions = ({
   isSelected,
   onSelect,
 }: MapAddressActionsProps) => (
-  <span className={"flex flex-wrap items-center justify-end gap-x-3"}>
+  <span className={"flex flex-wrap items-center justify-end gap-x-3 gap-y-1"}>
     <button
       type={"button"}
       aria-pressed={isSelected}

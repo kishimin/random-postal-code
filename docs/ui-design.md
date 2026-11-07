@@ -98,6 +98,8 @@ type UiError =
 | Intro                                                |
 | [ Generate a postal code ]                           |
 | Status / error / retry                               |
++------------------------------------------------------+
+| Eyebrow + result headline (once a result exists)     |
 +-----------------------------+------------------------+
 | Current result              | Map                    |
 | 100-0001  [Copy]            | selected address       |
@@ -113,7 +115,7 @@ type UiError =
 
 Once a result exists, its eyebrow (`TODAY'S DESTINATION`) and its headline (`波が運んできた場所`) come first in DOM and reading order, outside the result card. Below `1024px`, they sit above the result, and result and map stack in one column. At and above `1024px`, they span both columns above the result card and the map; the result and the map use two columns split `560:720`, with the result first in DOM and reading order, and the map panel's top and bottom edges line up with the result card's (Figma node `1:4`, owner decision on Issue #111, 2026-11-07). The result card holds the postal code, the area line, the address count, the copy action, the addresses, and the generate action.
 
-The content container is fluid with a maximum width of `1312px`, which leaves `64px` side margins at a `1440px` viewport (Issue #111); no primary content or action may require horizontal scrolling at a `320px` viewport. History remains below the current result so older entries never compete with the primary action.
+The main content container is fluid with a maximum width of `1312px`, which leaves `64px` side margins at a `1440px` viewport (Issue #111). The header and footer keep their own `1200px` container until the header's Figma layout is applied (Issue #113); no primary content or action may require horizontal scrolling at a `320px` viewport. History remains below the current result so older entries never compete with the primary action.
 
 ### 5.2 Web Components and Ownership
 

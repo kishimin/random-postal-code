@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import type { PostalCode } from "@zipnami/shared";
 import { describe, expect, test } from "vitest";
 import { postalGeneratorText } from "../site-text";
@@ -136,11 +136,11 @@ describe("CurrentResult", () => {
       />,
     );
 
-    // Only the list items carry a prefecture, so nothing outside them does.
-    const outsideList = screen
-      .getAllByText(/愛知県|三重県/)
-      .filter((element) => element.closest("li") === null);
-    expect(outsideList).toHaveLength(0);
+    // Every text naming a prefecture is one of the list's own.
+    const prefecture = /愛知県|三重県/;
+    expect(screen.getAllByText(prefecture)).toHaveLength(
+      within(screen.getByRole("list")).getAllByText(prefecture).length,
+    );
   });
 
   // The headline moved above both the card and the map (Issue #111), so it

@@ -103,9 +103,11 @@ export const GeneratorView = () => {
         >
           {!hasResult && <MysteryPlaceholder />}
           {/* ui-design.md section 8: "Set aria-busy on the result region
-              during generation." Wrapped rather than set on CurrentResult
-              itself so the attribute is present even on a first generation,
-              before any result exists to render. */}
+              during generation." Set on this wrapper of the result content,
+              not on CurrentResult itself, so the attribute is present even on
+              a first generation, before any result exists to render. Not on
+              the card either: the card also holds the generate action, which
+              is not what is being replaced. */}
           <div
             data-testid={"result-region"}
             aria-busy={state.status === "loading"}

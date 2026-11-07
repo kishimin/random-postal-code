@@ -14,12 +14,15 @@ const components = [
  *
  * Compared component by component rather than as a common string prefix,
  * which would cut `大山1丁目` and `大山2丁目` down to `大山` -- the owner chose
- * whole components over cut town names.
- * @param addresses - Every address of the postal code, in source order.
- * @returns The joined components, or `undefined` when none is shared.
+ * whole components over cut town names. `undefined` when not even the
+ * prefecture is shared.
+ * @param {PostalCode["addresses"]} addresses - Every address of the postal
+ * code, in source order.
  */
-export const sharedArea = ([first, ...rest]: PostalCode["addresses"]):
-  string | undefined => {
+export const sharedArea = (
+  addresses: PostalCode["addresses"],
+): string | undefined => {
+  const [first, ...rest] = addresses;
   const shared: string[] = [];
 
   for (const component of components) {
