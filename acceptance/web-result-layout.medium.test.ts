@@ -242,18 +242,17 @@ test.describe("Issue #111: the desktop result layout", () => {
   }) => {
     await showResult(resultLayoutPage, noSharedPrefecture, 1440);
 
-    // Every line the rule could have produced from any address.
-    const candidates = noSharedPrefecture.addresses.flatMap(
-      ({ prefecture, city, town }) => [
-        prefecture,
-        `${prefecture}${city}`,
-        `${prefecture}${city}${town}`,
-      ],
+    // Issue #118: any area line names a prefecture, however its parts are
+    // joined, so no text in the card outside the address list may name one.
+    // A list of exact joined strings missed `愛知県 弥富市` and `愛知県・三重県`.
+    const card = resultLayoutPage.resultCard();
+    const outsideAddressList = card.locator(
+      "xpath=.//*[not(ancestor-or-self::li)]",
     );
 
-    for (const candidate of candidates) {
+    for (const { prefecture } of noSharedPrefecture.addresses) {
       await expect(
-        resultLayoutPage.textOutsideAddresses(candidate),
+        card.getByText(prefecture).and(outsideAddressList),
       ).toHaveCount(0);
     }
   });
