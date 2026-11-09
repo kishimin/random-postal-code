@@ -68,9 +68,9 @@ describe("root error boundary", () => {
     );
 
     const banner = screen.getByRole("banner");
+    // A string name already matches the whole accessible name, exactly.
     const wordmark = within(banner).getByRole("link", {
       name: siteText.wordmark,
-      exact: true,
     });
     const logos = banner.querySelectorAll("img");
 
