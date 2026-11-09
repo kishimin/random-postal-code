@@ -1,4 +1,5 @@
 import type { ReactNode, Ref } from "react";
+import logoUrl from "../../images/logo.svg";
 import { siteText } from "../site-text";
 import {
   footerTextClass,
@@ -34,7 +35,20 @@ export const AppFrame = ({
       <div
         className={`${frameInnerClass} flex min-h-16 items-center gap-6 lg:min-h-20`}
       >
-        {wordmark}
+        <div className={"flex items-center gap-2"}>
+          {/* Decorative: the wordmark right after it already names the site,
+              so an alt text would make a screen reader say Zipnami twice. It
+              sits outside the link so the link's name stays exactly the
+              wordmark. */}
+          <img
+            src={logoUrl}
+            alt={""}
+            width={48}
+            height={32}
+            className={"h-8 w-12 shrink-0"}
+          />
+          {wordmark}
+        </div>
         <p className={"hidden text-body-sm text-ink-muted lg:block"}>
           {siteText.tagline}
         </p>

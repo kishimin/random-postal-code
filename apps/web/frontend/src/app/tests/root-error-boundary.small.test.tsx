@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import { AppProviders } from "../providers/AppProviders";
 import { siteText } from "../site-text";
@@ -54,6 +54,43 @@ describe("root error boundary", () => {
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("contentinfo")).toBeInTheDocument();
     expect(screen.getByText(siteText.attribution)).toBeInTheDocument();
+  });
+
+  // Issue #113: acceptance/header-logo.medium.test.ts cannot reach this
+  // screen from a browser, so its header logo is held here.
+  test("the header shows a same-origin decorative logo immediately before the wordmark", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    render(
+      <AppProviders>
+        <Throwing />
+      </AppProviders>,
+    );
+
+    const banner = screen.getByRole("banner");
+    // A string name already matches the whole accessible name, exactly.
+    const wordmark = within(banner).getByRole("link", {
+      name: siteText.wordmark,
+    });
+    // An image with an empty alt maps to the presentation role, so this finds
+    // the decorative logo and nothing a screen reader would announce.
+    const logos = within(banner).getAllByRole("presentation");
+    const logo = logos[0];
+
+    expect(logos).toHaveLength(1);
+    expect(logo).toHaveAttribute("alt", "");
+    // Adjacency is the requirement itself, and no Testing Library query
+    // answers "the next element". Document order alone would still pass with
+    // the tagline moved in between.
+    // eslint-disable-next-line testing-library/no-node-access -- see above
+    expect(logo?.nextElementSibling).toBe(wordmark);
+    expect(within(banner).queryAllByRole("img")).toHaveLength(0);
+
+    const source = logo?.getAttribute("src") ?? "";
+    expect(source).not.toBe("");
+    expect(new URL(source, window.location.href).origin).toBe(
+      window.location.origin,
+    );
   });
 
   test("focus moves to the error summary the crash would otherwise strand", () => {
