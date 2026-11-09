@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import { AppProviders } from "../providers/AppProviders";
 import { siteText } from "../site-text";
@@ -54,6 +54,30 @@ describe("root error boundary", () => {
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("contentinfo")).toBeInTheDocument();
     expect(screen.getByText(siteText.attribution)).toBeInTheDocument();
+  });
+
+  // Issue #113: acceptance/header-logo.medium.test.ts cannot reach this
+  // screen from a browser, so its header logo is held here.
+  test("the header shows a decorative logo immediately before the wordmark", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    render(
+      <AppProviders>
+        <Throwing />
+      </AppProviders>,
+    );
+
+    const banner = screen.getByRole("banner");
+    const wordmark = within(banner).getByRole("link", {
+      name: siteText.wordmark,
+      exact: true,
+    });
+    const logos = banner.querySelectorAll("img");
+
+    expect(logos).toHaveLength(1);
+    expect(logos[0]).toHaveAttribute("alt", "");
+    expect(logos[0]?.nextElementSibling).toBe(wordmark);
+    expect(within(banner).queryAllByRole("img")).toHaveLength(0);
   });
 
   test("focus moves to the error summary the crash would otherwise strand", () => {
