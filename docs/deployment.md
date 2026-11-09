@@ -90,20 +90,41 @@ tests visit. The two can't drift apart.
    message be created once the site is added to AdSense and its ad code is
    live on it, and the first deploy is what puts the code live. The
    `pages.dev` URL is not promoted until release, so that window exists.
-   - In AdSense, add the production site (`https://<project>.pages.dev`)
-     under **Sites**, if it is not there already. Verify ownership and
-     request review there. A new site stays in **Requires review** and
-     serves no ads until Google approves it and its status is **Ready**.
-   - Under **Privacy & messaging**, publish a message of the type
-     **European regulations** for that site. This is the consent platform
-     the privacy page names. Google's AdSense tag shows the message to
-     visitors from the EEA, the UK, and Switzerland, and gates ad requests
-     on their choice. Nothing in the code does this itself.
-   - Keep the ad setting that serves personalized ads only with consent,
-     and turn on **limited ads**. A visitor who declines personalization
-     then gets non-personalized or limited ads rather than none.
-   - Keep the floating link that lets a visitor revisit their choice; the
-     privacy page tells visitors they can change it from the message.
+   The steps below are the flow the owner followed on 2026-11-07 (Issue
+   #39, Issue #114).
+   1. In AdSense, open **Sites** → **New site** and enter the production
+      site (`https://<project>.pages.dev`), if it is not there already.
+   2. For ownership, pick the **`ads.txt` snippet**. The site's ad code is
+      injected by JavaScript after the page renders, so the AdSense code
+      snippet is not in the HTML Google's crawler reads. `ads.txt` is
+      written at build time with the publisher ID (PR #110), so it is
+      already live after the first deploy.
+   3. Select **Request review**. A new site stays in **Requires review**
+      and serves no ads until Google approves it and its status is
+      **Ready**.
+   4. When AdSense asks which consent management platform to use, choose
+      **Google's CMP** (the certified one AdSense offers). This is the
+      consent platform the privacy page names.
+   5. Under **Privacy & messaging**, create the **European regulations**
+      message:
+      - the site from step 1;
+      - default language **Japanese**;
+      - **Do not consent** turned on, and then on for every country it
+        offers (the EEA, the UK, and Switzerland);
+      - a message name (production uses `Zipnami EEA 同意`);
+      - the privacy policy URL `https://<project>.pages.dev/privacy`.
+   6. Select **Publish**.
+
+   There is no ad-type setting to choose. AdSense removed the control for
+   the type of ad from the European regulations message settings on
+   2025-05-19 ([AdSense announcements](https://support.google.com/adsense/announcements/9189068?hl=en)).
+   With Google's certified CMP, AdSense serves personalized,
+   non-personalized, or limited ads according to the visitor's consent
+   ([Google consent management requirements](https://support.google.com/adsense/answer/13554116?hl=en)).
+   Google's AdSense tag shows the message to visitors from the EEA, the
+   UK, and Switzerland, and gates ad requests on their choice. Nothing in
+   the code does this itself.
+
    - Once the site is **Ready**, so that real ads are eligible to serve,
      load the production site from an EEA connection (or a VPN exit
      there). Confirm the message appears before any ad, and that declining
