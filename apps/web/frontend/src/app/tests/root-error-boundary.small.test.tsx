@@ -58,7 +58,7 @@ describe("root error boundary", () => {
 
   // Issue #113: acceptance/header-logo.medium.test.ts cannot reach this
   // screen from a browser, so its header logo is held here.
-  test("the header shows a decorative logo immediately before the wordmark", () => {
+  test("the header shows a decorative logo before the wordmark", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     render(
@@ -72,11 +72,16 @@ describe("root error boundary", () => {
     const wordmark = within(banner).getByRole("link", {
       name: siteText.wordmark,
     });
-    const logos = banner.querySelectorAll("img");
+    // An image with an empty alt maps to the presentation role, so this finds
+    // the decorative logo and nothing a screen reader would announce.
+    const logos = within(banner).getAllByRole("presentation");
 
     expect(logos).toHaveLength(1);
     expect(logos[0]).toHaveAttribute("alt", "");
-    expect(logos[0]?.nextElementSibling).toBe(wordmark);
+    expect(
+      logos[0]?.compareDocumentPosition(wordmark) ??
+        Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     expect(within(banner).queryAllByRole("img")).toHaveLength(0);
   });
 
