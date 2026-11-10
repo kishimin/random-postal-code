@@ -79,6 +79,13 @@ const datasetEntry = (postalCode: string): PostalCode => {
 // Two addresses, so the overlap check covers more than a single row.
 const result = datasetEntry("3670030");
 
+// A result shown before the one a test checks. Since Issue #120 only the
+// result screen may request ads, so a test that needs an ad request to have
+// failed first has to show a result to start it. A different postal code, so
+// a later generation that failed and left this one on screen is told apart
+// from one that succeeded.
+const earlierResult = datasetEntry("4980000");
+
 // Long enough for a bounded retry schedule to finish, and then for a second
 // look to show it has stopped. Both are generous rather than tuned: the test
 // holds that attempts stop, not how quickly.
@@ -113,6 +120,14 @@ test.describe("Issue #9: the advertising and consent boundary", () => {
     await advertisingPage.substituteAdvertisingSdk();
     await postalCodeGeneratorPage.stubRandomEndpoint([respondWith(result)]);
     await postalCodeGeneratorPage.navigate();
+    // Issue #120: only the generator's result screen may carry an
+    // advertisement (ui-design.md section 7.1), so the area is looked for
+    // there. Rewritten with the owner's approval:
+    // https://github.com/kishimin/random-postal-code/issues/120#issuecomment-6751769425
+    await postalCodeGeneratorPage.generate();
+    await expect(
+      postalCodeGeneratorPage.postalCodeDisplay(result.postalCode),
+    ).toBeVisible();
 
     // Located by its advertising label, so one match means both that the area
     // exists and that it says what it is (ui-design.md sections 7 and 8).
@@ -217,6 +232,13 @@ test.describe("Issue #9: the advertising and consent boundary", () => {
     await advertisingPage.substituteAdvertisingSdk();
     await postalCodeGeneratorPage.stubRandomEndpoint([respondWith(result)]);
     await postalCodeGeneratorPage.navigate();
+    // Issue #120: the slot exists only on the result screen (ui-design.md
+    // section 7.1). Rewritten with the owner's approval:
+    // https://github.com/kishimin/random-postal-code/issues/120#issuecomment-6751769425
+    await postalCodeGeneratorPage.generate();
+    await expect(
+      postalCodeGeneratorPage.postalCodeDisplay(result.postalCode),
+    ).toBeVisible();
 
     /*
      * This build is not the production one: it is served by the local preview
@@ -238,8 +260,21 @@ test.describe("Issue #9: the advertising and consent boundary", () => {
   }) => {
     await postalCodeGeneratorPage.recordClipboardWrites();
     await advertisingPage.failEveryAdvertisingRequest();
-    await postalCodeGeneratorPage.stubRandomEndpoint([respondWith(result)]);
+    await postalCodeGeneratorPage.stubRandomEndpoint([
+      respondWith(earlierResult),
+      respondWith(result),
+    ]);
     await postalCodeGeneratorPage.navigate();
+
+    // Issue #120: advertising is requested only once a result is shown
+    // (ui-design.md section 7.1), so a first result starts the requests that
+    // then fail, and the generation, reading, and copying below all happen
+    // after they failed. Rewritten with the owner's approval:
+    // https://github.com/kishimin/random-postal-code/issues/120#issuecomment-6751769425
+    await postalCodeGeneratorPage.generate();
+    await expect(
+      postalCodeGeneratorPage.postalCodeDisplay(earlierResult.postalCode),
+    ).toBeVisible();
 
     // There has to have been something to fail. Without a request that was
     // refused, everything below would hold for a page that never advertises,
@@ -283,6 +318,13 @@ test.describe("Issue #9: the advertising and consent boundary", () => {
     await advertisingPage.failEveryAdvertisingRequest();
     await postalCodeGeneratorPage.stubRandomEndpoint([respondWith(result)]);
     await postalCodeGeneratorPage.navigate();
+    // Issue #120: only the result screen requests an advertisement
+    // (ui-design.md section 7.1). Rewritten with the owner's approval:
+    // https://github.com/kishimin/random-postal-code/issues/120#issuecomment-6751769425
+    await postalCodeGeneratorPage.generate();
+    await expect(
+      postalCodeGeneratorPage.postalCodeDisplay(result.postalCode),
+    ).toBeVisible();
 
     // The page has to ask at least once, or "not retried indefinitely" would
     // hold for an implementation that never advertises at all.
