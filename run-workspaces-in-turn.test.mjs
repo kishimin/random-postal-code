@@ -92,10 +92,27 @@ test("every output line carries the `<name> <script>:` prefix the coverage accep
   }
 });
 
-test("a failing workspace does not stop the ones after it, and the run still fails", () => {
+test("each workspace's start time and duration are in the log, so CI shows they did not overlap", () => {
+  const root = makeRepository([
+    workspace("a", { check: recordingScript("a") }),
+  ]);
+  try {
+    const result = runIn(root);
+
+    assert.match(
+      result.stdout,
+      /^@fixture\/a check: Started at \d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/m,
+    );
+    assert.match(result.stdout, /^@fixture\/a check: Finished in \d+\.\d{2}s$/m);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a failing workspace does not stop the ones after it, and the run fails with the first failure's code", () => {
   const root = makeRepository([
     workspace("a", { check: recordingScript("a", 3) }),
-    workspace("b", { check: recordingScript("b") }),
+    workspace("b", { check: recordingScript("b", 5) }),
   ]);
   try {
     const result = runIn(root);
@@ -103,6 +120,21 @@ test("a failing workspace does not stop the ones after it, and the run still fai
     assert.equal(result.status, 3);
     assert.deepEqual(orderLog(root), ["start a", "end a", "start b", "end b"]);
     assert.match(result.stdout, /^@fixture\/a check: Exited with code 3$/m);
+    // The workspace after the failure still reports, as its coverage must.
+    assert.match(result.stdout, /^@fixture\/b check: out b$/m);
+    assert.match(result.stdout, /^@fixture\/b check: Exited with code 5$/m);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a run in which no workspace has the script fails rather than passing the gate", () => {
+  const root = makeRepository([workspace("a", {})]);
+  try {
+    const result = runIn(root);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /no workspace has a "check" script/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
