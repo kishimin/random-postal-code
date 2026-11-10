@@ -25,6 +25,7 @@ import { useDocumentTitle } from "../../hooks/use-document-title";
 import { parseAppEnv } from "../schemas/env.schema";
 import { pageTitle } from "../site-text";
 import { GeneratorHero } from "./GeneratorHero";
+import { GeneratorOverview } from "./GeneratorOverview";
 
 const toneByStatus = {
   idle: announcementTones.quiet,
@@ -142,6 +143,10 @@ export const GeneratorView = () => {
           apiKey={env.mapsApiKey}
         />
       </div>
+      {/* ui-design.md section 5.5: what Zipnami does and where to learn more,
+          shown only while there is no result, so a result keeps the place the
+          generate action points to. */}
+      {!hasResult && <GeneratorOverview />}
       <HistoryList entries={entries} />
       {/* ui-design.md section 5.1: the reserved advertisement region sits
           after the current result and before the footer, so it never
