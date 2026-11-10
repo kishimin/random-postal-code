@@ -38,6 +38,17 @@ export const aboutPage: GuidePage = {
         "履歴はお使いのブラウザの中にだけ保存し、サーバーには送信しません。",
       ],
     },
+    {
+      headingId: "about-related-heading",
+      heading: "関連するページ",
+      paragraphs: [
+        "このサイトの個人情報の扱いと、データの出典や取得日については、次のページにまとめています。",
+      ],
+      links: [
+        { label: "プライバシーポリシー", to: "/privacy" },
+        { label: "データについて", to: "/guide/data" },
+      ],
+    },
   ],
   sources: [japanPostDownload, japanPostReadme, japanPostSearch],
 };

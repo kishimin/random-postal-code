@@ -1,6 +1,8 @@
+import { Link } from "@tanstack/react-router";
 import { sourcesHeading } from "../../features/guides/guide-pages";
 import type { GuidePage } from "../../features/guides/types";
 import { useDocumentTitle } from "../../hooks/use-document-title";
+import { useMetaDescription } from "../../hooks/use-meta-description";
 import { pageTitle } from "../site-text";
 import { contentLinkClass } from "../styles";
 
@@ -26,6 +28,7 @@ type GuideViewProps = {
  */
 export const GuideView = ({ page }: GuideViewProps) => {
   useDocumentTitle(pageTitle(page.name));
+  useMetaDescription(page.description);
 
   return (
     <div className={"mx-auto flex max-w-[720px] flex-col gap-6"}>
@@ -55,6 +58,17 @@ export const GuideView = ({ page }: GuideViewProps) => {
             <ul className={`${listClass} list-disc`}>
               {section.items.map((item) => (
                 <li key={item}>{item}</li>
+              ))}
+            </ul>
+          )}
+          {section.links && (
+            <ul className={listClass}>
+              {section.links.map((link) => (
+                <li key={link.to}>
+                  <Link className={contentLinkClass} to={link.to}>
+                    {link.label}
+                  </Link>
+                </li>
               ))}
             </ul>
           )}

@@ -6,10 +6,19 @@ export type GuidePath =
   | "/guide/data"
   | "/guide/how-to-use";
 
+/** A screen a guide's own text may link to: another guide, or the privacy page. */
+export type GuideLinkTarget = GuidePath | "/privacy";
+
 /** A page a guide cites as the source of its claims. */
 export type GuideSource = {
   readonly label: string;
   readonly href: string;
+};
+
+/** A link from a guide's body to another screen of the site. */
+export type GuideLink = {
+  readonly label: string;
+  readonly to: GuideLinkTarget;
 };
 
 /** One body section: a region named by its own visible h2. */
@@ -19,6 +28,7 @@ export type GuideSection = {
   readonly heading: string;
   readonly paragraphs: readonly string[];
   readonly items?: readonly string[];
+  readonly links?: readonly GuideLink[];
 };
 
 /** The copy of one guide page (ui-design.md section 5.5). */
