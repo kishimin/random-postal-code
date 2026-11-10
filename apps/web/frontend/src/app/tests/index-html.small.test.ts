@@ -1,0 +1,22 @@
+import { describe, expect, test } from "vitest";
+import indexHtml from "../../../index.html?raw";
+
+/*
+ * index.html is what every route first ships, so what it carries is what a
+ * crawler reads from a page that sets nothing of its own: the generator, the
+ * privacy page, and whatever path the router does not claim. The guide pages
+ * replace it while they are shown and hand it back (use-meta-description.ts).
+ */
+describe("index.html", () => {
+  test("ships the site's default description", () => {
+    const document = new DOMParser().parseFromString(indexHtml, "text/html");
+
+    expect(
+      // eslint-disable-next-line testing-library/no-node-access -- the parsed file is not rendered, so there is no accessibility tree to query
+      document.head.querySelector('meta[name="description"]'),
+    ).toHaveAttribute(
+      "content",
+      "日本の郵便番号をランダムに1つ選び、その番号に対応するすべての住所と地図を表示します。",
+    );
+  });
+});
