@@ -60,7 +60,7 @@ const resetAdState = () => {
 const expectNoAdRequested = () => {
   expect(screen.queryByTestId("advertising-ad-slot")).not.toBeInTheDocument();
   expect(
-    screen.queryByRole("region", { name: /広告/ }),
+    screen.queryByRole("region", { name: "広告" }),
   ).not.toBeInTheDocument();
   expect(loaderScripts()).toHaveLength(0);
   expect(adPushes()).toHaveLength(0);
@@ -121,6 +121,58 @@ describe("ad eligibility (ui-design.md section 7.1)", () => {
       await screen.findByRole("button", { name: generateActionName }),
     );
     await screen.findByRole("button", { name: "再試行する" });
+    await flushEffects();
+
+    expectNoAdRequested();
+  });
+
+  // The one eligible row. Without it, every "requests no ad" case above would
+  // also hold for a build that never advertises.
+  test("a shown result requests its ad once: the loader, one unit, one push", async () => {
+    worker.use(http.get(RANDOM_ENDPOINT, () => HttpResponse.json(result)));
+    const user = userEvent.setup();
+    renderAt("/");
+
+    await user.click(
+      await screen.findByRole("button", { name: generateActionName }),
+    );
+    await screen.findByRole("region", { name: "広告" });
+    await flushEffects();
+
+    expect(screen.getAllByTestId("advertising-ad-slot")).toHaveLength(1);
+    expect(loaderScripts()).toHaveLength(1);
+    expect(adPushes()).toHaveLength(1);
+  });
+
+  test("leaving a result for the privacy page leaves no ad unit behind and pushes nothing more", async () => {
+    worker.use(http.get(RANDOM_ENDPOINT, () => HttpResponse.json(result)));
+    const user = userEvent.setup();
+    renderAt("/");
+    await user.click(
+      await screen.findByRole("button", { name: generateActionName }),
+    );
+    await screen.findByRole("region", { name: "広告" });
+    await flushEffects();
+    const pushesOnResult = adPushes().length;
+    const loadersOnResult = loaderScripts().length;
+
+    await user.click(
+      screen.getByRole("link", { name: "プライバシーポリシー" }),
+    );
+    await screen.findByRole("heading", { name: /プライバシー/, level: 1 });
+    await flushEffects();
+
+    expect(screen.queryByTestId("advertising-ad-slot")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "広告" }),
+    ).not.toBeInTheDocument();
+    expect(adPushes()).toHaveLength(pushesOnResult);
+    expect(loaderScripts()).toHaveLength(loadersOnResult);
+  });
+
+  test("a privacy page opened directly requests no ad", async () => {
+    renderAt("/privacy");
+    await screen.findByRole("heading", { name: /プライバシー/, level: 1 });
     await flushEffects();
 
     expectNoAdRequested();
