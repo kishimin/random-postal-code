@@ -18,10 +18,15 @@ The Web UI owns presentation, client state, browser-local history, map actions, 
 
 ### 3.1 Web Routes
 
-| Route      | Page      | Purpose                                                                |
-| ---------- | --------- | ---------------------------------------------------------------------- |
-| `/`        | Generator | Generate, inspect, copy, map, and revisit results                      |
-| `/privacy` | Privacy   | Explain what is collected, why, advertising and analytics, and history |
+| Route                | Page             | Purpose                                                                    |
+| -------------------- | ---------------- | -------------------------------------------------------------------------- |
+| `/`                  | Generator        | Generate, inspect, copy, map, and revisit results                          |
+| `/privacy`           | Privacy          | Explain what is collected, why, advertising and analytics, and history     |
+| `/about`             | About            | What Zipnami does, why, its limits, and links to privacy and the data page |
+| `/guide/postal-code` | Postal codes     | How Japanese postal codes are assigned, with sourced examples              |
+| `/guide/address`     | Codes and places | Why a postal code and an address are not one-to-one, with dataset examples |
+| `/guide/data`        | Data             | Where Zipnami's data comes from, when it was retrieved, how it is changed  |
+| `/guide/how-to-use`  | How to use       | Generating, addresses, maps, copying, and the browser-local history        |
 
 Two further destinations have no route of their own.
 
@@ -155,6 +160,39 @@ Each history entry stores the canonical `PostalCode`, all addresses, and no serv
 
 The history is one list, closed until the `履歴を展開` control opens it. The control keeps that visible label and reports its state with `aria-expanded` (and `aria-controls` once the list is mounted), and a chevron beside the label turns over while the list is open. An opened entry shows its postal code and every stored address, so every stored address stays reachable. Expanding history must not change the current map selection unless the user explicitly chooses a map action from that entry.
 
+### 5.5 Guide Pages and the Generator's Overview
+
+AdSense rejected the site for screens without publisher content (Issue #120). Issue #121 adds the site's own written content: five guide pages and an overview on the generator. The owner decided on 2026-11-10 to add the pages as ordinary client-rendered SPA routes, like `/privacy`, with no build-time prerendering (answer B on Issue #121). The pages need no generation and no API request to show their content.
+
+**Navigation.** The footer of every screen carries one navigation landmark named `ガイド`, with five links in this order: `サイトについて` (`/about`), `郵便番号のしくみ` (`/guide/postal-code`), `郵便番号と住所` (`/guide/address`), `データについて` (`/guide/data`), and `使い方` (`/guide/how-to-use`). This applies to the generator in every state, `/privacy`, the guide pages themselves, the not-found destination, and the global error destination. On a guide page, the link to that page stays and carries `aria-current="page"`, so the five links read the same on every screen. The header is unchanged.
+
+**Generator overview.** While the generator shows no result (`idle`, the first `loading`, and `error` with no result shown; section 4), two sections follow the start card:
+
+- `Zipnamiでできること` names the three core capabilities: drawing a postal code at random, seeing every address it covers with a map, and copying it and finding it again in the browser-local history.
+- `郵便番号をもっと知る` links to the four guides: `郵便番号のしくみ`, `郵便番号と住所`, `データについて`, and `使い方`. Each link uses the guide's own name.
+
+Once a result is shown, both sections are removed, so the result keeps the place the generate action points to. The generate action stays the first control in `main`.
+
+**Each guide page** has:
+
+- one `h1` with the page's name;
+- body sections, each a region named by its own visible `h2`;
+- a `参考にした資料` section that lists the sources it relies on as links;
+- a document title built by `pageTitle` from the page's name (section 9.2), and a `<meta name="description">` whose text is that page's own one-sentence summary, set from JavaScript when the page mounts. Leaving a guide page restores the site's default description.
+
+Page names (the `h1`, the footer link, and the title) are: `サイトについて`, `郵便番号のしくみ`, `郵便番号と住所`, `データについて`, and `使い方`.
+
+**Content rules.** The copy lives in UI-owned resources (section 9). These pages have no Figma node, so their copy is not taken from Figma. It follows these rules:
+
+- Every claim about postal codes cites Japan Post's own pages: the KEN_ALL readme (<https://www.post.japanpost.jp/service/search/zipcode/download/readme.html>) and the download page (<https://www.post.japanpost.jp/service/search/zipcode/download/>).
+- Every claim about Zipnami's data cites `packages/postal-data/README.md`.
+- A claim neither of those pages states is not made. That includes when the 7-digit code was introduced, what each digit means, and how often Japan Post updates the data.
+- The examples are real entries of the committed dataset (`packages/postal-data/data/ken-all.source.csv`), shown as Zipnami shows them.
+- The data page states the retrieval date and the record counts that `packages/postal-data/README.md` records. It says that Zipnami's data is updated by hand, with no fixed schedule. It never says the data is updated continuously.
+- No page publishes a means of contact (owner decision on Issue #121, 2026-11-10; a contact section is V2 work in Issue #105). No page names an operator other than the footer's `© kishimin 2026`.
+
+The pages are not eligible for ads (section 7.1).
+
 ## 6. Android V2 Boundary
 
 Android screen design, device-local history, external Android map intents, AdMob, UMP, and Google Play delivery are V2 work tracked by Issues #12 through #15 and #20. They are intentionally not implementation or acceptance requirements for this document.
@@ -171,17 +209,18 @@ Google ads may be requested only on screens that carry publisher content. AdSens
 
 "Requesting an ad" means any of: loading the AdSense loader (`adsbygoogle.js`), rendering an `ins.adsbygoogle` unit, or calling `adsbygoogle.push`. A screen that is not eligible does none of the three. Hiding or collapsing the slot alone does not make a screen ineligible.
 
-| Route           | State (section 4)                                         | Eligible |
-| --------------- | --------------------------------------------------------- | -------- |
-| `/`             | `success`: a result is shown                              | Yes      |
-| `/`             | `loading` or `error` while an earlier result stays shown  | Yes      |
-| `/`             | `idle`: before any result, with or without stored history | No       |
-| `/`             | `loading` of the first generation (no result shown yet)   | No       |
-| `/`             | `error` with no result shown                              | No       |
-| `/privacy`      | Any                                                       | No       |
-| Not found       | Any                                                       | No       |
-| Global error    | Any                                                       | No       |
-| Any other route | Any                                                       | No       |
+| Route                | State (section 4)                                         | Eligible |
+| -------------------- | --------------------------------------------------------- | -------- |
+| `/`                  | `success`: a result is shown                              | Yes      |
+| `/`                  | `loading` or `error` while an earlier result stays shown  | Yes      |
+| `/`                  | `idle`: before any result, with or without stored history | No       |
+| `/`                  | `loading` of the first generation (no result shown yet)   | No       |
+| `/`                  | `error` with no result shown                              | No       |
+| `/privacy`           | Any                                                       | No       |
+| `/about`, `/guide/*` | Any (Issue #121's guide pages; decided again later)       | No       |
+| Not found            | Any                                                       | No       |
+| Global error         | Any                                                       | No       |
+| Any other route      | Any                                                       | No       |
 
 Each row is its own condition, not a single "has a result" flag: a route not listed as eligible stays ineligible even if a result exists somewhere in the application's state.
 
@@ -238,6 +277,8 @@ The Figma file `40UjUstDqllFYEaQ31J8L0` is the single visual source for the seve
 
 Figma draws no mobile frame for the privacy page (row 17). At mobile widths it follows the desktop frame's order and headings, with the side margins and footer of the other mobile frames (rows 05 and 06).
 
+The five guide pages of section 5.5 and the generator's two overview sections have no Figma node yet. The owner decided on 2026-11-10 to build them from the existing screens and the section 9.3 tokens without waiting for Figma (answer Y on Issue #121). Their layout follows the privacy page (row 17): one column, at most `720px` wide, a card surface for each section. They are compared with Figma once the screens are added there.
+
 Screens 09 and 10 (Field Error) are an open gap, not covered by any issue: Figma shows one address among several failing to load inside an otherwise successful result, but the Web API (Issues #3, #4) answers a request as a whole — a rejected dataset entry empties the dataset rather than producing a partial address list — and the frontend's `UiError` model (section 4 above) has only whole-request kinds (`offline`, `service-unavailable`, `invalid-response`, `unexpected`), not a partial-failure kind. Issue #25's own Notes section named screens 13 through 16 (404 and Global Error) as the uncovered ones instead; that claim is now stale, since Issue #26 (closed) covers both and is attributed to it above.
 
 ### 9.2 Color, Type, and Copy Values
@@ -248,7 +289,7 @@ The Figma file fixes these values per screen; recording them here makes that exi
 
 **Type.** Font family `Inter` at weights 400 (regular), 600 (semibold), and 700 (bold). Representative sizes: desktop display headline 52px with 68px line-height, desktop body 17px with 28px line-height, mobile display headline 34px with 46px line-height, mobile body 14px with 22px line-height, button label 16px, eyebrow label 11-13px (mobile 11px, desktop 13px), footer/caption 11-12px (varies by screen). `Inter` has no Japanese glyphs, and every screen's body is Japanese (section 2); the Figma file's text styles name only `Inter` and do not specify a CJK fallback, so which Japanese-capable family renders that text is chosen in section 9.3.
 
-**Copy.** The literal strings fixed on every screen are the brand wordmark `"ZIPNAMI"`, the footer's privacy link `"プライバシーポリシー"`, the Japan Post attribution, and `"© kishimin 2026"`. One exception: on `/privacy` itself, the footer's link reads `"ホームに戻る"` and goes to `/`, so the page never links to itself and the label says where the link goes. It keeps the privacy link's look. Every other screen, including the not-found and global error screens, keeps `"プライバシーポリシー"` linking to `/privacy` (owner decision on Issue #112, 2026-11-07). Per-screen headline, body, and control copy is deliberately not fixed in this document; it is left to the mapped Figma node in section 9.1, because transcribing that literal Japanese text here would create a second source of truth that can drift from Figma without anything catching it — the same reason this repository's `CLAUDE.md` gives for not duplicating acceptance criteria into `docs/ACCEPTANCE.md`. Every control's visible label is its Figma text, and the acceptance tests find controls by that text exactly.
+**Copy.** The literal strings fixed on every screen are the brand wordmark `"ZIPNAMI"`, the footer's privacy link `"プライバシーポリシー"`, the footer's five guide links (section 5.5), the Japan Post attribution, and `"© kishimin 2026"`. One exception: on `/privacy` itself, the footer's link reads `"ホームに戻る"` and goes to `/`, so the page never links to itself and the label says where the link goes. It keeps the privacy link's look. Every other screen, including the not-found and global error screens, keeps `"プライバシーポリシー"` linking to `/privacy` (owner decision on Issue #112, 2026-11-07). Per-screen headline, body, and control copy is deliberately not fixed in this document; it is left to the mapped Figma node in section 9.1, because transcribing that literal Japanese text here would create a second source of truth that can drift from Figma without anything catching it — the same reason this repository's `CLAUDE.md` gives for not duplicating acceptance criteria into `docs/ACCEPTANCE.md`. Every control's visible label is its Figma text, and the acceptance tests find controls by that text exactly. The guide pages, which have no Figma node, follow section 5.5 instead.
 
 **Where Figma is not taken literally** (owner decisions on Issue #97, 2026-11-05):
 
