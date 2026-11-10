@@ -103,7 +103,10 @@ test("each workspace's start time and duration are in the log, so CI shows they 
       result.stdout,
       /^@fixture\/a check: Started at \d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/m,
     );
-    assert.match(result.stdout, /^@fixture\/a check: Finished in \d+\.\d{2}s$/m);
+    assert.match(
+      result.stdout,
+      /^@fixture\/a check: Finished in \d+\.\d{2}s$/m,
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
