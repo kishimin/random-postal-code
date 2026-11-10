@@ -386,16 +386,21 @@ test.describe("Issue #17: core features stay usable during dependency failures",
     ]);
     await postalCodeGeneratorPage.navigate();
 
+    // Issue #120: advertising is requested only once a result is shown
+    // (ui-design.md section 7.1), so a first result loads the throwing SDK,
+    // and the regeneration, the addresses, and the copy below all happen after
+    // it ran. Rewritten with the owner's approval:
+    // https://github.com/kishimin/random-postal-code/issues/120#issuecomment-6765799783
+    await postalCodeGeneratorPage.generate();
+    await expect(
+      postalCodeGeneratorPage.postalCodeDisplay(firstResult.postalCode),
+    ).toBeVisible();
+
     // The failing SDK has to have arrived and run, or this would hold for a
     // page that never loads one.
     await expect
       .poll(() => dependencyFailurePage.answeredAdvertisingRequestCount())
       .toBeGreaterThan(0);
-
-    await postalCodeGeneratorPage.generate();
-    await expect(
-      postalCodeGeneratorPage.postalCodeDisplay(firstResult.postalCode),
-    ).toBeVisible();
 
     await postalCodeGeneratorPage.generate();
     await expect(
