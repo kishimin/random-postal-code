@@ -21,7 +21,7 @@
     "test:eslint": "node --test eslint.config.rule-tests.mjs",
     "test:config": "node --test config-contracts.test.mjs .github/scripts/plan-deploy.test.mjs",
     "test:small": "bun run --filter '*' test:small",
-    "test:medium": "bun run --filter '*' --sequential test:medium",
+    "test:medium": "bun run --filter '*' --sequential --no-exit-on-error test:medium",
     "test:large": "bun run --filter '*' test:large",
     "test:storybook": "bun run --filter '*' test:storybook",
     "test:coverage:pr": "bun run --filter '*' test:coverage:pr",
