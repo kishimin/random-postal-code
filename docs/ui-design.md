@@ -107,7 +107,7 @@ type UiError =
 +-----------------------------+------------------------+
 | Recent history (up to 20)                            |
 +------------------------------------------------------+
-| Reserved advertisement region                       |
+| Advertisement region (only while a result is shown)  |
 +------------------------------------------------------+
 | Japan Post attribution | Privacy | © kishimin 2026   |
 +------------------------------------------------------+
@@ -164,6 +164,31 @@ Android screen design, device-local history, external Android map intents, AdMob
 The Web map occupies a labeled region after a result exists. Before generation, the region may be absent rather than displaying an empty iframe. Loading and failure states reserve enough space to avoid disruptive layout shifts. A map failure shows a fallback with the selected address and external link.
 
 Advertising uses a dedicated region labeled as advertising where required. An unavailable, blocked, or unfilled ad collapses safely or retains a non-interactive reserved region according to the SDK contract; it never displays an application error. Consent failure follows the most privacy-preserving supported advertising mode and never blocks generation.
+
+### 7.1 Where Ads May Be Requested
+
+Google ads may be requested only on screens that carry publisher content. AdSense rejected the site for ads on screens without it (Issue #120), so eligibility is an explicit allowlist rather than a rule that every screen inherits. Until the original-content pages of Issue #121 exist, the generator's result screen is the only eligible screen (owner answer A on Issue #120, 2026-11-10: <https://github.com/kishimin/random-postal-code/issues/120#issuecomment-6749957382>). Whether it stays eligible is decided again once #121's pages exist.
+
+"Requesting an ad" means any of: loading the AdSense loader (`adsbygoogle.js`), rendering an `ins.adsbygoogle` unit, or calling `adsbygoogle.push`. A screen that is not eligible does none of the three. Hiding or collapsing the slot alone does not make a screen ineligible.
+
+| Route           | State (section 4)                                         | Eligible |
+| --------------- | --------------------------------------------------------- | -------- |
+| `/`             | `success`: a result is shown                              | Yes      |
+| `/`             | `loading` or `error` while an earlier result stays shown  | Yes      |
+| `/`             | `idle`: before any result, with or without stored history | No       |
+| `/`             | `loading` of the first generation (no result shown yet)   | No       |
+| `/`             | `error` with no result shown                              | No       |
+| `/privacy`      | Any                                                       | No       |
+| Not found       | Any                                                       | No       |
+| Global error    | Any                                                       | No       |
+| Any other route | Any                                                       | No       |
+
+Each row is its own condition, not a single "has a result" flag: a route not listed as eligible stays ineligible even if a result exists somewhere in the application's state.
+
+- Navigating from an eligible screen to an ineligible one leaves no ad unit behind and makes no new ad request on the ineligible screen. Returning to the generator's initial screen is the `idle` row: no ad until a result is shown again.
+- An ad loader already fetched on an eligible screen may stay in the browser after navigation; what is forbidden on an ineligible screen is a new loader request, a rendered unit, or a push.
+- Account-level Auto ads can place ads independently of this table. Its setting is checked by the owner in the AdSense console and recorded in [release-checklist.md](./release-checklist.md); it must not override the table above.
+- Consent presentation remains governed by Issue #39.
 
 ## 8. Accessibility Contract
 
