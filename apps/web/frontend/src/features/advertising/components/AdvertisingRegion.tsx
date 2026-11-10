@@ -16,10 +16,14 @@ const ADVERTISING_LABEL_ID = "advertising-region-label";
  * and consent boundary"; design.md section 7: "a dedicated region labeled as
  * advertising").
  *
- * Always rendered, independent of whether the loader script ever succeeds --
- * design.md section 7 requires an optional dependency's failure to leave
- * already-successful core behavior untouched, and this region carries none of
- * that core behavior itself. `<p>` rather than a heading: ui-design.md
+ * Rendering it is what requests an ad: it starts the loader and its unit
+ * pushes onto `adsbygoogle`. So the caller decides where it may be rendered
+ * (ui-design.md section 7.1) and must not mount it on a screen without a
+ * result. Once mounted, it renders independent of whether the loader script
+ * ever succeeds -- design.md section 7 requires an optional dependency's
+ * failure to leave already-successful core behavior untouched, and this
+ * region carries none of that core behavior itself. `<p>` rather than a
+ * heading: ui-design.md
  * section 8 lists headings for result, map, and history, not advertising, so
  * this label does not add another entry to the page's heading outline.
  *

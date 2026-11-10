@@ -75,6 +75,23 @@ https://zipnami.pages.dev after the deploy of main 0d93e6c on 2026-11-05
       Google Analytics (googletagmanager, google-analytics), and /privacy names
       Google Maps, Google AdSense, the consent platform, and Google Analytics.
 
+## Advertising eligibility
+
+Issue #120 limits ad requests to the screens ui-design.md section 7.1 lists as
+eligible. Zipnami's own slot is held by the Medium test
+acceptance/web-ad-eligibility.medium.test.ts. Account-level Auto ads is set in
+the AdSense console, outside the code, so it is checked by the owner and
+recorded here.
+
+- [ ] Auto ads is checked in the AdSense console for zipnami.pages.dev, and
+      its setting cannot place ads on a screen section 7.1 lists as not
+      eligible. Waits for the owner; record the date, the setting seen, and
+      where it was seen under Evidence.
+- [ ] A new AdSense site review is requested only after both #120 and the
+      original-content pages of #121 are deployed to production and checked
+      there. Changing the UI alone does not mark the rejection of 2026-11-08
+      as fixed.
+
 ## Evidence
 
 The ticks above rest on these runs of the Large test and the Medium suite.

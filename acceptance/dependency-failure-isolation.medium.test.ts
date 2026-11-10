@@ -333,10 +333,24 @@ test.describe("Issue #17: core features stay usable during dependency failures",
     await postalCodeGeneratorPage.recordClipboardWrites();
     await advertisingPage.failEveryAdvertisingRequest();
     await dependencyFailurePage.stubRandomEndpoint([
-      answerDataUnavailable(),
       answerWith(firstResult),
+      answerDataUnavailable(),
+      answerWith(secondResult),
     ]);
     await postalCodeGeneratorPage.navigate();
+
+    // Issue #120: advertising is requested only once a result is shown
+    // (ui-design.md section 7.1), so a first result starts the requests that
+    // then fail, and the API failure, the retry, the addresses, and the copy
+    // below all happen after they failed. The retry answers a different
+    // postal code, so a retry that failed and left the first result on screen
+    // is told apart from one that succeeded. Rewritten with the owner's
+    // approval:
+    // https://github.com/kishimin/random-postal-code/issues/120#issuecomment-6751769425
+    await postalCodeGeneratorPage.generate();
+    await expect(
+      postalCodeGeneratorPage.postalCodeDisplay(firstResult.postalCode),
+    ).toBeVisible();
 
     // There has to have been something to fail, or this would hold for a page
     // that never advertises.
@@ -348,16 +362,16 @@ test.describe("Issue #17: core features stay usable during dependency failures",
     await postalCodeGeneratorPage.generate();
 
     await expect(
-      postalCodeGeneratorPage.postalCodeDisplay(firstResult.postalCode),
+      postalCodeGeneratorPage.postalCodeDisplay(secondResult.postalCode),
     ).toBeVisible();
-    for (const address of firstResult.addresses) {
+    for (const address of secondResult.addresses) {
       await expect(postalCodeGeneratorPage.addressEntry(address)).toBeVisible();
     }
 
     await postalCodeGeneratorPage.copy();
     await expect
       .poll(() => postalCodeGeneratorPage.clipboardWrites())
-      .toContain(firstResult.postalCode);
+      .toContain(secondResult.postalCode);
   });
 
   test("an advertising SDK that throws blocks neither generation, regeneration, the addresses, nor copying", async ({
@@ -372,16 +386,21 @@ test.describe("Issue #17: core features stay usable during dependency failures",
     ]);
     await postalCodeGeneratorPage.navigate();
 
+    // Issue #120: advertising is requested only once a result is shown
+    // (ui-design.md section 7.1), so a first result loads the throwing SDK,
+    // and the regeneration, the addresses, and the copy below all happen after
+    // it ran. Rewritten with the owner's approval:
+    // https://github.com/kishimin/random-postal-code/issues/120#issuecomment-6765799783
+    await postalCodeGeneratorPage.generate();
+    await expect(
+      postalCodeGeneratorPage.postalCodeDisplay(firstResult.postalCode),
+    ).toBeVisible();
+
     // The failing SDK has to have arrived and run, or this would hold for a
     // page that never loads one.
     await expect
       .poll(() => dependencyFailurePage.answeredAdvertisingRequestCount())
       .toBeGreaterThan(0);
-
-    await postalCodeGeneratorPage.generate();
-    await expect(
-      postalCodeGeneratorPage.postalCodeDisplay(firstResult.postalCode),
-    ).toBeVisible();
 
     await postalCodeGeneratorPage.generate();
     await expect(
@@ -402,11 +421,24 @@ test.describe("Issue #17: core features stay usable during dependency failures",
     postalCodeGeneratorPage,
   }) => {
     await dependencyFailurePage.holdEveryAdvertisingRequest();
-    await dependencyFailurePage.stubRandomEndpoint([answerWith(firstResult)]);
+    await dependencyFailurePage.stubRandomEndpoint([
+      answerWith(firstResult),
+      answerWith(secondResult),
+    ]);
     await postalCodeGeneratorPage.navigate();
 
-    // The optional integration has to be outstanding before generating, or the
-    // result could not have been waiting on it.
+    // Issue #120: advertising is requested only once a result is shown
+    // (ui-design.md section 7.1), so the first result starts the requests and
+    // the second result is the one rendered while they are unanswered.
+    // Rewritten with the owner's approval:
+    // https://github.com/kishimin/random-postal-code/issues/120#issuecomment-6751769425
+    await postalCodeGeneratorPage.generate();
+    await expect(
+      postalCodeGeneratorPage.postalCodeDisplay(firstResult.postalCode),
+    ).toBeVisible();
+
+    // The optional integration has to be outstanding before the second
+    // generation, or that result could not have been waiting on it.
     await expect
       .poll(() => dependencyFailurePage.advertisingRequestCount())
       .toBeGreaterThan(0);
@@ -414,15 +446,15 @@ test.describe("Issue #17: core features stay usable during dependency failures",
     await postalCodeGeneratorPage.generate();
 
     await expect(
-      postalCodeGeneratorPage.postalCodeDisplay(firstResult.postalCode),
+      postalCodeGeneratorPage.postalCodeDisplay(secondResult.postalCode),
     ).toBeVisible();
-    for (const address of firstResult.addresses) {
+    for (const address of secondResult.addresses) {
       await expect(postalCodeGeneratorPage.addressEntry(address)).toBeVisible();
     }
     await expect(postalCodeGeneratorPage.copyAction()).toBeVisible();
 
     // Nothing the advertising boundary asked for was ever answered, so the
-    // result above cannot have been waiting on it.
+    // second result above cannot have been waiting on it.
     expect(dependencyFailurePage.answeredAdvertisingRequestCount()).toBe(0);
   });
 });
