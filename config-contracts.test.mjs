@@ -280,6 +280,26 @@ test("every command the README documents exists in the workspace", () => {
   assert.deepEqual(missing, []);
 });
 
+test("workspace medium tests run one workspace at a time", () => {
+  // Issue #116: on a 4-vCPU runner the frontend's browser tests waited past
+  // their 5s bound while the backend's full-dataset medium tests ran beside
+  // them. Running workspaces in turn removes that contention; raising the
+  // bound would only hide it (ADR-0071).
+  const { scripts } = JSON.parse(readRepositoryFile("package.json"));
+  const words = scripts["test:medium"].split(/\s+/);
+  const scriptName = words.lastIndexOf("test:medium");
+
+  // Both flags are bun's only before the script name; after it they would be
+  // handed to each workspace's vitest instead.
+  for (const flag of ["--sequential", "--no-exit-on-error"]) {
+    const position = words.indexOf(flag);
+    assert.ok(
+      position !== -1 && position < scriptName,
+      `test:medium does not pass ${flag} to bun before the script name`,
+    );
+  }
+});
+
 test("the README documents the commands Issue #1 asks it to", () => {
   // Formatting, type checking, linting, tests, coverage and builds. Not every
   // script — the point is that a contributor can find each kind of check, not
