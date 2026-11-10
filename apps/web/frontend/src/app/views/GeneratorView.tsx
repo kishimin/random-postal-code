@@ -145,12 +145,18 @@ export const GeneratorView = () => {
       <HistoryList entries={entries} />
       {/* ui-design.md section 5.1: the reserved advertisement region sits
           after the current result and before the footer, so it never
-          competes with the primary action for a visitor's attention. */}
-      <AdvertisingRegion
-        clientId={env.googleAdsenseClientId}
-        slotId={env.googleAdsenseSlotId}
-        testMode={env.useTestAds}
-      />
+          competes with the primary action for a visitor's attention.
+          ui-design.md section 7.1: it is mounted only while a result is
+          shown. Mounting it is what loads the SDK and queues the ad request,
+          so hiding it instead would still request an ad on a screen without
+          publisher content. */}
+      {hasResult && (
+        <AdvertisingRegion
+          clientId={env.googleAdsenseClientId}
+          slotId={env.googleAdsenseSlotId}
+          testMode={env.useTestAds}
+        />
+      )}
     </>
   );
 };
