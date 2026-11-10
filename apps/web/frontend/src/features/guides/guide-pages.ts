@@ -27,5 +27,8 @@ export const guidePages: readonly GuidePage[] = [
   howToUsePage,
 ];
 
+/** The name of the footer's navigation landmark on every screen. */
+export const guideNavigationLabel = "ガイド";
+
 /** Every guide page's list of sources. */
 export const sourcesHeading = "参考にした資料";
