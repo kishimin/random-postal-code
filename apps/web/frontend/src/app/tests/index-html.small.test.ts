@@ -11,11 +11,15 @@ describe("index.html", () => {
   test("ships the site's default description", () => {
     const document = new DOMParser().parseFromString(indexHtml, "text/html");
 
+    // Read as an attribute rather than matched with toHaveAttribute: the
+    // parsed document is a separate realm, so jest-dom does not accept its
+    // elements.
     expect(
       // eslint-disable-next-line testing-library/no-node-access -- the parsed file is not rendered, so there is no accessibility tree to query
-      document.head.querySelector('meta[name="description"]'),
-    ).toHaveAttribute(
-      "content",
+      document.head
+        .querySelector('meta[name="description"]')
+        ?.getAttribute("content"),
+    ).toBe(
       "日本の郵便番号をランダムに1つ選び、その番号に対応するすべての住所と地図を表示します。",
     );
   });
