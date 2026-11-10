@@ -538,17 +538,44 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
       ]);
     };
 
+    /*
+     * Issue #121 adds the footer's ガイド navigation to every screen, and the
+     * 郵便番号をもっと知る guide links to the generator while it shows no
+     * result. Owner-approved rewrite (ADR-0080):
+     * https://github.com/kishimin/random-postal-code/issues/121#issuecomment-6765803728
+     * Names and counts stay exact, so an unexpected extra link still fails.
+     */
+    const footerGuideLinks = [
+      "サイトについて",
+      "郵便番号のしくみ",
+      "郵便番号と住所",
+      "データについて",
+      "使い方",
+    ];
+    const learnMoreGuideLinks = [
+      "郵便番号のしくみ",
+      "郵便番号と住所",
+      "データについて",
+      "使い方",
+    ];
+
     // Start.
     await postalCodeGeneratorPage.navigate();
     await expect(postalCodeGeneratorPage.startAction()).toBeVisible();
     await expectControls("button", [figmaCopy.startAction]);
-    await expectControls("link", frameLinks([]));
+    await expectControls(
+      "link",
+      frameLinks([...learnMoreGuideLinks, ...footerGuideLinks]),
+    );
 
     // The API error from the start screen (Figma #27:72, #27:93).
     await postalCodeGeneratorPage.generate();
     await expect(postalCodeGeneratorPage.retryAction()).toBeVisible();
     await expectControls("button", [figmaCopy.retryAction]);
-    await expectControls("link", frameLinks([]));
+    await expectControls(
+      "link",
+      frameLinks([...learnMoreGuideLinks, ...footerGuideLinks]),
+    );
 
     // A result, reached by retrying.
     await postalCodeGeneratorPage.generate();
@@ -557,7 +584,10 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
       "button",
       resultButtons(figmaCopy.regenerateAction, result.addresses),
     );
-    await expectControls("link", await resultLinks(result.addresses));
+    await expectControls("link", [
+      ...(await resultLinks(result.addresses)),
+      ...footerGuideLinks,
+    ]);
 
     // The API error again, where the previous result stays and the retry is
     // offered in place of もう一度、波に乗る.
@@ -567,7 +597,10 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
       "button",
       resultButtons(figmaCopy.retryAction, result.addresses),
     );
-    await expectControls("link", await resultLinks(result.addresses));
+    await expectControls("link", [
+      ...(await resultLinks(result.addresses)),
+      ...footerGuideLinks,
+    ]);
 
     await privacyDisclosurePage.navigate();
     for (const name of privacyDisclosurePage.sectionHeadings) {
@@ -580,12 +613,16 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     await expectControls("link", [
       figmaCopy.wordmark,
       privacyFooterSelectors.homeLink,
+      ...footerGuideLinks,
     ]);
 
     await notFoundPage.navigate();
     await expect(notFoundPage.backToGeneratorLink()).toBeVisible();
     await expectControls("button", []);
-    await expectControls("link", frameLinks([figmaCopy.backToTop]));
+    await expectControls(
+      "link",
+      frameLinks([figmaCopy.backToTop, ...footerGuideLinks]),
+    );
   });
 
   test("AC-4 loading is stated in visible text and a busy state, not only by a greyed-out action", async ({
