@@ -1,5 +1,5 @@
 import type { PostalCode } from "@zipnami/shared";
-import { beforeAll, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { generatedDatasetRepository } from "../infrastructures/generated-dataset-repository.ts";
 
 /*
@@ -20,13 +20,9 @@ const shownAs = (postalCode: PostalCode): string[] =>
     ({ prefecture, city, town }) => `${prefecture}${city}${town}`,
   );
 
+const postalCodes = await generatedDatasetRepository.listPostalCodes();
+
 describe("the dataset facts the guide pages state", () => {
-  let postalCodes: readonly PostalCode[] = [];
-
-  beforeAll(async () => {
-    postalCodes = await generatedDatasetRepository.listPostalCodes();
-  });
-
   const addressesOf = (code: string): string[] => {
     const entry = postalCodes.find(({ postalCode }) => postalCode === code);
 
