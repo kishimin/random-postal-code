@@ -286,8 +286,18 @@ test("workspace medium tests run one workspace at a time", () => {
   // them. Running workspaces in turn removes that contention; raising the
   // bound would only hide it (ADR-0071).
   const { scripts } = JSON.parse(readRepositoryFile("package.json"));
+  const words = scripts["test:medium"].split(/\s+/);
+  const scriptName = words.lastIndexOf("test:medium");
 
-  assert.match(scripts["test:medium"], /(^|\s)--sequential(\s|$)/);
+  // Both flags are bun's only before the script name; after it they would be
+  // handed to each workspace's vitest instead.
+  for (const flag of ["--sequential", "--no-exit-on-error"]) {
+    const position = words.indexOf(flag);
+    assert.ok(
+      position !== -1 && position < scriptName,
+      `test:medium does not pass ${flag} to bun before the script name`,
+    );
+  }
 });
 
 test("the README documents the commands Issue #1 asks it to", () => {
