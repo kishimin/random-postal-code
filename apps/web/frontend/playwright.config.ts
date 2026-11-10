@@ -33,6 +33,7 @@ export default defineConfig({
     "acceptance/privacy-footer-home.medium.test.ts",
     "acceptance/header-logo.medium.test.ts",
     "acceptance/web-ad-eligibility.medium.test.ts",
+    "acceptance/web-guide-pages.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,

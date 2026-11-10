@@ -11,6 +11,8 @@ import {
 type AppFrameProps = {
   /** The wordmark link; the caller picks a router Link or a plain anchor. */
   wordmark: ReactNode;
+  /** The footer's ガイド navigation, whose links are picked the same way. */
+  guideNavigation: ReactNode;
   /** The footer's privacy link, picked the same way. */
   privacyLink: ReactNode;
   mainRef?: Ref<HTMLElement>;
@@ -26,6 +28,7 @@ type AppFrameProps = {
  */
 export const AppFrame = ({
   wordmark,
+  guideNavigation,
   privacyLink,
   mainRef,
   children,
@@ -63,6 +66,7 @@ export const AppFrame = ({
       <div
         className={`${frameInnerClass} flex flex-col items-center gap-1 text-center`}
       >
+        {guideNavigation}
         {privacyLink}
         <p className={footerTextClass}>{siteText.attribution}</p>
         <p className={footerTextClass}>{siteText.copyright}</p>

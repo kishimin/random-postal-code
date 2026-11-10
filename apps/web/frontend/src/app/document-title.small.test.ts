@@ -32,6 +32,19 @@ describe("titleForPathname", () => {
       `${siteText.privacyLabel} | ${siteText.name}`,
     );
   });
+
+  // Issue #121: the same early guess has to name each guide, or WebKit's
+  // direct navigation would read the not-found title until the route mounts.
+  test.each([
+    ["/about", "サイトについて"],
+    ["/guide/postal-code", "郵便番号のしくみ"],
+    ["/guide/address", "郵便番号と住所"],
+    ["/guide/data", "データについて"],
+    ["/guide/how-to-use", "使い方"],
+  ])("names the guide at %s as %s", (pathname, name) => {
+    expect(titleForPathname(pathname)).toBe(`${name} | ${siteText.name}`);
+    expect(titleForPathname(`${pathname}/`)).toBe(`${name} | ${siteText.name}`);
+  });
 });
 
 describe("applyInitialDocumentTitle", () => {

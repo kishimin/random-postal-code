@@ -52,3 +52,20 @@ export const footerTextClass = "text-caption-sm text-ink-muted lg:text-caption";
  * "Outline Button" (#46:69), a brand-colored stroke and label on white.
  */
 export const privacyLinkClass = `${tapTargetClass} rounded-full border border-brand bg-card px-6 text-caption font-semibold text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`;
+
+/**
+ * A link set in the body of a content screen (Issue #121): a guide's sources,
+ * and the overview's links to the guides. These screens have no Figma node, so
+ * the link takes the brand color the privacy link already uses, on a white
+ * card, where it is 5.61:1. The underline, not the color alone, marks it as a
+ * link (WCAG 1.4.1).
+ */
+export const contentLinkClass = `${tapTargetClass} text-body-sm text-brand underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`;
+
+/**
+ * A link of the footer's ガイド navigation, which both frames build themselves.
+ * It sits in the footer's own text color, which is already legible on the page
+ * background, and the underline marks it as a link. The horizontal padding
+ * widens the 44px-high target on a phone, where five labels wrap onto rows.
+ */
+export const guideLinkClass = `${tapTargetClass} px-3 text-caption text-ink-muted underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`;

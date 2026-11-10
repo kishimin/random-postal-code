@@ -7,6 +7,13 @@ import {
 import { AppErrorContent } from "../views/AppErrorContent";
 import { AppErrorView } from "../views/AppErrorView";
 import { GeneratorView } from "../views/GeneratorView";
+import {
+  AboutView,
+  AddressGuideView,
+  DataGuideView,
+  HowToUseGuideView,
+  PostalCodeGuideView,
+} from "../views/GuideViews";
 import { NotFoundView } from "../views/NotFoundView";
 import { PrivacyView } from "../views/PrivacyView";
 import { RootLayout } from "../views/RootLayout";
@@ -35,7 +42,48 @@ const privacyRoute = createRoute({
   component: PrivacyView,
 });
 
-const routeTree = rootRoute.addChildren([generatorRoute, privacyRoute]);
+// The guide pages (Issue #121, ui-design.md section 5.5): ordinary client
+// rendered routes like /privacy, so each answers a direct navigation and a
+// refresh through the same SPA fallback.
+const aboutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/about",
+  component: AboutView,
+});
+
+const postalCodeGuideRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/guide/postal-code",
+  component: PostalCodeGuideView,
+});
+
+const addressGuideRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/guide/address",
+  component: AddressGuideView,
+});
+
+const dataGuideRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/guide/data",
+  component: DataGuideView,
+});
+
+const howToUseGuideRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/guide/how-to-use",
+  component: HowToUseGuideView,
+});
+
+const routeTree = rootRoute.addChildren([
+  generatorRoute,
+  privacyRoute,
+  aboutRoute,
+  postalCodeGuideRoute,
+  addressGuideRoute,
+  dataGuideRoute,
+  howToUseGuideRoute,
+]);
 
 /**
  * Builds the application router from the route tree the application ships.

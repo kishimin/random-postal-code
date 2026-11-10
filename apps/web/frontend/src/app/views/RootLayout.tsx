@@ -1,8 +1,9 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { siteText } from "../site-text";
-import { privacyLinkClass, wordmarkClass } from "../styles";
+import { guideLinkClass, privacyLinkClass, wordmarkClass } from "../styles";
 import { AppFrame } from "./AppFrame";
+import { GuideNavigation } from "./GuideNavigation";
 
 /**
  * Frame shared by every route.
@@ -66,6 +67,18 @@ export const RootLayout = () => {
         <Link className={wordmarkClass} to={"/"}>
           {siteText.wordmark}
         </Link>
+      }
+      guideNavigation={
+        <GuideNavigation
+          renderLink={(page) => (
+            // The router marks the link of the page on display with
+            // aria-current="page" itself, so the five links read the same on
+            // every screen and only the current guide's says where we are.
+            <Link className={guideLinkClass} to={page.path}>
+              {page.name}
+            </Link>
+          )}
+        />
       }
       privacyLink={
         // On /privacy the footer would link to the page the visitor is on, so

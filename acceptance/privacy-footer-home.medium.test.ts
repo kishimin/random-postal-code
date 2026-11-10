@@ -115,7 +115,10 @@ test.describe("Issue #112: the privacy page's footer link goes home", () => {
     await expect(
       accessibilityPage.controlsNamed("link", privacyFooterSelectors.homeLink),
     ).toHaveCount(1);
-    await expect(accessibilityPage.controls("link")).toHaveCount(2);
+    // Plus the five links of the footer's ガイド navigation (Issue #121).
+    // Owner-approved rewrite (ADR-0080):
+    // https://github.com/kishimin/random-postal-code/issues/121#issuecomment-6765803728
+    await expect(accessibilityPage.controls("link")).toHaveCount(7);
   });
 
   test("on the generator, the footer link is still プライバシーポリシー and opens /privacy", async ({

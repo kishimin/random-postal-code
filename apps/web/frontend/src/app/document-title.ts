@@ -1,3 +1,4 @@
+import { guidePages } from "../features/guides/guide-pages";
 import { pageTitle, siteText } from "./site-text";
 
 /**
@@ -9,10 +10,11 @@ import { pageTitle, siteText } from "./site-text";
  */
 export const notFoundHeading = "ページが見つかりません";
 
-// The two paths app-router.tsx registers as real routes. Duplicated here as
-// literals rather than imported from that module: it is a small, stable
-// table, and importing the router module from this early-bootstrap path
-// would pull the whole route tree in just to read two strings off it.
+// The generator and privacy paths app-router.tsx registers as real routes.
+// Duplicated here as literals rather than imported from that module:
+// importing the router module from this early-bootstrap path would pull the
+// whole route tree in just to read two strings off it. The guide pages' paths
+// are read from their copy instead, which the router's own views render.
 const GENERATOR_PATH = "/";
 const PRIVACY_PATH = "/privacy";
 
@@ -54,6 +56,10 @@ export const titleForPathname = (pathname: string): string => {
   const normalized = withoutTrailingSlash(pathname);
   if (normalized === GENERATOR_PATH) return pageTitle();
   if (normalized === PRIVACY_PATH) return pageTitle(siteText.privacyLabel);
+
+  const guide = guidePages.find((page) => page.path === normalized);
+  if (guide) return pageTitle(guide.name);
+
   return pageTitle(notFoundHeading);
 };
 
