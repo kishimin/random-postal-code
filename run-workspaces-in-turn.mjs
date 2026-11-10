@@ -19,6 +19,9 @@ const workspaceDirectories = (root) => {
 
   return workspaces
     .flatMap((pattern) => {
+      if (pattern.includes("*") && !/^[^*]+\/\*$/.test(pattern)) {
+        throw new Error(`unsupported workspace pattern: ${pattern}`);
+      }
       if (!pattern.endsWith("/*")) return [path.join(root, pattern)];
 
       const parent = path.join(root, pattern.slice(0, -2));
@@ -41,13 +44,26 @@ const forwardLines = (stream, prefix, target) =>
 
 const runInWorkspace = async (directory, name, script) => {
   const prefix = `${name} ${script}: `;
+  const startedAt = Date.now();
+  process.stdout.write(
+    `${prefix}Started at ${new Date(startedAt).toISOString()}\n`,
+  );
+
   const child = spawn("bun", ["run", script], {
     cwd: directory,
     stdio: ["ignore", "pipe", "pipe"],
   });
   const exited = new Promise((resolve) => {
-    child.on("error", () => resolve(1));
-    child.on("close", (code) => resolve(code ?? 1));
+    child.on("error", (error) => {
+      process.stderr.write(`${prefix}could not start bun: ${error.message}\n`);
+      resolve(1);
+    });
+    child.on("close", (code, signal) => {
+      if (signal !== null) {
+        process.stderr.write(`${prefix}terminated by ${signal}\n`);
+      }
+      resolve(code ?? 1);
+    });
   });
 
   const [code] = await Promise.all([
@@ -55,6 +71,8 @@ const runInWorkspace = async (directory, name, script) => {
     forwardLines(child.stdout, prefix, process.stdout),
     forwardLines(child.stderr, prefix, process.stderr),
   ]);
+  const seconds = ((Date.now() - startedAt) / 1000).toFixed(2);
+  process.stdout.write(`${prefix}Finished in ${seconds}s\n`);
   process.stdout.write(`${prefix}Exited with code ${code}\n`);
 
   return code;
@@ -69,12 +87,20 @@ if (script === undefined) {
 // Keep going after a failure so every workspace still reports its results,
 // and exit with the first failure's code.
 let firstFailure = 0;
+let ran = 0;
 for (const directory of workspaceDirectories(process.cwd())) {
   const { name, scripts = {} } = readJson(path.join(directory, "package.json"));
   if (scripts[script] === undefined) continue;
 
+  ran += 1;
   const code = await runInWorkspace(directory, name, script);
   if (code !== 0 && firstFailure === 0) firstFailure = code;
+}
+
+// A gate that found nothing to run has checked nothing.
+if (ran === 0) {
+  process.stderr.write(`no workspace has a "${script}" script\n`);
+  firstFailure = 1;
 }
 
 process.exitCode = firstFailure;
