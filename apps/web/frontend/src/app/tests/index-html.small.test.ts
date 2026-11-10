@@ -15,7 +15,6 @@ describe("index.html", () => {
     // parsed document is a separate realm, so jest-dom does not accept its
     // elements.
     expect(
-      // eslint-disable-next-line testing-library/no-node-access -- the parsed file is not rendered, so there is no accessibility tree to query
       document.head
         .querySelector('meta[name="description"]')
         ?.getAttribute("content"),

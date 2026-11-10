@@ -1,10 +1,13 @@
-/** The route of each guide page, in the order the footer lists them. */
-export type GuidePath =
-  | "/about"
-  | "/guide/postal-code"
-  | "/guide/address"
-  | "/guide/data"
-  | "/guide/how-to-use";
+/** The route of each guide page. */
+export const guidePaths = {
+  about: "/about",
+  postalCode: "/guide/postal-code",
+  address: "/guide/address",
+  data: "/guide/data",
+  howToUse: "/guide/how-to-use",
+} as const;
+
+export type GuidePath = (typeof guidePaths)[keyof typeof guidePaths];
 
 /** A screen a guide's own text may link to: another guide, or the privacy page. */
 export type GuideLinkTarget = GuidePath | "/privacy";

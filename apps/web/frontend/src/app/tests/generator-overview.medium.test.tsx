@@ -36,13 +36,13 @@ const renderGenerator = () =>
 
 /** Answers the first `GET /api/random` with a failure and the next with a result. */
 const failOnceThenSucceed = () => {
-  let answered = 0;
+  const requests: string[] = [];
 
   worker.use(
-    http.get(RANDOM_ENDPOINT, () => {
-      answered += 1;
+    http.get(RANDOM_ENDPOINT, ({ request }) => {
+      requests.push(request.url);
 
-      return answered === 1
+      return requests.length === 1
         ? HttpResponse.json(
             {
               error: {
