@@ -178,6 +178,7 @@ Once a result is shown, both sections are removed, so the result keeps the place
 - one `h1` with the page's name;
 - body sections, each a region named by its own visible `h2`;
 - a `参考にした資料` section that lists the sources it relies on as links;
+- after the sources, as the last thing in the page's own content, one link named `トップへ戻る` (the not-found destination's words) that opens `/`. It is not a region and has no heading. The header logo was the only way home from a guide page; the owner chose to add the link at the end of the article only, not to the header or the footer's `ガイド` navigation (Issue #121, 2026-11-11);
 - a document title built by `pageTitle` from the page's name (section 9.2), and a `<meta name="description">` whose text is that page's own one-sentence summary, set from JavaScript when the page mounts. Leaving a guide page restores the site's default description.
 
 Page names (the `h1`, the footer link, and the title) are: `サイトについて`, `郵便番号のしくみ`, `郵便番号と住所`, `データについて`, and `使い方`.
