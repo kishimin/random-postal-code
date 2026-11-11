@@ -97,6 +97,25 @@ describe("guide routes", () => {
     );
   });
 
+  // The header logo was the only way home from a guide page (owner decision
+  // on Issue #121, 2026-11-11).
+  test.each(guidePages)(
+    "$path ends its content with one トップへ戻る link to the generator",
+    async (page) => {
+      renderAt(page.path);
+
+      await screen.findByRole("heading", { level: 1, name: page.name });
+      const links = within(screen.getByRole("main")).getAllByRole("link");
+      const last = links.at(-1);
+
+      expect(
+        links.filter((link) => link.textContent === "トップへ戻る"),
+      ).toHaveLength(1);
+      expect(last).toHaveTextContent("トップへ戻る");
+      expect(last).toHaveAttribute("href", "/");
+    },
+  );
+
   test("sets the page's own meta description, and the site's default returns when the page is left", async () => {
     const siteMeta = addSiteDescription();
     const { router } = renderAt("/guide/data");
