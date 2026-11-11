@@ -34,6 +34,7 @@ export default defineConfig({
     "acceptance/header-logo.medium.test.ts",
     "acceptance/web-ad-eligibility.medium.test.ts",
     "acceptance/web-guide-pages.medium.test.ts",
+    "acceptance/web-guide-back-to-top.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,
