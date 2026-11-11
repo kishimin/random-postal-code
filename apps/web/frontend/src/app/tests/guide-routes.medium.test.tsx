@@ -1,10 +1,7 @@
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
 import { act, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import {
-  guidePages,
-  sourcesHeading,
-} from "../../features/guides/guide-pages";
+import { guidePages, sourcesHeading } from "../../features/guides/guide-pages";
 import { createAppRouter } from "../routes/app-router";
 
 /*
