@@ -1,7 +1,7 @@
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
 import { act, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { guidePages } from "../../features/guides/guide-pages";
+import { guidePages, sourcesHeading } from "../../features/guides/guide-pages";
 import { createAppRouter } from "../routes/app-router";
 
 /*
@@ -96,6 +96,37 @@ describe("guide routes", () => {
       "/guide/data",
     );
   });
+
+  // The header logo was the only way home from a guide page (owner decision
+  // on Issue #121, 2026-11-11). The label is written out rather than read
+  // from siteText: it is the visible copy the owner chose, so a change to the
+  // constant alone should fail here.
+  test.each(guidePages)(
+    "$path ends its content, after the sources, with one トップへ戻る link to the generator",
+    async (page) => {
+      renderAt(page.path);
+
+      await screen.findByRole("heading", { level: 1, name: page.name });
+      const links = within(screen.getByRole("main")).getAllByRole("link");
+      const last = links.at(-1);
+      const sources = screen.getByRole("region", { name: sourcesHeading });
+
+      expect(
+        links.filter((link) => link.textContent === "トップへ戻る"),
+      ).toHaveLength(1);
+      expect(last?.textContent).toBe("トップへ戻る");
+      expect(last).toHaveAttribute("href", "/");
+      expect(
+        within(sources).queryByRole("link", { name: "トップへ戻る" }),
+      ).not.toBeInTheDocument();
+      // Document order is what "after the sources, last in the content"
+      // means, and the accessibility tree does not expose siblings.
+      // eslint-disable-next-line testing-library/no-node-access -- see above
+      expect(last?.previousElementSibling).toBe(sources);
+      // eslint-disable-next-line testing-library/no-node-access -- see above
+      expect(last?.nextElementSibling).toBeNull();
+    },
+  );
 
   test("sets the page's own meta description, and the site's default returns when the page is left", async () => {
     const siteMeta = addSiteDescription();

@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { sourcesHeading } from "../../features/guides/guide-pages";
 import type { GuidePage } from "../../features/guides/types";
 import { useDocumentTitle } from "../../hooks/use-document-title";
@@ -15,18 +16,21 @@ const listClass = "flex flex-col gap-2 pl-5 text-body-sm text-ink-muted";
 
 type GuideViewProps = {
   page: GuidePage;
+  /** What ends the page, after the sources. */
+  children?: ReactNode;
 };
 
 /**
  * One guide page (Issue #121, ui-design.md section 5.5): a lead, body sections
- * each a region named by its own visible h2, and the sources it relies on.
+ * each a region named by its own visible h2, the sources it relies on, and
+ * whatever the route ends the page with.
  *
  * Laid out like PrivacyView, which is also text on cards, and for the same
  * reason labelled the same way: aria-labelledby on the visible heading rather
  * than an invisible aria-label. It renders from the page's copy alone, so it
  * needs no generation and makes no request.
  */
-export const GuideView = ({ page }: GuideViewProps) => {
+export const GuideView = ({ page, children }: GuideViewProps) => {
   useDocumentTitle(pageTitle(page.name));
   useMetaDescription(page.description);
 
@@ -89,6 +93,8 @@ export const GuideView = ({ page }: GuideViewProps) => {
           ))}
         </ul>
       </section>
+
+      {children}
     </div>
   );
 };

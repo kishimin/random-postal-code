@@ -14,7 +14,8 @@ const tapTargetClass = "inline-flex min-h-11 items-center";
 
 /**
  * The brand-accent pill Figma draws as "Primary Button", for a link that acts
- * as the screen's one primary action (the not-found screen's way back).
+ * as the screen's one primary action: the way back to `/` from the not-found
+ * screen, the global error screen, and the end of a guide page.
  *
  * White on the brand color is 5.61:1, so the label takes Figma's own 16px size
  * and weight. A shape, not an underline, carries the affordance.
