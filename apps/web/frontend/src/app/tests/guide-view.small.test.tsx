@@ -111,6 +111,23 @@ describe("GuideView", () => {
     expect(link).not.toHaveAttribute("target");
   });
 
+  test("ends with what its route passes, after the sources", () => {
+    render(
+      <GuideView page={page}>
+        <a href={"/"}>{"見本の結び"}</a>
+      </GuideView>,
+    );
+
+    const links = screen.getAllByRole("link");
+
+    expect(links.map((link) => link.textContent)).toEqual([
+      "見本の資料",
+      "見本の結び",
+    ]);
+    const sources = screen.getByRole("region", { name: sourcesHeading });
+    expect(within(sources).queryByText("見本の結び")).not.toBeInTheDocument();
+  });
+
   test("names the document by the page and the product", () => {
     render(<GuideView page={page} />);
 
