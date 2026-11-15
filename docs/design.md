@@ -19,7 +19,7 @@ The MVP includes:
 - a privacy policy and Japan Post data attribution; and
 - distribution through Cloudflare Pages and Cloudflare Workers.
 
-The MVP excludes authentication, user accounts, favorites, history synchronization, regional filters, GPS, location collection, social sharing, push notifications, payments, iOS, multilingual UI, and Android. Android and Google Play delivery are V2 work tracked by Issues #12 through #15 and #20.
+The MVP excludes authentication, user accounts, favorites, history synchronization, regional filters, GPS, location collection, social sharing, push notifications, payments, multilingual UI, and the Android and iOS apps. The mobile apps are developed now, in parallel with the Web MVP but outside it, under section 6.3 and Issues #12 through #15 and #20.
 
 ## 3. System Architecture
 
@@ -41,6 +41,7 @@ The repository is a Bun workspaces monorepo with these ownership boundaries:
 
 ```text
 apps/
+  mobile/         # Expo and React Native app for Android and iOS
   web/
     frontend/     # React, Vite, Pages, and browser-specific behavior
     backend/      # Hono, Workers, public API, and CORS
@@ -138,9 +139,13 @@ A successful regeneration replaces the current result and prepends it to history
 - Store history only in the browser, newest first, retaining duplicates, with a maximum of 20 entries.
 - When adding entry 21, remove the oldest entry.
 
-### 6.3 Android V2 Boundary
+### 6.3 Mobile App Boundary
 
-Android, Expo, AdMob, UMP, and Google Play delivery are not part of the Web MVP. Their existing requirements remain tracked as V2 in Issues #12 through #15 and #20. They must not delay, be bundled with, or become acceptance criteria for the Web MVP.
+Android and iOS are one Expo (React Native) application in `apps/mobile`, tracked by Issues #12 through #15 and #20. On 2026-11-16 the owner moved it out of V2: it is developed now, in parallel with the Web MVP but outside it. The mobile app, including Expo, AdMob, UMP, and store delivery, must not delay, be bundled with, or become acceptance criteria for the Web MVP. When a Web MVP Issue under #22 can be started, it goes first.
+
+- Each mobile Issue holds for both Android and iOS. iOS is verified by automated tests and by `expo export --platform ios` succeeding. No iPhone or Mac is available, so no iOS device or simulator check is required.
+- Google Play delivery is Issue #20. App Store delivery is not planned. It is decided once the app is complete, because the Apple Developer Program has a yearly fee.
+- Manual checks through Expo Go are not planned.
 
 ## 7. External Services and Failure Boundaries
 
@@ -192,7 +197,7 @@ Before completing a code branch, run every repository-defined formatter, type ch
 
 ## 11. Completion and Traceability
 
-The MVP is complete when every MVP Issue under [tracker Issue #22](https://github.com/kishimin/random-postal-code/issues/22) is closed with its acceptance criteria satisfied, this design is satisfied, and reproducible final acceptance evidence is recorded. Issues marked `v2` are not required for MVP completion.
+The MVP is complete when every MVP Issue under [tracker Issue #22](https://github.com/kishimin/random-postal-code/issues/22) is closed with its acceptance criteria satisfied, this design is satisfied, and reproducible final acceptance evidence is recorded. The mobile app Issues (section 6.3) and Issues marked `v2` are not required for MVP completion.
 
 When the design changes, update this contract and its affected scope before synchronizing the corresponding Issue acceptance criteria and branch plan. If the reasoning or rejected alternatives behind a decision require long-term preservation, create an ADR instead of mixing decision history into this current-state design.
 
