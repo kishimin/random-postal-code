@@ -1,8 +1,10 @@
 # Changelog
 
 Every version of Zipnami that production has served, or is about to serve.
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+From v1.0.0 on, [release-please](https://github.com/googleapis/release-please)
+generates each entry from the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+merged to `main`, and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html):
+`fix:` is a patch, `feat:` a minor, and `!` or `BREAKING CHANGE` a major release.
 All workspaces share one version, because they ship as one site.
 
 ## [1.0.0] - Unreleased

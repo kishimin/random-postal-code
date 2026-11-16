@@ -202,6 +202,48 @@ unattended loop makes: they pass the same CI gate.
   look at the run first, and roll back by hand if production is broken. A
   successful run posts nothing.
 
+## Releases
+
+Every merge to `main` deploys, but a version number is given only by a
+release (Issue #133). `.github/workflows/release.yml` runs release-please on
+each push to `main`:
+
+- **Release pull request**: release-please keeps one open pull request that
+  collects every `fix:` and `feat:` merged since the last release. It bumps
+  the root `package.json` and the `packages/shared`, `packages/postal-data`,
+  `apps/web/frontend`, and `apps/web/backend` `package.json` files to the same
+  next version and adds the `CHANGELOG.md` entry. A follow-up job commits the
+  matching `bun.lock`. `fix:` is a patch, `feat:` a minor, and `!` or
+  `BREAKING CHANGE` a major release.
+- **PR titles**: the squash merge uses the pull request title as the commit
+  subject, so the "PR title" check in `ci-pull-request.yml` fails a title that
+  is not a Conventional Commit (`feat`, `fix`, `perf`, `refactor`, `docs`,
+  `test`, `build`, `ci`, `chore`, `style`, or `revert`, optionally with a
+  `(scope)` and `!`).
+- **X post**: the text to post on X for the next release is one comment on the
+  release pull request whose first line is `<!-- x-post -->`. The latest such
+  comment counts. It must weigh at most 280 as X counts it (a CJK character
+  weighs 2, each URL 23) and link to `https://zipnami.pages.dev`.
+- **Releasing**: merging the release pull request creates the `vX.Y.Z` tag
+  and the GitHub Release. The same run checks the X post and sends Discord the
+  version, the text, and an `https://x.com/intent/post?text=...` link that
+  opens X with the text filled in; press ポスト there. If the comment is
+  missing or fails a check, nothing is sent and the "Release pull request and
+  release" job fails. The release itself already exists by then: fix the
+  comment and post it by hand.
+
+### Release token
+
+A pull request opened with `GITHUB_TOKEN` starts no `pull_request` workflow,
+so its required checks would never run and it could not merge. release-please
+therefore uses the repository secret `ZIPNAMI_RELEASE_TOKEN`, a fine-grained
+personal access token with resource owner `kishimin`, access to this
+repository only, and **Contents**, **Pull requests**, and **Issues** set to
+read and write (Issues for the release pull request's labels). Add it under
+Settings → Secrets and variables → Actions. Until it is set, the Release
+workflow fails on every push to `main` with a message naming the secret; the
+deploy is a separate workflow and is not affected.
+
 ## Deploying by hand
 
 ```sh
