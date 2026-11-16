@@ -1,5 +1,6 @@
 import { useDocumentTitle } from "../../hooks/use-document-title";
 import { pageTitle, siteText } from "../site-text";
+import { contentLinkClass } from "../styles";
 import { privacySections } from "./privacy-text";
 
 const sectionClass = "flex flex-col gap-3 rounded-card bg-card p-6";
@@ -9,7 +10,7 @@ const paragraphClass = "text-body-sm text-ink-muted";
 /**
  * Privacy screen (Issue #10, laid out as Figma's node 46:165 by Issue #97).
  *
- * design.md section 8 divides the page into Figma's four sections: each
+ * design.md section 8 divides the page into Figma's five sections: each
  * `section` is a separately named region, labelled by its own
  * visible heading (aria-labelledby) rather than an invisible aria-label -- the
  * same pattern AdvertisingRegion uses for its labelled region.
@@ -40,6 +41,16 @@ export const PrivacyView = () => {
               {paragraph}
             </p>
           ))}
+          {section.link === undefined ? null : (
+            // self-start: the section is a flex column, which would otherwise
+            // stretch the link's hit area across the whole card.
+            <a
+              className={`${contentLinkClass} self-start`}
+              href={section.link.href}
+            >
+              {section.link.label}
+            </a>
+          )}
         </section>
       ))}
     </div>

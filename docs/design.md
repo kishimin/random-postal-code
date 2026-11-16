@@ -166,7 +166,9 @@ Google Maps, AdSense, Google Analytics, and consent services are optional depend
 
 ## 8. Privacy and Accessibility
 
-`/privacy` is divided into the four sections of its Figma frame: what is collected, what it is used for, advertising and analytics, and history. It names Google Maps, AdSense, Google Analytics, and consent services, and documents browser-local history, the absence of location collection, and Japan Post attribution. A contact section is V2 work (Issue #105).
+`/privacy` is divided into the five sections of its Figma frame: what is collected, what it is used for, advertising and analytics, history, and contact. It names Google Maps, AdSense, Google Analytics, and consent services, and documents browser-local history, the absence of location collection, and Japan Post attribution.
+
+The contact method is a Google Form (Issue #105, moved into the MVP by the owner on 2026-11-15). The contact section links to the form and does not embed it, so the Content-Security-Policy is unchanged. It says the form is a Google service, which fields it asks for, that what is entered is used only to handle the inquiry, and that no reply is possible. The form collects no email address. Its Apps Script (section 3) sends Discord only the selected inquiry type and a link to the responses page; the name and the content never leave Google.
 
 The Web uses semantic HTML, keyboard-operable controls, visible focus, meaningful names, and appropriate announcements for dynamic results and errors. State is not conveyed by color alone. Advertising areas are distinguishable from application content.
 

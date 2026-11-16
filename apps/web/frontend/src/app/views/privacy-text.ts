@@ -4,20 +4,26 @@
  * ui-design.md section 12 leaves the exact copy to this Issue; the MVP ships
  * Japanese only (section 9), so there is no locale to select between.
  *
- * The page takes Figma's four section headings (node 46:165, Issue #97), and
+ * The page takes Figma's five section headings (node 46:165, Issue #97), and
  * the sentences under them are the application's own accurate disclosure,
  * moved under the matching heading (owner decision on Issue #97,
  * https://github.com/kishimin/random-postal-code/issues/97#issuecomment-6670298264).
- * Figma's fifth heading, "5. お問い合わせ", is not in the MVP: a contact
- * section is V2 work (Issue #105). design.md section 8 divides the page by
- * those same four sections, so the page follows them rather than a split
- * between what Zipnami stores and what third-party services process.
+ * design.md section 8 divides the page by those same five sections, so the
+ * page follows them rather than a split between what Zipnami stores and what
+ * third-party services process.
  */
+export type PrivacyLink = {
+  readonly label: string;
+  readonly href: string;
+};
+
 export type PrivacySection = {
   /** The id its heading carries, which names the section's region. */
   readonly headingId: string;
   readonly heading: string;
   readonly paragraphs: readonly string[];
+  /** A link shown after the paragraphs, for a section that points elsewhere. */
+  readonly link?: PrivacyLink;
 };
 
 /*
@@ -104,10 +110,36 @@ const history: PrivacySection = {
   ],
 };
 
+/*
+ * 5. お問い合わせ: design.md section 8 (Issue #105).
+ *
+ * Figma draws the heading and no link, so the words are the application's
+ * own. The form is linked and not embedded, so the Content-Security-Policy
+ * does not change. It collects no email address, which is why the section
+ * says no reply is possible rather than leaving a visitor waiting for one.
+ * The address is the form's public responder URL, recorded on Issue #105
+ * (issuecomment-6904686822); anyone may open it, so it is not a secret.
+ */
+const contact: PrivacySection = {
+  headingId: "privacy-contact-heading",
+  heading: "5. お問い合わせ",
+  paragraphs: [
+    "お問い合わせは、Googleが提供するGoogleフォームで受け付けています。",
+    "フォームでは、お名前（ニックネーム可）、問い合わせの種類、内容をお聞きします。",
+    "フォームに入力された内容は、お問い合わせへの対応にのみ利用します。",
+    "メールアドレスは収集しないため、返信はできません。",
+  ],
+  link: {
+    label: "お問い合わせフォーム",
+    href: "https://docs.google.com/forms/d/e/1FAIpQLSej3EUlVYPDsE6AzzILNLYqqu1kJlDWBJE-vxuNjk8jzqjSnQ/viewform",
+  },
+};
+
 /** The page's sections, in Figma's order. */
 export const privacySections: readonly PrivacySection[] = [
   collectedInformation,
   purposeOfUse,
   advertisingAndAnalytics,
   history,
+  contact,
 ];

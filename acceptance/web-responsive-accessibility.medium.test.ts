@@ -32,6 +32,7 @@ import {
   showOnMapName,
 } from "./selectors/figma-copy.ts";
 import { displayedPostalCode } from "./selectors/generator-selectors.ts";
+import { privacyContactSelectors } from "./selectors/privacy-contact-selectors.ts";
 import { privacyFooterSelectors } from "./selectors/privacy-footer-selectors.ts";
 
 /*
@@ -607,11 +608,14 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
       await expect(privacyDisclosurePage.section(name), name).toBeVisible();
     }
     await expectControls("button", []);
-    // Only the frame's links: the contact link went to V2 (Issue #105), and
-    // the footer reads ホームに戻る here, not プライバシーポリシー (Issue #112;
+    // The frame's links and the contact section's link to the Google Form
+    // (Issue #105; owner-approved rewrite, ADR-0080,
+    // https://github.com/kishimin/random-postal-code/issues/105#issuecomment-6912936734).
+    // The footer reads ホームに戻る here, not プライバシーポリシー (Issue #112;
     // approved there, issuecomment-6700995872).
     await expectControls("link", [
       figmaCopy.wordmark,
+      privacyContactSelectors.linkName,
       privacyFooterSelectors.homeLink,
       ...footerGuideLinks,
     ]);
