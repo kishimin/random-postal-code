@@ -35,7 +35,9 @@ const urlsIn = (text) =>
 
 const weightOf = (character) => {
   const codePoint = character.codePointAt(0) ?? 0;
-  return LIGHT_RANGES.some(([low, high]) => codePoint >= low && codePoint <= high)
+  return LIGHT_RANGES.some(
+    ([low, high]) => codePoint >= low && codePoint <= high,
+  )
     ? 1
     : 2;
 };
@@ -59,7 +61,9 @@ export const latestXPost = (comments) => {
     .map(({ body }) => (body ?? "").replace(/\r\n/g, "\n").trim())
     .filter((body) => body.startsWith(X_POST_MARKER));
   const latest = posts.at(-1);
-  return latest === undefined ? undefined : latest.slice(X_POST_MARKER.length).trim();
+  return latest === undefined
+    ? undefined
+    : latest.slice(X_POST_MARKER.length).trim();
 };
 
 const linksToSite = (text) =>
@@ -106,9 +110,16 @@ const messageFor = (version, text) => {
   ].join("\n");
 };
 
-export const announceRelease = async ({ version, comments, webhookUrl, fetch }) => {
+export const announceRelease = async ({
+  version,
+  comments,
+  webhookUrl,
+  fetch,
+}) => {
   if (!webhookUrl) {
-    throw new Error("The Discord webhook secret ZIPNAMI_DISCORD_WEBHOOK_URL is not set.");
+    throw new Error(
+      "The Discord webhook secret ZIPNAMI_DISCORD_WEBHOOK_URL is not set.",
+    );
   }
   const text = latestXPost(comments);
   const problem = validateXPost(text);
@@ -155,7 +166,10 @@ const github = async (path, token) => {
 
 /** The release pull request merged as `sha`, found by release-please's branch prefix. */
 const releasePullRequest = async (repository, sha, token) => {
-  const pulls = await github(`/repos/${repository}/commits/${sha}/pulls`, token);
+  const pulls = await github(
+    `/repos/${repository}/commits/${sha}/pulls`,
+    token,
+  );
   const pull = pulls.find((candidate) =>
     candidate.head?.ref?.startsWith("release-please--"),
   );
@@ -180,9 +194,18 @@ const commentsOn = async (repository, number, token) => {
 };
 
 const main = async () => {
-  const { GITHUB_REPOSITORY, GITHUB_TOKEN, RELEASE_SHA, VERSION, DISCORD_WEBHOOK_URL } =
-    process.env;
-  const number = await releasePullRequest(GITHUB_REPOSITORY, RELEASE_SHA, GITHUB_TOKEN);
+  const {
+    GITHUB_REPOSITORY,
+    GITHUB_TOKEN,
+    RELEASE_SHA,
+    VERSION,
+    DISCORD_WEBHOOK_URL,
+  } = process.env;
+  const number = await releasePullRequest(
+    GITHUB_REPOSITORY,
+    RELEASE_SHA,
+    GITHUB_TOKEN,
+  );
   const comments = await commentsOn(GITHUB_REPOSITORY, number, GITHUB_TOKEN);
   await announceRelease({
     version: VERSION,

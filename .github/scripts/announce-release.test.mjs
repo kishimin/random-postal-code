@@ -35,7 +35,10 @@ test("Latin letters weigh 1 and CJK characters weigh 2", () => {
 test("each URL weighs 23 however long it is", () => {
   assert.equal(weightedLength(SITE), 23);
   assert.equal(weightedLength(`${SITE}/guide/about-zipnami?from=x`), 23);
-  assert.equal(weightedLength(`見て ${SITE} と ${SITE}`), 2 * 2 + 1 + 23 + 1 + 2 + 1 + 23);
+  assert.equal(
+    weightedLength(`見て ${SITE} と ${SITE}`),
+    2 * 2 + 1 + 23 + 1 + 2 + 1 + 23,
+  );
 });
 
 test("a URL ends where the ASCII run ends, and trailing punctuation is text", () => {
@@ -66,7 +69,10 @@ test("a text that is empty, too long, or without the site is refused", () => {
   assert.match(validateXPost(undefined) ?? "", /no <!-- x-post --> comment/);
   assert.match(validateXPost("") ?? "", /empty/);
   assert.match(validateXPost(`${"あ".repeat(129)} ${SITE}`) ?? "", /282/);
-  assert.match(validateXPost("Zipnami を公開しました") ?? "", /zipnami\.pages\.dev/);
+  assert.match(
+    validateXPost("Zipnami を公開しました") ?? "",
+    /zipnami\.pages\.dev/,
+  );
   // A look-alike host is not the site.
   assert.match(
     validateXPost("https://zipnami.pages.dev.example.com を見て") ?? "",
@@ -80,7 +86,12 @@ test("a valid post sends one message with the version, the text, and an intent l
   const { calls, fetch } = recordingFetch();
   const text = `Zipnami 1.1.0 を公開しました & 100% 無料 #郵便番号\n${SITE}`;
 
-  await announceRelease({ version: "1.1.0", comments: [xPost(text)], webhookUrl: WEBHOOK, fetch });
+  await announceRelease({
+    version: "1.1.0",
+    comments: [xPost(text)],
+    webhookUrl: WEBHOOK,
+    fetch,
+  });
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, WEBHOOK);
@@ -91,7 +102,8 @@ test("a valid post sends one message with the version, the text, and an intent l
   assert.deepEqual(payload.allowed_mentions, { parse: [] });
   assert.match(payload.content, /v1\.1\.0/);
   assert.ok(payload.content.includes(text));
-  const [link] = payload.content.match(/https:\/\/x\.com\/intent\/post\?text=[^\s>]+/) ?? [];
+  const [link] =
+    payload.content.match(/https:\/\/x\.com\/intent\/post\?text=[^\s>]+/) ?? [];
   assert.equal(new URL(link).searchParams.get("text"), text);
 });
 
@@ -102,7 +114,10 @@ test("nothing is sent when the post is invalid or the webhook is missing", async
     ["no webhook", { comments: [xPost(SITE)], webhookUrl: "" }],
   ]) {
     const { calls, fetch } = recordingFetch();
-    await assert.rejects(announceRelease({ version: "1.0.1", fetch, ...options }), why);
+    await assert.rejects(
+      announceRelease({ version: "1.0.1", fetch, ...options }),
+      why,
+    );
     assert.equal(calls.length, 0, why);
   }
 });
@@ -116,7 +131,12 @@ test("a Discord error or a network failure fails without naming the webhook", as
   ];
   for (const fetch of failures) {
     await assert.rejects(
-      announceRelease({ version: "1.0.1", comments: [xPost(SITE)], webhookUrl: WEBHOOK, fetch }),
+      announceRelease({
+        version: "1.0.1",
+        comments: [xPost(SITE)],
+        webhookUrl: WEBHOOK,
+        fetch,
+      }),
       (error) => {
         assert.ok(!String(error).includes("secret-token"), String(error));
         assert.ok(!String(error.cause ?? "").includes("secret-token"));
