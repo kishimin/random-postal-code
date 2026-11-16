@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { PrivacyView } from "../views/PrivacyView";
 
@@ -9,7 +9,7 @@ import { PrivacyView } from "../views/PrivacyView";
  * contract against the component alone, without a browser, for fast feedback
  * while it is built.
  *
- * The page takes Figma's four section headings; the sentences under them are
+ * The page takes Figma's five section headings; the sentences under them are
  * the application's own accurate disclosure, moved under the matching heading
  * (owner decision on Issue #97, 2026-11-06). Regex patterns mirror
  * acceptance/selectors/privacy-selectors.ts by intent (subject plus, where the
@@ -23,12 +23,13 @@ const headings = {
   purposeOfUse: "2. 利用目的",
   advertisingAndAnalytics: "3. 広告とアクセス解析",
   history: "4. 履歴",
+  contact: "5. お問い合わせ",
 } as const;
 
 const sectionOf = (name: string) => screen.getByRole("region", { name });
 
 describe("PrivacyView", () => {
-  test("has Figma's four section headings, each heading its own region, under the page's one h1", () => {
+  test("has Figma's five section headings, each heading its own region, under the page's one h1", () => {
     render(<PrivacyView />);
 
     // ui-design.md section 8: one h1 per page. The disclosure's own sections
@@ -148,16 +149,25 @@ describe("PrivacyView", () => {
     expect(section).not.toHaveTextContent(/Google\s*(?:Maps|マップ)|Cookie/i);
   });
 
-  // The contact section is V2 work (Issue #105), so the MVP page carries no
-  // contact link and no section for one.
-  test("has no contact section or link in the MVP", () => {
+  // Issue #105: the contact method is a Google Form, linked and not embedded.
+  test("5. お問い合わせ links once to the Google Form and says how what is entered is used", () => {
     render(<PrivacyView />);
 
+    const section = sectionOf(headings.contact);
+
+    // One link only: the form is the single means of contact.
+    expect(within(section).getAllByRole("link")).toHaveLength(1);
     expect(
-      screen.queryByRole("link", { name: /問い合わせ|連絡先|Contact/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: /お問い合わせ/ }),
-    ).not.toBeInTheDocument();
+      within(section).getByRole("link", { name: "お問い合わせフォーム" }),
+    ).toHaveAttribute(
+      "href",
+      expect.stringMatching(/^https:\/\/docs\.google\.com\/forms\//),
+    );
+    expect(section).toHaveTextContent(/Google[^。]*フォーム/);
+    expect(section).toHaveTextContent(/入力[^。]*問い合わせ[^。]*(?:利用|使用)/);
+    // The form collects no email address, so the page must not promise one.
+    expect(section).toHaveTextContent(/返信[^。]*(?:できません|しません)/);
+    // Each disclosure sits in the section it belongs to, not in all of them.
+    expect(section).not.toHaveTextContent(/AdSense|Analytics|履歴|位置情報/i);
   });
 });
