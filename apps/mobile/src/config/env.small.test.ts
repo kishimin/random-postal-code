@@ -21,4 +21,12 @@ describe("readMobileConfig", () => {
       readMobileConfig({ apiBaseUrl: value, adBannerUnitId: value }),
     ).toEqual({ apiBaseUrl: undefined, adBannerUnitId: undefined });
   });
+
+  // process.env is untyped under Expo, so anything else that arrived is
+  // not trusted as a setting.
+  test.each([0, true, {}])("treats a non-string %j as unset", (value) => {
+    expect(
+      readMobileConfig({ apiBaseUrl: value, adBannerUnitId: value }),
+    ).toEqual({ apiBaseUrl: undefined, adBannerUnitId: undefined });
+  });
 });

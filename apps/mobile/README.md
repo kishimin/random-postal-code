@@ -15,24 +15,29 @@ Build-time settings are `EXPO_PUBLIC_*` variables. [`.env.example`](.env.example
 
 Run these from the repository root.
 
-| Command                                           | What it does                                                               |
-| ------------------------------------------------- | -------------------------------------------------------------------------- |
-| `bun run --filter @zipnami/mobile start`          | Starts the Metro dev server                                                |
-| `bun run --filter @zipnami/mobile android`        | Starts Metro and opens the app on a running Android emulator or USB device |
-| `bun run --filter @zipnami/mobile export:android` | Bundles the app for Android into `apps/mobile/dist`                        |
-| `bun run --filter @zipnami/mobile export:ios`     | Bundles the app for iOS into `apps/mobile/dist`                            |
+The app runs as a development build (`expo-dev-client`), not in Expo Go, which `docs/design.md` §6.3 rules out.
+
+| Command                                           | What it does                                                                                                      |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `bun run --filter @zipnami/mobile run:android`    | Builds the development build locally (Android SDK required) and installs it on the running emulator or USB device |
+| `bun run --filter @zipnami/mobile start`          | Starts the Metro dev server for an installed development build                                                    |
+| `bun run --filter @zipnami/mobile android`        | Starts Metro and opens the installed development build on Android                                                 |
+| `bun run --filter @zipnami/mobile export:android` | Bundles the app for Android into `apps/mobile/dist`                                                               |
+| `bun run --filter @zipnami/mobile export:ios`     | Bundles the app for iOS into `apps/mobile/dist`                                                                   |
 
 To see the app start on Android (Issue #12, criterion 1):
 
 1. Start an emulator from Android Studio's Device Manager, or connect a phone with USB debugging on.
-2. Run `bun run --filter @zipnami/mobile android`.
+2. Run `bun run --filter @zipnami/mobile run:android`. The first run generates `apps/mobile/android` (ignored by Git) and takes several minutes.
 3. The start screen shows `ZIPNAMI` and a `Zipnami について` link that opens the information screen.
 
-A development build installs the app itself rather than relying on Expo Go:
+The same development build can be built on EAS instead of locally. The project must be linked to an Expo account first (`bunx eas-cli init`, once):
 
 ```bash
 bunx eas-cli build --platform android --profile development
 ```
+
+The Android application ID (`android.package` in `app.json`) is not set yet. It becomes the app's permanent identity on Google Play, so the owner chooses it (Issue #12). Until then, `run:android` and EAS ask for one.
 
 ## Production
 

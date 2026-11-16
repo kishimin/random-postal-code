@@ -9,26 +9,26 @@ export type MobileConfig = {
   readonly adBannerUnitId: string | undefined;
 };
 
+// Expo's types leave process.env untyped, so a value is checked to be a
+// string rather than trusted as `any`. An empty string, which a variable
+// listed in .env with nothing after `=` arrives as, means "not configured".
+const setting = (value: unknown): string | undefined =>
+  typeof value === "string" && value !== "" ? value : undefined;
+
 /**
- * Reads the configuration from the variables as Expo inlines them, treating
- * an empty value as unset.
+ * Reads the configuration from the variables as Expo inlines them.
  */
 export const readMobileConfig = (env: {
-  apiBaseUrl: string | undefined;
-  adBannerUnitId: string | undefined;
+  apiBaseUrl: unknown;
+  adBannerUnitId: unknown;
 }): MobileConfig => ({
-  apiBaseUrl: env.apiBaseUrl || undefined,
-  adBannerUnitId: env.adBannerUnitId || undefined,
+  apiBaseUrl: setting(env.apiBaseUrl),
+  adBannerUnitId: setting(env.adBannerUnitId),
 });
 
 // Expo replaces only the literal `process.env.EXPO_PUBLIC_…` expressions, so
-// each variable is named in full here rather than read through a loop. Expo's
-// types leave process.env untyped, so each value is narrowed to a string
-// rather than trusted as `any`.
-const fromBuild = (value: unknown) =>
-  typeof value === "string" ? value : undefined;
-
+// each variable is named in full here rather than read through a loop.
 export const mobileConfig = readMobileConfig({
-  apiBaseUrl: fromBuild(process.env.EXPO_PUBLIC_API_BASE_URL),
-  adBannerUnitId: fromBuild(process.env.EXPO_PUBLIC_AD_BANNER_UNIT_ID),
+  apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL,
+  adBannerUnitId: process.env.EXPO_PUBLIC_AD_BANNER_UNIT_ID,
 });

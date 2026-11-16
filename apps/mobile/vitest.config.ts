@@ -10,9 +10,11 @@ export default defineConfig({
       "src/**/*.test.ts",
       "../../acceptance/mobile-expo-foundation.medium.test.ts",
     ],
-    // Two `expo export` runs take minutes on a CI runner.
-    testTimeout: 1_200_000,
-    hookTimeout: 1_200_000,
+    // Two `expo export` runs take about a minute locally. The bound stays
+    // well inside the CI Medium job's 20 minutes, so a stuck export fails
+    // this test rather than cancelling the whole job.
+    testTimeout: 600_000,
+    hookTimeout: 600_000,
     reporters: process.env.GITHUB_ACTIONS
       ? ["dot", "github-actions", "json"]
       : ["dot"],
