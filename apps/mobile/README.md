@@ -31,9 +31,10 @@ To see the app start on Android (Issue #12, criterion 1):
 2. Run `bun run --filter @zipnami/mobile run:android`. The first run generates `apps/mobile/android` (ignored by Git) and takes several minutes.
 3. The start screen shows `ZIPNAMI` and a `Zipnami について` link that opens the information screen.
 
-The same development build can be built on EAS instead of locally. The project must be linked to an Expo account first (`bunx eas-cli init`, once):
+The same development build can be built on EAS instead of locally. EAS CLI reads `app.json` and `eas.json` from the directory it runs in, so run it from `apps/mobile`, not from the repository root. The project must be linked to an Expo account first (`bunx eas-cli init`, once):
 
 ```bash
+cd apps/mobile
 bunx eas-cli build --platform android --profile development
 ```
 
@@ -41,9 +42,10 @@ The Android application ID (`android.package` in `app.json`) is not set yet. It 
 
 ## Production
 
-Production builds run on EAS Build and need an Expo account (`bunx eas-cli login`).
+Production builds run on EAS Build and need an Expo account (`bunx eas-cli login`). Run them from `apps/mobile` as well:
 
 ```bash
+cd apps/mobile
 bunx eas-cli build --platform android --profile production
 ```
 
