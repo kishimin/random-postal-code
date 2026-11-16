@@ -163,8 +163,16 @@ describe("PrivacyView", () => {
       "href",
       expect.stringMatching(/^https:\/\/docs\.google\.com\/forms\//),
     );
-    expect(section).toHaveTextContent(/Google[^。]*フォーム/);
-    expect(section).toHaveTextContent(/入力[^。]*問い合わせ[^。]*(?:利用|使用)/);
+    // "Googleフォーム" alone would match a looser pattern, even in a sentence
+    // denying its use, so the sentence must say Google provides it.
+    expect(section).toHaveTextContent(
+      /Google[^。]*(?:提供|サービス)[^。]*フォーム/,
+    );
+    // The form's three questions, so a visitor knows a name is asked for.
+    expect(section).toHaveTextContent(/名前[^。]*問い合わせの種類[^。]*内容/);
+    expect(section).toHaveTextContent(
+      /入力[^。]*問い合わせ[^。]*(?:利用|使用)/,
+    );
     // The form collects no email address, so the page must not promise one.
     expect(section).toHaveTextContent(/返信[^。]*(?:できません|しません)/);
     // Each disclosure sits in the section it belongs to, not in all of them.
