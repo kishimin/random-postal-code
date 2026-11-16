@@ -50,11 +50,17 @@ test("each named workspace's version is rewritten, and nothing else", () => {
       ),
   );
   // A workspace the release does not version keeps its own.
-  assert.match(synced, /"@zipnami\/web-contact-form",\n {6}"version": "1\.0\.0"/);
+  assert.match(
+    synced,
+    /"@zipnami\/web-contact-form",\n {6}"version": "1\.0\.0"/,
+  );
 });
 
 test("a workspace whose version already matches leaves the file unchanged", () => {
-  assert.equal(syncLockfileVersions(lockfile, { "packages/shared": "1.0.0" }), lockfile);
+  assert.equal(
+    syncLockfileVersions(lockfile, { "packages/shared": "1.0.0" }),
+    lockfile,
+  );
 });
 
 test("a workspace missing from bun.lock is an error, not a silent skip", () => {
@@ -65,7 +71,10 @@ test("a workspace missing from bun.lock is an error, not a silent skip", () => {
 });
 
 test("a path is matched as a whole key, not as a prefix of another", () => {
-  assert.throws(() => syncLockfileVersions(lockfile, { "apps/web": "1.1.0" }), /apps\/web/);
+  assert.throws(
+    () => syncLockfileVersions(lockfile, { "apps/web": "1.1.0" }),
+    /apps\/web/,
+  );
 });
 
 test("Windows line endings are kept", () => {

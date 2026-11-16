@@ -213,7 +213,8 @@ each push to `main`:
   the root `package.json` and the `packages/shared`, `packages/postal-data`,
   `apps/web/frontend`, and `apps/web/backend` `package.json` files to the same
   next version and adds the `CHANGELOG.md` entry. A follow-up job commits the
-  matching `bun.lock`. `fix:` is a patch, `feat:` a minor, and `!` or
+  matching `bun.lock` versions (`.github/scripts/sync-lockfile-versions.mjs`).
+  `fix:` is a patch, `feat:` a minor, and `!` or
   `BREAKING CHANGE` a major release.
 - **PR titles**: the squash merge uses the pull request title as the commit
   subject, so the "PR title" check in `ci-pull-request.yml` fails a title that
