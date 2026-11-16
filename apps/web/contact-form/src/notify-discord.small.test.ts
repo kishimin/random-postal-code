@@ -64,18 +64,16 @@ describe("onFormSubmit", () => {
     },
   };
 
-  /**
-   * Stands in for the two Apps Script services the handler uses.
-   * @param options - What the services answer.
-   * @param options.webhook - The DISCORD_WEBHOOK_URL script property.
-   * @param options.status - The HTTP status Discord answers with.
-   * @returns The fetch stand-in, to inspect what was sent.
-   */
+  // Stands in for the two Apps Script services the handler uses: `webhook`
+  // is the DISCORD_WEBHOOK_URL script property, `status` what Discord
+  // answers. Returns the fetch stand-in, to inspect what was sent.
   const stubAppsScript = (options: {
     webhook: string | null;
     status: number;
   }) => {
-    const fetch = vi.fn(() => ({ getResponseCode: () => options.status }));
+    const fetch = vi.fn<typeof UrlFetchApp.fetch>(() => ({
+      getResponseCode: () => options.status,
+    }));
     vi.stubGlobal("PropertiesService", {
       getScriptProperties: () => ({
         getProperty: (key: string) =>

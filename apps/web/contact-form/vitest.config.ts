@@ -19,6 +19,13 @@ export default defineConfig({
       include: ["src/**/*.cjs"],
       reporter: ["text", "html", "lcov", "json-summary"],
       reportsDirectory: "./coverage",
+      // test:coverage:pr measures only this package's own tests (`src/`).
+      // The acceptance test runs the same file a second time, as a vm
+      // script, and V8 merges that run's function counts into the file's
+      // under the same path: onFormSubmit then reads as never called even
+      // though both runs call it. The acceptance test still runs in
+      // test:medium; leaving it out of the threshold only stops the merge
+      // from failing a gate the package's own tests already meet.
       thresholds: process.env.COVERAGE_THRESHOLD
         ? {
             lines: Number(process.env.COVERAGE_THRESHOLD),
