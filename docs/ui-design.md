@@ -21,7 +21,7 @@ The Web UI owns presentation, client state, browser-local history, map actions, 
 | Route                | Page             | Purpose                                                                    |
 | -------------------- | ---------------- | -------------------------------------------------------------------------- |
 | `/`                  | Generator        | Generate, inspect, copy, map, and revisit results                          |
-| `/privacy`           | Privacy          | Explain what is collected, why, advertising and analytics, and history     |
+| `/privacy`           | Privacy          | Explain what is collected, why, ads and analytics, history, and contact    |
 | `/about`             | About            | What Zipnami does, why, its limits, and links to privacy and the data page |
 | `/guide/postal-code` | Postal codes     | How Japanese postal codes are assigned, with sourced examples              |
 | `/guide/address`     | Codes and places | Why a postal code and an address are not one-to-one, with dataset examples |
@@ -190,7 +190,7 @@ Page names (the `h1`, the footer link, and the title) are: `サイトについ�
 - A claim neither of those pages states is not made. That includes when the 7-digit code was introduced, what each digit means, and how often Japan Post updates the data.
 - The examples are real entries of the committed dataset (`packages/postal-data/data/ken-all.source.csv`), shown as Zipnami shows them.
 - The data page states the retrieval date and the record counts that `packages/postal-data/README.md` records. It says that Zipnami's data is updated by hand, with no fixed schedule. It never says the data is updated continuously.
-- No page publishes a means of contact (owner decision on Issue #121, 2026-11-10; a contact section is V2 work in Issue #105). No page names an operator other than the footer's `© kishimin 2026`.
+- No guide page publishes a means of contact (owner decision on Issue #121, 2026-11-10). The only means of contact is the Google Form linked from `/privacy` (Issue #105). No page names an operator other than the footer's `© kishimin 2026`.
 
 The pages are not eligible for ads (section 7.1).
 
@@ -294,7 +294,8 @@ The Figma file fixes these values per screen; recording them here makes that exi
 
 **Where Figma is not taken literally** (owner decisions on Issue #97, 2026-11-05):
 
-- The privacy page (row 17) takes its layout and its four section headings from Figma (`1. 取得する情報`, `2. 利用目的`, `3. 広告とアクセス解析`, `4. 履歴`), but the sentences under them are the application's own accurate disclosure (section 7), moved under the matching heading: the Figma body names no service and promises a history deletion the application does not have. Figma's `5. お問い合わせ` is not in the MVP; a contact section is V2 work (Issue #105). Owner decision on Issue #97, 2026-11-06.
+- The privacy page (row 17) takes its layout and its five section headings from Figma (`1. 取得する情報`, `2. 利用目的`, `3. 広告とアクセス解析`, `4. 履歴`, `5. お問い合わせ`), but the sentences under them are the application's own accurate disclosure (section 7), moved under the matching heading: the Figma body names no service, gives no contact, and promises a history deletion the application does not have. Owner decision on Issue #97, 2026-11-06.
+- `5. お問い合わせ` holds the contact method, a Google Form (Issue #105; owner decision 2026-11-15). Figma draws no link there, so the section's words are the application's own: it says the form is a Google service, how what is entered is used, and that no reply is possible. It carries one link, `お問い合わせフォーム`, whose destination is the form's `https://docs.google.com/forms/...` responder URL. The link opens the form in the same tab like the page's other links; the form is not embedded.
 - `地図に表示` and `Google マップで開く` repeat on every address in Figma. Their visible labels are Figma's, and their accessible names include the address (for example `沖縄県宜野湾市大山 1丁目を地図に表示`), so a screen reader can tell them apart (section 8).
 - The history's `履歴を展開` opens the list. An opened entry shows every address of its postal code, so every stored address stays reachable (section 5).
 - `広告掲載エリア` inside the advertising slot is a placeholder in the mock, not copy; the slot shows the ad, or collapses (section 7).
