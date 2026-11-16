@@ -25,7 +25,7 @@ The app runs as a development build (`expo-dev-client`), not in Expo Go, which `
 | `bun run --filter @zipnami/mobile export:android` | Bundles the app for Android into `apps/mobile/dist`                                                               |
 | `bun run --filter @zipnami/mobile export:ios`     | Bundles the app for iOS into `apps/mobile/dist`                                                                   |
 
-To see the app start on Android (Issue #12, criterion 1):
+To see the app start on Android (checked once in Issue #20's release verification):
 
 1. Start an emulator from Android Studio's Device Manager, or connect a phone with USB debugging on.
 2. Run `bun run --filter @zipnami/mobile run:android`. The first run generates `apps/mobile/android` (ignored by Git) and takes several minutes.
@@ -38,7 +38,7 @@ cd apps/mobile
 bunx eas-cli build --platform android --profile development
 ```
 
-The Android application ID (`android.package` in `app.json`) is not set yet. It becomes the app's permanent identity on Google Play, so the owner chooses it (Issue #12). Until then, `run:android` and EAS ask for one.
+The Android application ID (`android.package`) and the iOS bundle identifier (`ios.bundleIdentifier`) in `app.json` are both `io.github.kishimin.zipnami`, the owner's choice in Issue #12. It is the app's permanent identity on Google Play and the App Store, so do not change it after the first release.
 
 ## Production
 
