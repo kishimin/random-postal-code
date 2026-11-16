@@ -14,6 +14,17 @@
 const INQUIRY_TYPE_QUESTION = "問い合わせの種類";
 
 /**
+ * The form's choices for that question. An answer outside them is reported
+ * as 不明 rather than posted: it could be the visitor's own words.
+ */
+const INQUIRY_TYPES = [
+  "不具合の報告",
+  "住所や郵便番号の誤り",
+  "広告について",
+  "その他",
+];
+
+/**
  * @typedef {object} AnsweredItem
  * @property {string} title - The question, as the form words it.
  * @property {unknown} response - The visitor's answer to it.
@@ -35,12 +46,15 @@ function buildDiscordMessage(answeredItems, formId) {
   const typeItem = answeredItems.find(
     (item) => item.title === INQUIRY_TYPE_QUESTION,
   );
+  const answer = typeItem?.response;
   const inquiryType =
-    typeof typeItem?.response === "string" ? typeItem.response : "不明";
+    typeof answer === "string" && INQUIRY_TYPES.includes(answer)
+      ? answer
+      : "不明";
   return {
     content: `新しいお問い合わせ: ${inquiryType}\nhttps://docs.google.com/forms/d/${formId}/edit#responses`,
-    // The type is one of the form's fixed choices, but the guard keeps a
-    // response from ever pinging the channel whatever it holds.
+    // The type is always one of the fixed choices; the guard is there so a
+    // later change to the message cannot make it ping the channel.
     allowed_mentions: { parse: [] },
   };
 }
@@ -73,18 +87,27 @@ function onFormSubmit(event) {
       response: itemResponse.getResponse(),
     }));
 
-  // muteHttpExceptions: UrlFetchApp's own error names the request, and Apps
-  // Script mails a failed trigger's error to the owner; the error below names
-  // only the status, so the webhook URL never leaves the script property.
-  const reply = UrlFetchApp.fetch(webhookUrl, {
-    method: "post",
-    contentType: "application/json",
-    payload: JSON.stringify(
-      buildDiscordMessage(answeredItems, event.source.getId()),
-    ),
-    muteHttpExceptions: true,
-  });
-  const status = reply.getResponseCode();
+  // Apps Script mails a failed trigger's error to the owner and keeps it in
+  // the execution log, so no error leaving this function may carry the
+  // webhook URL. muteHttpExceptions turns an HTTP refusal into a status to
+  // report; a request that cannot be sent at all (DNS, a malformed URL)
+  // still throws, quoting the URL, so that error is replaced, not rethrown.
+  const payload = JSON.stringify(
+    buildDiscordMessage(answeredItems, event.source.getId()),
+  );
+  let status;
+  try {
+    status = UrlFetchApp.fetch(webhookUrl, {
+      method: "post",
+      contentType: "application/json",
+      payload,
+      muteHttpExceptions: true,
+    }).getResponseCode();
+  } catch {
+    throw new Error(
+      "Could not reach Discord. Check the DISCORD_WEBHOOK_URL script property.",
+    );
+  }
   if (status < 200 || status >= 300) {
     throw new Error(`Discord did not accept the message: HTTP ${status}.`);
   }

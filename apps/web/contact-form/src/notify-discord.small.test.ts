@@ -125,10 +125,8 @@ describe("onFormSubmit", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  /**
-   * The error onFormSubmit throws, which Apps Script mails to the owner.
-   * @returns The thrown error's message.
-   */
+  // The message of the error onFormSubmit throws, which Apps Script mails to
+  // the owner.
   const failureMessage = () => {
     try {
       onFormSubmit(submission);
