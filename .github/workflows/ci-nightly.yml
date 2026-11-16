@@ -57,6 +57,8 @@ jobs:
           path: |
             apps/*/*/test-result.json
             apps/*/*/coverage
+            apps/*/test-result.json
+            apps/*/coverage
             packages/*/test-result.json
             packages/*/coverage
           if-no-files-found: error

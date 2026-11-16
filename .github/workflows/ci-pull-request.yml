@@ -116,6 +116,8 @@ jobs:
           path: |
             apps/*/*/test-result.json
             apps/*/*/coverage
+            apps/*/test-result.json
+            apps/*/coverage
             packages/*/test-result.json
             packages/*/coverage
           if-no-files-found: error
@@ -251,6 +253,7 @@ jobs:
           name: coverage-report
           path: |
             apps/*/*/coverage
+            apps/*/coverage
             packages/*/coverage
           if-no-files-found: error
           retention-days: 14
