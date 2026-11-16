@@ -9,6 +9,7 @@ export default defineConfig({
     include: [
       "src/**/*.test.ts",
       "../../acceptance/mobile-expo-foundation.medium.test.ts",
+      "../../acceptance/mobile-app-identifier.medium.test.ts",
     ],
     // Two `expo export` runs take about a minute locally. The bound stays
     // well inside the CI Medium job's 20 minutes, so a stuck export fails
