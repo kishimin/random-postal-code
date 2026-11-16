@@ -50,6 +50,21 @@ describe("buildDiscordMessage", () => {
       ).content,
     ).toBe(`新しいお問い合わせ: 不明\n${responsesPage}`);
   });
+
+  // The form's choices are fixed, but an answer the script does not know
+  // (a renamed choice, an "other" field someone adds later, an empty
+  // string) could be the visitor's own words, so it never reaches Discord.
+  test.each(["", "その他: 住所が見つかりません", visitorContent])(
+    "says the type is unknown when the answer %j is not one of the four choices",
+    (answer) => {
+      expect(
+        buildDiscordMessage(
+          [{ title: "問い合わせの種類", response: answer }],
+          formId,
+        ).content,
+      ).toBe(`新しいお問い合わせ: 不明\n${responsesPage}`);
+    },
+  );
 });
 
 describe("onFormSubmit", () => {
@@ -110,14 +125,47 @@ describe("onFormSubmit", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  test("fails naming only the status when Discord refuses the message", () => {
-    stubAppsScript({ webhook: webhookUrl, status: 404 });
+  /**
+   * The error onFormSubmit throws, which Apps Script mails to the owner.
+   * @returns The thrown error's message.
+   */
+  const failureMessage = () => {
+    try {
+      onFormSubmit(submission);
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
+    throw new Error("onFormSubmit did not fail");
+  };
+
+  test.each([200, 204, 299])("accepts Discord's HTTP %i", (status) => {
+    stubAppsScript({ webhook: webhookUrl, status });
 
     expect(() => {
       onFormSubmit(submission);
-    }).toThrow("HTTP 404");
-    expect(() => {
-      onFormSubmit(submission);
-    }).not.toThrow(webhookUrl);
+    }).not.toThrow();
+  });
+
+  test.each([199, 300, 404, 500])(
+    "fails naming only the status when Discord answers HTTP %i",
+    (status) => {
+      stubAppsScript({ webhook: webhookUrl, status });
+
+      const message = failureMessage();
+      expect(message).toContain(`HTTP ${status}`);
+      expect(message).not.toContain(webhookUrl);
+    },
+  );
+
+  test("fails without the webhook URL when the request cannot be sent at all", () => {
+    const fetch = stubAppsScript({ webhook: webhookUrl, status: 204 });
+    fetch.mockImplementation(() => {
+      // UrlFetchApp's own network errors quote the URL they were given.
+      throw new Error(`Address unavailable: ${webhookUrl}`);
+    });
+
+    const message = failureMessage();
+    expect(message).toContain("Discord");
+    expect(message).not.toContain(webhookUrl);
   });
 });
