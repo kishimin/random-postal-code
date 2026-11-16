@@ -35,6 +35,7 @@ export default defineConfig({
     "acceptance/web-ad-eligibility.medium.test.ts",
     "acceptance/web-guide-pages.medium.test.ts",
     "acceptance/web-guide-back-to-top.medium.test.ts",
+    "acceptance/privacy-contact-section.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,

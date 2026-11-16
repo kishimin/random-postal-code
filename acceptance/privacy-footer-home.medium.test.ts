@@ -118,7 +118,10 @@ test.describe("Issue #112: the privacy page's footer link goes home", () => {
     // Plus the five links of the footer's ガイド navigation (Issue #121).
     // Owner-approved rewrite (ADR-0080):
     // https://github.com/kishimin/random-postal-code/issues/121#issuecomment-6765803728
-    await expect(accessibilityPage.controls("link")).toHaveCount(7);
+    // Plus the contact section's link to the Google Form (Issue #105).
+    // Owner-approved rewrite (ADR-0080):
+    // https://github.com/kishimin/random-postal-code/issues/105#issuecomment-6912936734
+    await expect(accessibilityPage.controls("link")).toHaveCount(8);
   });
 
   test("on the generator, the footer link is still プライバシーポリシー and opens /privacy", async ({
