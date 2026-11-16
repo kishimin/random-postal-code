@@ -3,7 +3,7 @@
 Every version of Zipnami that production has served, or is about to serve.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-All four workspaces share one version, because they ship as one site.
+All workspaces share one version, because they ship as one site.
 
 ## [1.0.0] - Unreleased
 
@@ -20,6 +20,9 @@ are created once #39 and #120 are closed, from the draft in
 - The logo before the wordmark in every header (#113, #122).
 - `SECURITY.md`, which asks for vulnerability reports through GitHub's private
   vulnerability reporting.
+- `apps/web/contact-form`: the Apps Script the owner attaches to the contact
+  form, which posts each response's inquiry type and a link to the responses
+  page to Discord, and never the visitor's name or message (#105).
 
 ### Changed
 
