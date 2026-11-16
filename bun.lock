@@ -44,6 +44,18 @@
         "wrangler": "^4.129.0",
       },
     },
+    "apps/web/contact-form": {
+      "name": "@zipnami/web-contact-form",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@types/node": "^24.13.3",
+        "@vitest/coverage-v8": "4.1.10",
+        "eslint": "9.39.5",
+        "oxlint": "^1.75.0",
+        "typescript": "~6.0.2",
+        "vitest": "4.1.10",
+      },
+    },
     "apps/web/frontend": {
       "name": "@zipnami/web-frontend",
       "version": "1.0.0",
@@ -1092,6 +1104,8 @@
     "@zipnami/shared": ["@zipnami/shared@workspace:packages/shared"],
 
     "@zipnami/web-backend": ["@zipnami/web-backend@workspace:apps/web/backend"],
+
+    "@zipnami/web-contact-form": ["@zipnami/web-contact-form@workspace:apps/web/contact-form"],
 
     "@zipnami/web-frontend": ["@zipnami/web-frontend@workspace:apps/web/frontend"],
 

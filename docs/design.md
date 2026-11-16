@@ -45,12 +45,15 @@ apps/
   web/
     frontend/     # React, Vite, Pages, and browser-specific behavior
     backend/      # Hono, Workers, public API, and CORS
+    contact-form/ # Apps Script bound to the Google contact form (Issue #105)
 packages/
   shared/         # Pure types and validation contracts shared by clients and API
   postal-data/    # Japan Post data retrieval, normalization, and artifacts
 ```
 
 The frontend and backend are separate projects that must support independent deployment and rollback. The frontend reads the public API URL from the build-time `VITE_API_BASE_URL` variable.
+
+`apps/web/contact-form` holds the source of the Google Apps Script that runs inside the contact form's own script editor and posts one Discord message per response. It is not deployed by CI: the owner pastes `src/notify-discord.cjs` into the form once and attaches its trigger there. The file is a classic script, as Apps Script requires, and exports its functions to Node only when a `module` object exists, so the workspace can test it.
 
 ## 4. Domain and Data Contracts
 
