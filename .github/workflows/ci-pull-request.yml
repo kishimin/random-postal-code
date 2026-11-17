@@ -4,10 +4,14 @@ on:
   pull_request:
     # labeled/unlabeled re-run the checks when atdd-unlock-approved is added
     # or removed, so the acceptance lock below reflects the current label.
+    # edited re-runs them when the title changes, so a corrected title clears
+    # the PR title check (Issue #133); a body edit re-runs them too, which only
+    # costs time.
     types:
       - opened
       - synchronize
       - reopened
+      - edited
       - labeled
       - unlabeled
 
@@ -80,6 +84,24 @@ jobs:
 
       - name: Build production bundle
         run: bun run build
+
+  pull-request-title:
+    name: PR title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      # The squash merge makes the title the commit subject on main, and
+      # release-please versions releases from those subjects (Issue #133). The
+      # title reaches the script through the environment: pasted into `run`, a
+      # crafted title would execute as shell.
+      - name: Check that the title is a Conventional Commit
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: node .github/scripts/check-pr-title.mjs
 
   package-tests:
     name: Test (${{ matrix.size }})
@@ -245,6 +267,13 @@ jobs:
       # single package's vitest.config.ts (ADR-0077).
       - name: Run Issue #108 automatic deploy acceptance test (Medium)
         run: bun test ./acceptance/web-auto-deploy.medium.test.ts
+
+      # Issue #133's acceptance test reads the workflows, the release-please
+      # configuration, every workspace's package.json, and CHANGELOG.md, and
+      # loads the two release scripts, so it belongs to no single package's
+      # vitest.config.ts (ADR-0077).
+      - name: Run Issue #133 release versioning acceptance test (Medium)
+        run: bun test ./acceptance/release-versioning.medium.test.ts
 
       - name: Upload coverage report
         if: ${{ !cancelled() }}

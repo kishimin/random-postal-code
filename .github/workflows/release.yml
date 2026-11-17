@@ -1,0 +1,109 @@
+name: Release
+
+# Versions each release after v1.0.0 (Issue #133). release-please keeps one
+# open release pull request that collects every fix: and feat: merged since
+# the last release. Merging that pull request makes the next push to main
+# create the vX.Y.Z tag and the GitHub Release, and this same run then hands
+# the owner a ready-to-post X link on Discord.
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+# Two merges in quick succession must not race to update the release pull
+# request or to create the same tag; the second waits for the first.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release pull request and release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # GITHUB_TOKEN only reads the release pull request's comments here. Every
+    # write goes through ZIPNAMI_RELEASE_TOKEN, because a pull request opened
+    # with GITHUB_TOKEN starts no pull_request workflow and its required
+    # checks would never run.
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      prs_created: ${{ steps.release.outputs.prs_created }}
+      pr: ${{ steps.release.outputs.pr }}
+
+    steps:
+      - name: Check that the release token is set
+        env:
+          RELEASE_TOKEN: ${{ secrets.ZIPNAMI_RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error::The secret ZIPNAMI_RELEASE_TOKEN is not set; see docs/deployment.md, Releases."
+            exit 1
+          fi
+
+      - name: Update the release pull request, or release
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.ZIPNAMI_RELEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      - name: Check out repository
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v7
+
+      # In this run rather than in a workflow on `release`: the push that
+      # created the Release is the merge of the release pull request, so this
+      # run knows which pull request's x-post comment to read, and a failed
+      # check fails the same run that released.
+      - name: Announce the release on Discord
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.ZIPNAMI_DISCORD_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.sha }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: node .github/scripts/announce-release.mjs
+
+  sync-lockfile:
+    name: Sync bun.lock on the release pull request
+    needs: release-please
+    # bun.lock records each workspace's version, and release-please cannot
+    # rewrite it; the script says why it edits the file instead of running
+    # `bun install`. release-please rebuilds its branch from main on every
+    # update, so this runs again each time.
+    if: ${{ needs.release-please.outputs.prs_created == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out the release branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
+          # Pushed with the release token so the push re-runs the pull
+          # request's required checks.
+          token: ${{ secrets.ZIPNAMI_RELEASE_TOKEN }}
+
+      - name: Write the release versions into bun.lock
+        run: node .github/scripts/sync-lockfile-versions.mjs
+
+      - name: Commit bun.lock if it changed
+        run: |
+          if git diff --quiet -- bun.lock; then
+            echo "bun.lock already matches the release versions."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bun.lock
+          git commit -m "chore: sync bun.lock with the release versions"
+          git push
