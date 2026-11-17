@@ -56,10 +56,13 @@ describe("mergeLoadedHistory", () => {
     ).toEqual([resultOf(3), resultOf(2), resultOf(1)]);
   });
 
-  test("keeps at most the limit", () => {
-    expect(
-      mergeLoadedHistory([resultOf(99)], numbered(HISTORY_LIMIT)),
-    ).toHaveLength(HISTORY_LIMIT);
+  test("keeps at most the limit, dropping the oldest stored entry", () => {
+    const stored = numbered(HISTORY_LIMIT);
+
+    expect(mergeLoadedHistory([resultOf(99)], stored)).toEqual([
+      resultOf(99),
+      ...stored.slice(0, HISTORY_LIMIT - 1),
+    ]);
   });
 });
 

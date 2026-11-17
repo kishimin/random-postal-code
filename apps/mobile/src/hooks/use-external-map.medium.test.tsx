@@ -98,7 +98,7 @@ describe("useExternalMap", () => {
     let failEarlier: (reason: Error) => void = () => undefined;
     openURL.mockImplementationOnce(
       () =>
-        new Promise<true>((_resolve, reject) => {
+        new Promise<void>((_resolve, reject) => {
           failEarlier = reject;
         }),
     );
@@ -124,9 +124,9 @@ describe("useExternalMap", () => {
     let succeedEarlier: () => void = () => undefined;
     openURL.mockImplementationOnce(
       () =>
-        new Promise<true>((resolve) => {
+        new Promise<void>((resolve) => {
           succeedEarlier = () => {
-            resolve(true);
+            resolve();
           };
         }),
     );
@@ -152,7 +152,7 @@ describe("useExternalMap", () => {
     let failEarlier: (reason: Error) => void = () => undefined;
     openURL.mockImplementationOnce(
       () =>
-        new Promise<true>((_resolve, reject) => {
+        new Promise<void>((_resolve, reject) => {
           failEarlier = reject;
         }),
     );
