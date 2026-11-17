@@ -57,6 +57,14 @@ const zip = (
   return Buffer.concat([local, nameBytes, data, central, nameBytes, end]);
 };
 
+// A response body over its own ArrayBuffer. When DOM typings are in the
+// program (vitest's types pull them in once @types/jsdom is installed, as
+// jest-expo does for the mobile app), `new Response(body)` accepts only an
+// ArrayBuffer-backed view, and a Buffer's ArrayBufferLike backing does not
+// type-check. The bytes are the same either way.
+const body = (bytes: Uint8Array): Uint8Array<ArrayBuffer> =>
+  new Uint8Array(bytes);
+
 const responding =
   (response: Response): typeof fetch =>
   () =>
@@ -201,7 +209,7 @@ describe("decodeShiftJis", () => {
 describe("retrieveKenAllCsv", () => {
   test("downloads the archive and returns KEN_ALL.CSV decoded to text", async () => {
     const fetchArchive = responding(
-      new Response(zip("KEN_ALL.CSV", TOKYO_SHIFT_JIS)),
+      new Response(body(zip("KEN_ALL.CSV", TOKYO_SHIFT_JIS))),
     );
 
     await expect(
@@ -227,7 +235,7 @@ describe("retrieveKenAllCsv", () => {
 
   test("rejects an archive whose KEN_ALL.CSV is blank", async () => {
     const fetchArchive = responding(
-      new Response(zip("KEN_ALL.CSV", Uint8Array.from([0x0d, 0x0a]))),
+      new Response(body(zip("KEN_ALL.CSV", Uint8Array.from([0x0d, 0x0a])))),
     );
 
     await expect(
@@ -253,7 +261,7 @@ describe("retrieveKenAllCsv", () => {
 
   test("rejects an archive whose KEN_ALL.CSV is not Shift-JIS", async () => {
     const fetchArchive = responding(
-      new Response(zip("KEN_ALL.CSV", Uint8Array.from([0x81]))),
+      new Response(body(zip("KEN_ALL.CSV", Uint8Array.from([0x81])))),
     );
 
     await expect(
@@ -262,7 +270,7 @@ describe("retrieveKenAllCsv", () => {
   });
 
   test("rejects an https download that a redirect moved to plain http", async () => {
-    const redirected = new Response(zip("KEN_ALL.CSV", TOKYO_SHIFT_JIS));
+    const redirected = new Response(body(zip("KEN_ALL.CSV", TOKYO_SHIFT_JIS)));
 
     Object.defineProperty(redirected, "url", {
       value: "http://example.test/ken_all.zip",

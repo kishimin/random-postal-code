@@ -45,15 +45,18 @@ export default {
         // acceptance/ can also hold a non-Playwright acceptance test (Issue
         // #3's dataset build has no screen to drive, so it runs under
         // Vitest; Issue #18's CI quality gates test reads workflow YAML and
-        // spawns local processes, so it runs under bun:test). Its `test`
+        // spawns local processes, so it runs under bun:test; Issue #13's
+        // mobile screen renders React Native, which only Jest can, so it
+        // imports from @jest/globals). Its `test`
         // import is unrelated to the Playwright fixture this rule protects,
-        // so the exemption requires positive proof the source is "vitest" or
-        // "bun:test" rather than merely not being "@playwright/test" —
+        // so the exemption requires positive proof the source is one of those
+        // runners rather than merely not being "@playwright/test" —
         // otherwise a typo'd fixture path or an accidental node:test import
         // inside a real Playwright test would silently stop being caught.
         if (
           node.source.value === "vitest" ||
-          node.source.value === "bun:test"
+          node.source.value === "bun:test" ||
+          node.source.value === "@jest/globals"
         ) {
           return;
         }
