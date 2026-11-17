@@ -62,7 +62,7 @@ describe("randomPostalCodeUrl", () => {
 });
 
 describe("fetchRandomPostalCode", () => {
-  test("asks the API for JSON without a cached answer and returns the result", async () => {
+  test("asks the API for JSON and returns the result", async () => {
     const request = vi.fn<typeof fetch>(() =>
       Promise.resolve(respond(200, tokyo)),
     );
@@ -72,8 +72,37 @@ describe("fetchRandomPostalCode", () => {
     );
     expect(request).toHaveBeenCalledWith(`${origin}/api/random`, {
       headers: { Accept: "application/json" },
-      cache: "no-store",
+      signal: expect.any(AbortSignal),
     });
+  });
+
+  test("sets no cache mode, which React Native's fetch would turn into a query the API rejects", async () => {
+    const request = vi.fn<typeof fetch>(() =>
+      Promise.resolve(respond(200, tokyo)),
+    );
+
+    await fetchRandomPostalCode(origin, request);
+
+    const [, init] = request.mock.calls[0] ?? [];
+    expect(init).not.toHaveProperty("cache");
+  });
+
+  test("reports a request that outlasts the time limit as offline", async () => {
+    // Settles only when its signal aborts, like a connection that stalls.
+    const stalled = vi.fn<typeof fetch>(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("aborted", "AbortError"));
+          });
+        }),
+    );
+
+    await expect(
+      fetchRandomPostalCode(origin, stalled, { timeoutMs: 10 }).catch(
+        failureOf,
+      ),
+    ).resolves.toBe("offline");
   });
 
   test.each([undefined, "http://api.example.test"])(
