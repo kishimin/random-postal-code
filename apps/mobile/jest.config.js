@@ -45,6 +45,12 @@ const shared = {
 
 /** @type {import('jest').Config} */
 module.exports = {
+  // The first test of a file pays for loading Expo Router and React Native
+  // (its beforeEach renders the app), which takes more than Jest's default
+  // 5 seconds when coverage instrumentation and parallel workers compete
+  // for the CPU. The limit also covers hooks. Jest reads it only at the top
+  // level when the configuration has projects.
+  testTimeout: 120_000,
   // What Vitest's coverage cannot reach because it needs React Native to
   // run; src/lib and src/config stay measured by Vitest. Jest reads this
   // only at the top level when the configuration has projects.
