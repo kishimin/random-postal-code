@@ -19,7 +19,7 @@ const shared = {
   // a <rootDir>-relative pattern, so the acceptance directory never matched.
   testMatch: [
     "**/apps/mobile/src/**/*.medium.test.tsx",
-    "**/acceptance/mobile-*.medium.test.tsx",
+    "**/acceptance/mobile-random-postal-code.medium.test.tsx",
   ],
   // jest-expo's own pattern, plus bun's isolated layout. bun keeps each
   // package at node_modules/.bun/<name>@<version>/node_modules/<name>, so the

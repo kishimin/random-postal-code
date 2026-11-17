@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.13",
+    "@babel/runtime": "^7.29.2",
     "@jest/globals": "30.5.2",
     "@testing-library/react-native": "14.1.0",
     "@types/node": "^24.13.3",

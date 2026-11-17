@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
@@ -12,6 +12,14 @@ export default defineConfig({
       "../../acceptance/mobile-expo-foundation.medium.test.ts",
       "../../acceptance/mobile-app-identifier.medium.test.ts",
       "../../acceptance/mobile-random-postal-code-bundle.medium.test.ts",
+    ],
+    // This package's screen acceptance test, run by Jest (jest.config.js),
+    // not by Vitest. It is named here so this file stays the one list of
+    // the package's acceptance tests, which the CI quality-gates acceptance
+    // test reads.
+    exclude: [
+      ...configDefaults.exclude,
+      "../../acceptance/mobile-random-postal-code.medium.test.tsx",
     ],
     // Two `expo export` runs take about a minute locally. The bound stays
     // well inside the CI Medium job's 20 minutes, so a stuck export fails
