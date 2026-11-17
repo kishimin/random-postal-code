@@ -39,7 +39,10 @@ export const useGenerationHistory = (): {
     const unmounted = new AbortController();
     void AsyncStorage.getItem(HISTORY_STORAGE_KEY)
       .then(
-        (raw) => ({ status: "ready" as const, stored: parseStoredHistory(raw) }),
+        (raw) => ({
+          status: "ready" as const,
+          stored: parseStoredHistory(raw),
+        }),
         // A storage that cannot be read does not stop a person from
         // generating; their results stay in memory for this session.
         () => ({ status: "unreadable" as const, stored: [] }),
