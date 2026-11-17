@@ -9,13 +9,21 @@ import {
 } from "../lib/generation-history";
 
 /**
+ * Where the device's stored history stands. `unreadable` is not `ready`: the
+ * stored value may be intact, only unreachable right now.
+ */
+type StorageStatus = "reading" | "ready" | "unreadable";
+
+/**
  * The generation history, kept on the device (Issue #14). It is read when
  * the screen mounts and written whenever it changes; it never reaches the
  * server and is not shared with the Web client.
  *
  * Nothing is written until the stored history has been read. Otherwise a
  * result made while the read is pending would overwrite what is stored with
- * a history of one, and the read would then find only that.
+ * a history of one, and the read would then find only that. For the same
+ * reason nothing is written after a read that failed: the stored history is
+ * unknown, so writing would replace it with only this session's results.
  */
 export const useGenerationHistory = (): {
   history: readonly PostalCode[];
@@ -23,7 +31,7 @@ export const useGenerationHistory = (): {
   record: (result: PostalCode) => void;
 } => {
   const [history, setHistory] = useState<readonly PostalCode[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [storage, setStorage] = useState<StorageStatus>("reading");
 
   // The device's storage is an external system the history is kept in step
   // with: read once on mount, then written after each change.
@@ -31,15 +39,15 @@ export const useGenerationHistory = (): {
     const unmounted = new AbortController();
     void AsyncStorage.getItem(HISTORY_STORAGE_KEY)
       .then(
-        parseStoredHistory,
-        // A storage that cannot be read is an empty history, not a reason to
-        // stop a person from generating.
-        () => [],
+        (raw) => ({ status: "ready" as const, stored: parseStoredHistory(raw) }),
+        // A storage that cannot be read does not stop a person from
+        // generating; their results stay in memory for this session.
+        () => ({ status: "unreadable" as const, stored: [] }),
       )
-      .then((stored) => {
+      .then(({ status, stored }) => {
         if (unmounted.signal.aborted) return;
         setHistory((current) => mergeLoadedHistory(current, stored));
-        setLoaded(true);
+        setStorage(status);
       });
     return () => {
       unmounted.abort();
@@ -47,18 +55,18 @@ export const useGenerationHistory = (): {
   }, []);
 
   useEffect(() => {
-    if (!loaded) return;
+    if (storage !== "ready") return;
     // A failed write loses only the convenience of remembering; the history
     // on screen is still right, so the failure is not shown.
     void AsyncStorage.setItem(
       HISTORY_STORAGE_KEY,
       JSON.stringify(history),
     ).catch(() => undefined);
-  }, [history, loaded]);
+  }, [history, storage]);
 
   const record = useCallback((result: PostalCode) => {
     setHistory((current) => prependToHistory(current, result));
   }, []);
 
-  return { history, loaded, record };
+  return { history, loaded: storage !== "reading", record };
 };
