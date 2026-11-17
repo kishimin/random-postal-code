@@ -69,18 +69,17 @@ describe("useGenerationHistory", () => {
   });
 
   test("keeps a result made before the stored history finished loading", async () => {
-    await AsyncStorage.setItem(
-      HISTORY_STORAGE_KEY,
-      JSON.stringify([resultOf(1)]),
-    );
-    const realGetItem = AsyncStorage.getItem.bind(AsyncStorage);
+    const earlier = JSON.stringify([resultOf(1)]);
     let release: () => void = () => undefined;
     const slow = new Promise<void>((resolve) => {
       release = resolve;
     });
-    jest.spyOn(AsyncStorage, "getItem").mockImplementation(async (key) => {
+    // Only the hook's first read is slow. The library's mock is already a
+    // jest.fn, so the stored value is answered here rather than delegated
+    // back to it, and later reads fall through to the real mock storage.
+    jest.spyOn(AsyncStorage, "getItem").mockImplementationOnce(async () => {
       await slow;
-      return realGetItem(key);
+      return earlier;
     });
     const { result } = await renderHook(() => useGenerationHistory());
 
