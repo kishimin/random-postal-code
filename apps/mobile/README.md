@@ -29,7 +29,7 @@ To see the app start on Android (checked once in Issue #20's release verificatio
 
 1. Start an emulator from Android Studio's Device Manager, or connect a phone with USB debugging on.
 2. Run `bun run --filter @zipnami/mobile run:android`. The first run generates `apps/mobile/android` (ignored by Git) and takes several minutes.
-3. The start screen shows `ZIPNAMI` and a `Zipnami について` link that opens the information screen.
+3. The start screen shows `ZIPNAMI` and a `ランダム生成する` button. Pressing it asks the API at `EXPO_PUBLIC_API_BASE_URL` (HTTPS only) for a postal code and shows it with every address. The `Zipnami について` link opens the information screen.
 
 The same development build can be built on EAS instead of locally. EAS CLI reads `app.json` and `eas.json` from the directory it runs in, so run it from `apps/mobile`, not from the repository root. The project must be linked to an Expo account first (`bunx eas-cli init`, once):
 
@@ -53,11 +53,14 @@ The `production` profile in [`eas.json`](eas.json) builds an Android App Bundle 
 
 ## Checks
 
-| Command                                        | What it does                                                                |
-| ---------------------------------------------- | --------------------------------------------------------------------------- |
-| `bun run --filter @zipnami/mobile typecheck`   | TypeScript                                                                  |
-| `bun run --filter @zipnami/mobile lint`        | oxlint and ESLint                                                           |
-| `bun run --filter @zipnami/mobile test:small`  | Small tests of the logic that runs without React Native                     |
-| `bun run --filter @zipnami/mobile test:medium` | The Issue #12 acceptance test: exports both platforms and checks the result |
+| Command                                         | What it does                                                             |
+| ----------------------------------------------- | ------------------------------------------------------------------------ |
+| `bun run --filter @zipnami/mobile typecheck`    | TypeScript                                                               |
+| `bun run --filter @zipnami/mobile lint`         | oxlint and ESLint                                                        |
+| `bun run --filter @zipnami/mobile test:small`   | Small tests of the logic that runs without React Native                  |
+| `bun run --filter @zipnami/mobile test:medium`  | The export-based acceptance tests (Vitest), then the screen tests (Jest) |
+| `bun run --filter @zipnami/mobile test:screens` | The screen tests alone, rendered once as iOS and once as Android         |
+
+The screen tests render React Native, which Vitest cannot, so they run under Jest with the `jest-expo/ios` and `jest-expo/android` presets ([`jest.config.js`](jest.config.js)). Logic and export tests stay on Vitest.
 
 Metro uses Expo's built-in monorepo support. There is no `metro.config.js`: workspace packages such as `@zipnami/shared` resolve without `watchFolders` or resolver overrides.
