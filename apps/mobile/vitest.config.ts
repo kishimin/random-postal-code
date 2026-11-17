@@ -2,14 +2,16 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    // The Issue #12 acceptance test lives outside every package (ADR-0062
-    // isolates acceptance/ from implementation code) and is not a Playwright
-    // test. It builds this package with `expo export`, so this package's own
-    // Vitest run is the one that includes it.
+    // The export-based acceptance tests live outside every package (ADR-0062
+    // isolates acceptance/ from implementation code) and are not Playwright
+    // tests. They build this package with `expo export`, so this package's
+    // own Vitest run is the one that includes them. The screen tests render
+    // React Native and run under Jest instead (jest.config.js).
     include: [
       "src/**/*.test.ts",
       "../../acceptance/mobile-expo-foundation.medium.test.ts",
       "../../acceptance/mobile-app-identifier.medium.test.ts",
+      "../../acceptance/mobile-random-postal-code-bundle.medium.test.ts",
     ],
     // Two `expo export` runs take about a minute locally. The bound stays
     // well inside the CI Medium job's 20 minutes, so a stuck export fails
@@ -23,7 +25,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       // Logic that runs without React Native. The screens are measured by
-      // the acceptance test's export, not by line coverage.
+      // the Jest screen tests, not by this line coverage.
       include: ["src/config/**/*.ts", "src/lib/**/*.ts"],
       exclude: ["src/**/*.test.ts"],
       reporter: ["text", "html", "lcov", "json-summary"],
