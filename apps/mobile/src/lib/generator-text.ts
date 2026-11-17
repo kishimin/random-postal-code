@@ -31,6 +31,11 @@ export const generatorText = {
   } satisfies Record<GenerationFailure, string>,
   historyHeading: "生成の履歴",
   historyEmpty: "生成した郵便番号がここに並びます。",
+  // The Web's name for the same action (ui-design.md section 5.3).
+  mapLinkLabel: (address: string) => `${address}をGoogle マップで開く`,
+  mapFailureHeading: "地図を開けませんでした",
+  mapFailureBody:
+    "Google マップを開けるアプリやブラウザが見つかりません。住所はこの画面の表示をご確認ください。",
   adRegionLabel: "広告",
   infoLink: "Zipnami について",
 } as const;

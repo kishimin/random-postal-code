@@ -26,6 +26,11 @@ const shared = {
   // module does not exist under Jest. The library's own mock stands in for
   // every screen test, including ones that never mention storage.
   setupFiles: ["<rootDir>/jest.setup.js"],
+  // React Native's Linking is already a jest.fn in jest-expo's setup, so a
+  // test's spyOn on it is not a spy that jest.restoreAllMocks() undoes, and
+  // the calls of one test stay visible to the next. Clearing them before
+  // each test keeps a test seeing only its own presses.
+  clearMocks: true,
   // jest-expo's own pattern, plus bun's isolated layout. bun keeps each
   // package at node_modules/.bun/<name>@<version>/node_modules/<name>, so the
   // first node_modules is followed by `.bun/`, which jest-expo's allowlist

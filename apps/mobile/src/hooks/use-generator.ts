@@ -1,3 +1,4 @@
+import type { PostalCode } from "@zipnami/shared";
 import { useCallback, useReducer, useRef } from "react";
 import { mobileConfig } from "../config/env";
 import {
@@ -13,9 +14,13 @@ import { failureOf, fetchRandomPostalCode } from "../lib/random-postal-code";
  * A ref mirrors "a request is in flight" so a second press is refused at
  * the moment it happens. State alone would only say "loading" after the
  * next render, and a fast double tap lands before that render.
+ *
+ * `onSucceeded` is told of each successful result, which the history
+ * records. It must be stable, or `generate` changes on every render.
  */
 export const useGenerator = (
   apiBaseUrl: string | undefined = mobileConfig.apiBaseUrl,
+  onSucceeded?: (result: PostalCode) => void,
 ): { state: GeneratorState; generate: () => void } => {
   const [state, dispatch] = useReducer(generatorReducer, initialGeneratorState);
   const inFlight = useRef(false);
@@ -31,13 +36,14 @@ export const useGenerator = (
       (result) => {
         inFlight.current = false;
         dispatch({ type: "succeeded", result });
+        onSucceeded?.(result);
       },
       (error: unknown) => {
         inFlight.current = false;
         dispatch({ type: "failed", failure: failureOf(error) });
       },
     );
-  }, [apiBaseUrl]);
+  }, [apiBaseUrl, onSucceeded]);
 
   return { state, generate };
 };
