@@ -20,7 +20,17 @@ const shared = {
   testMatch: [
     "**/apps/mobile/src/**/*.medium.test.tsx",
     "**/acceptance/mobile-random-postal-code.medium.test.tsx",
+    "**/acceptance/mobile-generation-history.medium.test.tsx",
   ],
+  // The app persists the history in AsyncStorage (Issue #14), whose native
+  // module does not exist under Jest. The library's own mock stands in for
+  // every screen test, including ones that never mention storage.
+  setupFiles: ["<rootDir>/jest.setup.js"],
+  // React Native's Linking is already a jest.fn in jest-expo's setup, so a
+  // test's spyOn on it is not a spy that jest.restoreAllMocks() undoes, and
+  // the calls of one test stay visible to the next. Clearing them before
+  // each test keeps a test seeing only its own presses.
+  clearMocks: true,
   // jest-expo's own pattern, plus bun's isolated layout. bun keeps each
   // package at node_modules/.bun/<name>@<version>/node_modules/<name>, so the
   // first node_modules is followed by `.bun/`, which jest-expo's allowlist
@@ -35,6 +45,12 @@ const shared = {
 
 /** @type {import('jest').Config} */
 module.exports = {
+  // The first test of a file pays for loading Expo Router and React Native
+  // (its beforeEach renders the app), which takes more than Jest's default
+  // 5 seconds when coverage instrumentation and parallel workers compete
+  // for the CPU. The limit also covers hooks. Jest reads it only at the top
+  // level when the configuration has projects.
+  testTimeout: 120_000,
   // What Vitest's coverage cannot reach because it needs React Native to
   // run; src/lib and src/config stay measured by Vitest. Jest reads this
   // only at the top level when the configuration has projects.

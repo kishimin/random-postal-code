@@ -149,6 +149,7 @@ Android and iOS are one Expo (React Native) application in `apps/mobile`, tracke
 - Each mobile Issue holds for both Android and iOS. iOS is verified by automated tests and by `expo export --platform ios` succeeding. No iPhone or Mac is available, so no iOS device or simulator check is required.
 - Google Play delivery is Issue #20. App Store delivery is not planned. It is decided once the app is complete, because the Apple Developer Program has a yearly fee.
 - Manual checks through Expo Go are not planned.
+- Mobile history is stored on the device with `@react-native-async-storage/async-storage`, newest first, at most 20 entries as one JSON array under one key; it is never sent to the server or synchronized with Web. Each address opens an external Google Maps search URL through `expo-linking`; no map SDK or location permission is used (owner decision on #14, 2026-11-17).
 
 ## 7. External Services and Failure Boundaries
 

@@ -1,6 +1,6 @@
-import type { PostalCode } from "@zipnami/shared";
+import type { Address, PostalCode } from "@zipnami/shared";
 import { Link } from "expo-router";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -11,11 +11,14 @@ import {
   View,
 } from "react-native";
 import { mobileConfig } from "../config/env";
+import { useExternalMap } from "../hooks/use-external-map";
+import { useGenerationHistory } from "../hooks/use-generation-history";
 import { useGenerator } from "../hooks/use-generator";
 import { announcementOf } from "../lib/generator-announcement";
 import type { GeneratorState } from "../lib/generator-state";
 import { shownResultOf } from "../lib/generator-state";
 import { generatorText } from "../lib/generator-text";
+import { fullAddressText } from "../lib/map-url";
 import { formatPostalCode } from "../lib/postal-code-label";
 
 const actionLabelOf = (state: GeneratorState): string => {
@@ -31,7 +34,54 @@ const actionLabelOf = (state: GeneratorState): string => {
   }
 };
 
-const CurrentResult = ({ result }: { result: PostalCode | undefined }) => {
+/** One address, which opens in the device's map when pressed. */
+const AddressLink = ({
+  address,
+  onOpen,
+}: {
+  address: Address;
+  onOpen: (address: Address) => void;
+}) => {
+  const text = fullAddressText(address);
+  return (
+    <Pressable
+      accessibilityLabel={generatorText.mapLinkLabel(text)}
+      accessibilityRole="link"
+      onPress={() => {
+        onOpen(address);
+      }}
+      style={styles.addressLink}
+    >
+      <Text style={styles.address}>{text}</Text>
+    </Pressable>
+  );
+};
+
+/** Every address of a postal code. */
+const AddressLinks = ({
+  addresses,
+  onOpen,
+}: {
+  addresses: readonly Address[];
+  onOpen: (address: Address) => void;
+}) =>
+  addresses.map((address, index) => (
+    // One postal code can list the same town twice in Japan Post's data, so
+    // the position is part of the key.
+    <AddressLink
+      key={`${index}:${fullAddressText(address)}`}
+      address={address}
+      onOpen={onOpen}
+    />
+  ));
+
+const CurrentResult = ({
+  result,
+  onOpenMap,
+}: {
+  result: PostalCode | undefined;
+  onOpenMap: (address: Address) => void;
+}) => {
   const displayed =
     result === undefined ? undefined : formatPostalCode(result.postalCode);
   return (
@@ -56,16 +106,7 @@ const CurrentResult = ({ result }: { result: PostalCode | undefined }) => {
           >
             {displayed}
           </Text>
-          {result.addresses.map((address, index) => (
-            // One postal code can list the same town twice in Japan Post's
-            // data, so the position is part of the key.
-            <Text
-              key={`${index}:${address.prefecture}${address.city}${address.town}`}
-              style={styles.address}
-            >
-              {`${address.prefecture}${address.city}${address.town}`}
-            </Text>
-          ))}
+          <AddressLinks addresses={result.addresses} onOpen={onOpenMap} />
         </>
       )}
     </View>
@@ -73,16 +114,91 @@ const CurrentResult = ({ result }: { result: PostalCode | undefined }) => {
 };
 
 /**
- * The start route's content (Issue #13): generate a random postal code
- * from the Hono API and show it with every address.
+ * One past result. Its postal code is read the way the current result's is,
+ * and the entry is named so a screen reader can tell which result an address
+ * belongs to.
+ */
+const HistoryEntry = ({
+  entry,
+  onOpenMap,
+}: {
+  entry: PostalCode;
+  onOpenMap: (address: Address) => void;
+}) => {
+  const displayed = formatPostalCode(entry.postalCode);
+  const readable = displayed?.slice(1);
+  return (
+    // Labelled but not `accessible`, for the reason the current result is not.
+    <View
+      accessibilityLabel={
+        readable === undefined
+          ? undefined
+          : generatorText.historyEntryLabel(readable)
+      }
+      style={styles.entry}
+    >
+      <Text
+        accessibilityLabel={
+          readable === undefined
+            ? undefined
+            : generatorText.postalCodeLabel(readable)
+        }
+        style={styles.entryCode}
+      >
+        {displayed ?? generatorText.mysteryCode}
+      </Text>
+      <AddressLinks addresses={entry.addresses} onOpen={onOpenMap} />
+    </View>
+  );
+};
+
+const HistoryList = ({
+  history,
+  onOpenMap,
+}: {
+  history: readonly PostalCode[];
+  onOpenMap: (address: Address) => void;
+}) => (
+  <View
+    accessibilityLabel={generatorText.historyHeading}
+    style={styles.history}
+  >
+    {history.length === 0 ? (
+      <Text style={styles.caption}>{generatorText.historyEmpty}</Text>
+    ) : (
+      history.map((entry, index) => (
+        // A postal code can repeat, so the position is part of the key.
+        <HistoryEntry
+          key={`${index}:${entry.postalCode}`}
+          entry={entry}
+          onOpenMap={onOpenMap}
+        />
+      ))
+    )}
+  </View>
+);
+
+/**
+ * The start route's content (Issues #13 and #14): generate a random postal
+ * code from the Hono API, show it with every address, keep the recent
+ * results on the device, and open any address in the device's map.
  */
 export const GeneratorScreen = ({
   apiBaseUrl = mobileConfig.apiBaseUrl,
 }: {
   apiBaseUrl?: string | undefined;
 }) => {
-  const { state, generate } = useGenerator(apiBaseUrl);
+  const { history, record } = useGenerationHistory();
+  const { state, generate } = useGenerator(apiBaseUrl, record);
+  const map = useExternalMap();
+  const { dismiss: dismissMapFailure, failureCount } = map;
   const loading = state.status === "loading";
+
+  const generateAgain = useCallback(() => {
+    // A map failure belongs to the result it was reported for.
+    dismissMapFailure();
+    generate();
+  }, [dismissMapFailure, generate]);
 
   // The screen reader is an external system the screen keeps in step with
   // the request lifecycle. Each dispatch makes a new state object, so one
@@ -94,6 +210,18 @@ export const GeneratorScreen = ({
     }
   }, [state]);
 
+  // The map failure is announced the same way, for the same reason: iOS
+  // does not read an alert that appears by itself. It follows the count, not
+  // `failed`, so a second failure while the alert is still shown is announced
+  // too.
+  useEffect(() => {
+    if (failureCount > 0) {
+      AccessibilityInfo.announceForAccessibility(
+        `${generatorText.mapFailureHeading}。${generatorText.mapFailureBody}`,
+      );
+    }
+  }, [failureCount]);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text accessibilityRole="header" style={styles.brand}>
@@ -101,7 +229,7 @@ export const GeneratorScreen = ({
       </Text>
       <Text style={styles.intro}>{generatorText.intro}</Text>
 
-      <CurrentResult result={shownResultOf(state)} />
+      <CurrentResult result={shownResultOf(state)} onOpenMap={map.open} />
 
       {state.status === "error" ? (
         // `accessible` makes the alert one element, so TalkBack and
@@ -119,11 +247,20 @@ export const GeneratorScreen = ({
         </View>
       ) : null}
 
+      {map.failed ? (
+        <View accessible accessibilityRole="alert" style={styles.alert}>
+          <Text style={styles.alertHeading}>
+            {generatorText.mapFailureHeading}
+          </Text>
+          <Text style={styles.alertBody}>{generatorText.mapFailureBody}</Text>
+        </View>
+      ) : null}
+
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ busy: loading, disabled: loading }}
         disabled={loading}
-        onPress={generate}
+        onPress={generateAgain}
         style={({ pressed }) => [
           styles.action,
           (pressed || loading) && styles.actionMuted,
@@ -137,7 +274,7 @@ export const GeneratorScreen = ({
         <Text accessibilityRole="header" style={styles.sectionHeading}>
           {generatorText.historyHeading}
         </Text>
-        <Text style={styles.caption}>{generatorText.historyEmpty}</Text>
+        <HistoryList history={history} onOpenMap={map.open} />
       </View>
 
       {/* Reserved for the AdMob banner (Issue #15), outside every action. */}
@@ -160,7 +297,8 @@ const styles = StyleSheet.create({
   result: { gap: 8, alignItems: "center", paddingVertical: 16 },
   resultHeading: { fontSize: 14, color: "#526B78" },
   postalCode: { fontSize: 36, fontWeight: "700" },
-  address: { fontSize: 16, textAlign: "center" },
+  address: { fontSize: 16, textAlign: "center", color: "#0F6E9E" },
+  addressLink: { minHeight: 44, justifyContent: "center" },
   alert: {
     gap: 4,
     padding: 12,
@@ -182,6 +320,9 @@ const styles = StyleSheet.create({
   actionLabel: { fontSize: 16, fontWeight: "700", color: "#FFFFFF" },
   section: { gap: 4 },
   sectionHeading: { fontSize: 16, fontWeight: "700" },
+  history: { gap: 12 },
+  entry: { gap: 2 },
+  entryCode: { fontSize: 20, fontWeight: "700" },
   caption: { fontSize: 12, color: "#526B78" },
   banner: { minHeight: 50 },
   link: { fontSize: 16, color: "#0F6E9E", textAlign: "center", minHeight: 48 },
