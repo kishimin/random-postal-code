@@ -4,12 +4,18 @@ const testFilePattern = /(?:\.test|\.spec)\.[cm]?[jt]sx?$/;
 // acceptance/ can also hold a non-Playwright acceptance test (Issue #3's
 // dataset build has no screen to drive, so it runs under Vitest; Issue #18's
 // CI quality gates test reads workflow YAML and spawns local processes, so it
-// runs under bun:test). Its `test(...)` calls never receive a Playwright Page
+// runs under bun:test; Issue #13's mobile screen renders React Native, which
+// only Jest can, so it imports from @jest/globals). Its `test(...)` calls
+// never receive a Playwright Page
 // Object fixture and are not this rule's concern. A RuleTester fragment has
 // no import at all, and that case must keep reporting as before, so this only
-// opts a file out when it positively imports `test` from vitest or bun:test
+// opts a file out when it positively imports `test` from one of those runners
 // rather than requiring proof that it is Playwright.
-const nonPlaywrightTestSources = new Set(["vitest", "bun:test"]);
+const nonPlaywrightTestSources = new Set([
+  "vitest",
+  "bun:test",
+  "@jest/globals",
+]);
 
 const importsNonPlaywrightTest = (programNode) =>
   programNode.body.some(

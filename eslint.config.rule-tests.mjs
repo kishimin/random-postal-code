@@ -221,6 +221,12 @@ run("require-e2e-fixture-import", requireE2eFixtureImport, {
       filename: "acceptance/ci-quality-gates.medium.test.ts",
       code: 'import { describe, expect, test } from "bun:test";',
     },
+    {
+      // Issue #13's screen acceptance test renders React Native, which only
+      // Jest (jest-expo) can do, so it imports `test` from @jest/globals.
+      filename: "acceptance/mobile-random-postal-code.medium.test.tsx",
+      code: 'import { describe, expect, test } from "@jest/globals";',
+    },
   ],
   invalid: [
     {
@@ -308,6 +314,11 @@ run("require-e2e-page-fixture", requireE2ePageFixture, {
       // Playwright, so it never receives a Page Object fixture either.
       filename: "acceptance/ci-quality-gates.medium.test.ts",
       code: 'import { test } from "bun:test";\n\ntest("checks a gate", () => {});',
+    },
+    {
+      // Issue #13's Jest screen test never receives a Page Object fixture.
+      filename: "acceptance/mobile-random-postal-code.medium.test.tsx",
+      code: 'import { test } from "@jest/globals";\n\ntest("shows the screen", () => {});',
     },
   ],
   invalid: [
