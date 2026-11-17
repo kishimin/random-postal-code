@@ -361,6 +361,21 @@ test("git ignores secrets, build output, dependencies and editor state", () => {
   );
 });
 
+/*
+ * Issue #133: release-please writes CHANGELOG.md on every release pull request
+ * in its own Markdown (`*` bullets, two blank lines before a heading), and
+ * rewrites it on each update. If Prettier judged that file, the first release
+ * pull request (#140) failed Static checks and could never merge.
+ */
+test("the format check leaves CHANGELOG.md, which release-please writes, alone", async () => {
+  const { getFileInfo } = await import("prettier");
+  const info = await getFileInfo(path.join(repositoryRoot, "CHANGELOG.md"), {
+    ignorePath: path.join(repositoryRoot, ".prettierignore"),
+  });
+
+  assert.equal(info.ignored, true);
+});
+
 test("git keeps the example env file the README tells you to copy", () => {
   // The .env rule is broad enough to swallow this one, so it is exempted on
   // purpose. A rewrite that drops the exemption removes the file a new
