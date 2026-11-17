@@ -63,13 +63,15 @@ const responseOf = async (
   signal: AbortSignal,
 ): Promise<Response> => {
   try {
-    // No `cache: "no-store"`, unlike the Web client: React Native's fetch
-    // is whatwg-fetch, which turns that option into a `?_=<time>` query on
-    // a GET, and the API rejects every query parameter with 400
-    // (api-design.md section 4.1). The API's own Cache-Control: no-store
-    // already keeps the native HTTP stacks from caching the answer.
+    // ADR-0071: the client itself asks for no cached answer, besides the
+    // API's own Cache-Control: no-store. It is said as a request header,
+    // which OkHttp and NSURLSession honour, and not as fetch's `cache`
+    // option like the Web client: React Native's fetch is whatwg-fetch,
+    // which turns `cache: "no-store"` into a `?_=<time>` query on a GET,
+    // and the API rejects every query parameter with 400 (api-design.md
+    // section 4.1).
     return await request(url, {
-      headers: { Accept: "application/json" },
+      headers: { Accept: "application/json", "Cache-Control": "no-store" },
       signal,
     });
   } catch (error) {

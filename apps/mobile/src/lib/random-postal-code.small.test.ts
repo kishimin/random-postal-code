@@ -62,7 +62,7 @@ describe("randomPostalCodeUrl", () => {
 });
 
 describe("fetchRandomPostalCode", () => {
-  test("asks the API for JSON and returns the result", async () => {
+  test("asks the API for a fresh JSON answer and returns the result", async () => {
     const request = vi.fn<typeof fetch>(() =>
       Promise.resolve(respond(200, tokyo)),
     );
@@ -73,7 +73,12 @@ describe("fetchRandomPostalCode", () => {
     expect(request).toHaveBeenCalledTimes(1);
     const [url, init] = request.mock.calls[0] ?? [];
     expect(url).toBe(`${origin}/api/random`);
-    expect(init?.headers).toEqual({ Accept: "application/json" });
+    // ADR-0071: the client asks for no cached answer itself. On React
+    // Native that is a request header, which the native HTTP stacks honour.
+    expect(init?.headers).toEqual({
+      Accept: "application/json",
+      "Cache-Control": "no-store",
+    });
     expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 
