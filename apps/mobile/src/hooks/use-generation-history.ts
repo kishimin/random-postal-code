@@ -28,19 +28,21 @@ export const useGenerationHistory = (): {
   // The device's storage is an external system the history is kept in step
   // with: read once on mount, then written after each change.
   useEffect(() => {
-    let cancelled = false;
-    void AsyncStorage.getItem(HISTORY_STORAGE_KEY).then(
-      parseStoredHistory,
-      // A storage that cannot be read is an empty history, not a reason to
-      // stop a person from generating.
-      () => [],
-    ).then((stored) => {
-      if (cancelled) return;
-      setHistory((current) => mergeLoadedHistory(current, stored));
-      setLoaded(true);
-    });
+    const unmounted = new AbortController();
+    void AsyncStorage.getItem(HISTORY_STORAGE_KEY)
+      .then(
+        parseStoredHistory,
+        // A storage that cannot be read is an empty history, not a reason to
+        // stop a person from generating.
+        () => [],
+      )
+      .then((stored) => {
+        if (unmounted.signal.aborted) return;
+        setHistory((current) => mergeLoadedHistory(current, stored));
+        setLoaded(true);
+      });
     return () => {
-      cancelled = true;
+      unmounted.abort();
     };
   }, []);
 

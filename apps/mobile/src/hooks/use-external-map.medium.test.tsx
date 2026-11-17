@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, jest, test } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  jest,
+  test,
+} from "@jest/globals";
 import { act, renderHook } from "@testing-library/react-native";
 import { Linking } from "react-native";
 import { useExternalMap } from "./use-external-map";
@@ -8,7 +15,7 @@ const address = { prefecture: "東京都", city: "千代田区", town: "千代�
 let openURL: jest.SpiedFunction<typeof Linking.openURL>;
 
 beforeEach(() => {
-  openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+  openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
 });
 
 afterEach(() => {

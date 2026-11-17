@@ -16,7 +16,9 @@ describe("buildExternalMapHref", () => {
     expect(href).toMatch(
       /^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/,
     );
-    expect(new URL(href).searchParams.get("query")).toBe("東京都千代田区千代田");
+    expect(new URL(href).searchParams.get("query")).toBe(
+      "東京都千代田区千代田",
+    );
   });
 
   test("percent-encodes the address so it never appears as written", () => {

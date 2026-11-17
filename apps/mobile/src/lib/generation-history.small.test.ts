@@ -51,9 +51,9 @@ describe("prependToHistory", () => {
 
 describe("mergeLoadedHistory", () => {
   test("places results made while loading before the stored ones", () => {
-    expect(mergeLoadedHistory([resultOf(3)], [resultOf(2), resultOf(1)])).toEqual(
-      [resultOf(3), resultOf(2), resultOf(1)],
-    );
+    expect(
+      mergeLoadedHistory([resultOf(3)], [resultOf(2), resultOf(1)]),
+    ).toEqual([resultOf(3), resultOf(2), resultOf(1)]);
   });
 
   test("keeps at most the limit", () => {
@@ -79,9 +79,9 @@ describe("parseStoredHistory", () => {
   });
 
   test("discards JSON that is not a list", () => {
-    expect(parseStoredHistory(JSON.stringify({ postalCode: "1000001" }))).toEqual(
-      [],
-    );
+    expect(
+      parseStoredHistory(JSON.stringify({ postalCode: "1000001" })),
+    ).toEqual([]);
   });
 
   test("discards a list holding an entry the shared contract rejects", () => {

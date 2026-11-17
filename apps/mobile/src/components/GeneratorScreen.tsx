@@ -120,7 +120,10 @@ const HistoryList = ({
   history: readonly PostalCode[];
   onOpenMap: (address: Address) => void;
 }) => (
-  <View accessibilityLabel={generatorText.historyHeading} style={styles.history}>
+  <View
+    accessibilityLabel={generatorText.historyHeading}
+    style={styles.history}
+  >
     {history.length === 0 ? (
       <Text style={styles.caption}>{generatorText.historyEmpty}</Text>
     ) : (
