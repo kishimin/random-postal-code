@@ -270,9 +270,7 @@ describe("retrieveKenAllCsv", () => {
   });
 
   test("rejects an https download that a redirect moved to plain http", async () => {
-    const redirected = new Response(
-      body(zip("KEN_ALL.CSV", TOKYO_SHIFT_JIS)),
-    );
+    const redirected = new Response(body(zip("KEN_ALL.CSV", TOKYO_SHIFT_JIS)));
 
     Object.defineProperty(redirected, "url", {
       value: "http://example.test/ken_all.zip",
