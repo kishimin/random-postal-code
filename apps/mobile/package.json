@@ -14,8 +14,8 @@
     "lint": "oxlint && eslint .",
     "test": "vitest run && jest --ci",
     "test:small": "vitest run --coverage --passWithNoTests small.test",
-    "test:medium": "vitest run --coverage --passWithNoTests medium.test && jest --ci",
-    "test:screens": "jest --ci",
+    "test:medium": "vitest run --coverage --passWithNoTests medium.test && jest --ci --coverage",
+    "test:screens": "jest --ci --coverage",
     "test:large": "vitest run --coverage --passWithNoTests large.test",
     "test:coverage:pr": "COVERAGE_THRESHOLD=80 vitest run --coverage --passWithNoTests src/"
   },

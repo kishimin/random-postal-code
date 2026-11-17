@@ -1,6 +1,8 @@
 import type { PostalCode } from "@zipnami/shared";
 import { Link } from "expo-router";
+import { useEffect } from "react";
 import {
+  AccessibilityInfo,
   ActivityIndicator,
   Pressable,
   ScrollView,
@@ -8,7 +10,9 @@ import {
   Text,
   View,
 } from "react-native";
+import { mobileConfig } from "../config/env";
 import { useGenerator } from "../hooks/use-generator";
+import { announcementOf } from "../lib/generator-announcement";
 import type { GeneratorState } from "../lib/generator-state";
 import { shownResultOf } from "../lib/generator-state";
 import { generatorText } from "../lib/generator-text";
@@ -72,9 +76,23 @@ const CurrentResult = ({ result }: { result: PostalCode | undefined }) => {
  * The start route's content (Issue #13): generate a random postal code
  * from the Hono API and show it with every address.
  */
-export const GeneratorScreen = () => {
-  const { state, generate } = useGenerator();
+export const GeneratorScreen = ({
+  apiBaseUrl = mobileConfig.apiBaseUrl,
+}: {
+  apiBaseUrl?: string | undefined;
+}) => {
+  const { state, generate } = useGenerator(apiBaseUrl);
   const loading = state.status === "loading";
+
+  // The screen reader is an external system the screen keeps in step with
+  // the request lifecycle. Each dispatch makes a new state object, so one
+  // transition is announced once.
+  useEffect(() => {
+    const message = announcementOf(state);
+    if (message !== undefined) {
+      AccessibilityInfo.announceForAccessibility(message);
+    }
+  }, [state]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -87,13 +105,11 @@ export const GeneratorScreen = () => {
 
       {state.status === "error" ? (
         // `accessible` makes the alert one element, so TalkBack and
-        // VoiceOver read the heading and the explanation together.
-        <View
-          accessible
-          accessibilityRole="alert"
-          accessibilityLiveRegion="assertive"
-          style={styles.alert}
-        >
+        // VoiceOver read the heading and the explanation together when
+        // focused. It has no live region: the effect above announces the
+        // failure on both platforms, and a live region would make TalkBack
+        // read it twice.
+        <View accessible accessibilityRole="alert" style={styles.alert}>
           <Text style={styles.alertHeading}>
             {generatorText.failureHeading}
           </Text>

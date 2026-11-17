@@ -17,6 +17,8 @@ export const generatorText = {
   mysteryCode: "〒 ???-????",
   // Read aloud instead of the bare 〒 and digits.
   postalCodeLabel: (displayed: string) => `郵便番号 ${displayed}`,
+  resultAnnouncement: (displayed: string) =>
+    `郵便番号 ${displayed} を生成しました`,
   failureHeading: "場所を取得できませんでした",
   failure: {
     offline: "通信状態を確認して、もう一度お試しください。",

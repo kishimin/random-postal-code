@@ -230,6 +230,13 @@ run("require-e2e-fixture-import", requireE2eFixtureImport, {
   ],
   invalid: [
     {
+      // The Jest exemption names @jest/globals exactly. A near miss in a
+      // Playwright acceptance test must still be reported, not waved through.
+      filename: "acceptance/web-generation-history.medium.test.ts",
+      code: 'import { test } from "@jest/global";',
+      errors: [{ messageId: "directImport" }],
+    },
+    {
       filename: "e2e/tests/generate-postal-code.medium.test.ts",
       code: 'import { test } from "@playwright/test";',
       errors: [{ messageId: "directImport" }],

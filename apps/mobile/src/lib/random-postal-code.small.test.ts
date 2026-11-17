@@ -70,10 +70,11 @@ describe("fetchRandomPostalCode", () => {
     await expect(fetchRandomPostalCode(origin, request)).resolves.toEqual(
       tokyo,
     );
-    expect(request).toHaveBeenCalledWith(`${origin}/api/random`, {
-      headers: { Accept: "application/json" },
-      signal: expect.any(AbortSignal),
-    });
+    expect(request).toHaveBeenCalledTimes(1);
+    const [url, init] = request.mock.calls[0] ?? [];
+    expect(url).toBe(`${origin}/api/random`);
+    expect(init?.headers).toEqual({ Accept: "application/json" });
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 
   test("sets no cache mode, which React Native's fetch would turn into a query the API rejects", async () => {

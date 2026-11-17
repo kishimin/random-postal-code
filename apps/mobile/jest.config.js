@@ -35,6 +35,19 @@ const shared = {
 
 /** @type {import('jest').Config} */
 module.exports = {
+  // What Vitest's coverage cannot reach because it needs React Native to
+  // run; src/lib and src/config stay measured by Vitest. Jest reads this
+  // only at the top level when the configuration has projects.
+  collectCoverageFrom: ["src/components/**/*.tsx", "src/hooks/**/*.ts"],
+  // Inside the ignored coverage/ directory, but in its own folder so Jest's
+  // report never overwrites Vitest's. test:medium runs Vitest first, and
+  // Vitest empties coverage/ before it writes.
+  coverageDirectory: "<rootDir>/coverage/jest",
+  coverageReporters: ["text", "lcov", "json-summary"],
+  // The same bar as the Vitest coverage gate (COVERAGE_THRESHOLD=80).
+  coverageThreshold: {
+    global: { lines: 80, statements: 80, functions: 80, branches: 80 },
+  },
   projects: [
     { ...shared, displayName: "ios", preset: "jest-expo/ios" },
     { ...shared, displayName: "android", preset: "jest-expo/android" },
