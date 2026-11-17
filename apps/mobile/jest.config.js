@@ -20,7 +20,12 @@ const shared = {
   testMatch: [
     "**/apps/mobile/src/**/*.medium.test.tsx",
     "**/acceptance/mobile-random-postal-code.medium.test.tsx",
+    "**/acceptance/mobile-generation-history.medium.test.tsx",
   ],
+  // The app persists the history in AsyncStorage (Issue #14), whose native
+  // module does not exist under Jest. The library's own mock stands in for
+  // every screen test, including ones that never mention storage.
+  setupFiles: ["<rootDir>/jest.setup.js"],
   // jest-expo's own pattern, plus bun's isolated layout. bun keeps each
   // package at node_modules/.bun/<name>@<version>/node_modules/<name>, so the
   // first node_modules is followed by `.bun/`, which jest-expo's allowlist
