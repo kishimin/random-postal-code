@@ -229,7 +229,10 @@ describe("Issue #133: release-please keeps one release pull request", () => {
     const manifest = readJson<Record<string, string>>(
       ".release-please-manifest.json",
     );
-    expect(manifest).toEqual({ ".": "1.0.0" });
+    // Not pinned to 1.0.0: each release pull request moves the manifest and
+    // every package.json forward together, and must still pass this check.
+    expect(Object.keys(manifest)).toEqual(["."]);
+    expect(manifest["."]).toMatch(/^\d+\.\d+\.\d+$/);
     for (const file of ["package.json", ...bumped.map((entry) => entry.path)]) {
       expect(readJson<{ version?: string }>(file).version, file).toBe(
         manifest["."],
