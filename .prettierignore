@@ -19,3 +19,8 @@ apps/web/frontend/public/mockServiceWorker.js
 # parsed content (check:postal-data), so formatting would only grow 120,000
 # entries without changing what the Worker serves.
 apps/web/backend/src/data/postal-codes.generated.json
+
+# Written by release-please on every release pull request, in its own Markdown.
+# Not formatted on the release branch instead: release-please rewrites the
+# file on each update, so every update would need another formatting commit.
+CHANGELOG.md
