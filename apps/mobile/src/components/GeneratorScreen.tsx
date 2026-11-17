@@ -113,6 +113,45 @@ const CurrentResult = ({
   );
 };
 
+/**
+ * One past result. Its postal code is read the way the current result's is,
+ * and the entry is named so a screen reader can tell which result an address
+ * belongs to.
+ */
+const HistoryEntry = ({
+  entry,
+  onOpenMap,
+}: {
+  entry: PostalCode;
+  onOpenMap: (address: Address) => void;
+}) => {
+  const displayed = formatPostalCode(entry.postalCode);
+  const readable = displayed?.slice(1);
+  return (
+    // Labelled but not `accessible`, for the reason the current result is not.
+    <View
+      accessibilityLabel={
+        readable === undefined
+          ? undefined
+          : generatorText.historyEntryLabel(readable)
+      }
+      style={styles.entry}
+    >
+      <Text
+        accessibilityLabel={
+          readable === undefined
+            ? undefined
+            : generatorText.postalCodeLabel(readable)
+        }
+        style={styles.entryCode}
+      >
+        {displayed ?? generatorText.mysteryCode}
+      </Text>
+      <AddressLinks addresses={entry.addresses} onOpen={onOpenMap} />
+    </View>
+  );
+};
+
 const HistoryList = ({
   history,
   onOpenMap,
@@ -129,12 +168,11 @@ const HistoryList = ({
     ) : (
       history.map((entry, index) => (
         // A postal code can repeat, so the position is part of the key.
-        <View key={`${index}:${entry.postalCode}`} style={styles.entry}>
-          <Text style={styles.entryCode}>
-            {formatPostalCode(entry.postalCode) ?? generatorText.mysteryCode}
-          </Text>
-          <AddressLinks addresses={entry.addresses} onOpen={onOpenMap} />
-        </View>
+        <HistoryEntry
+          key={`${index}:${entry.postalCode}`}
+          entry={entry}
+          onOpenMap={onOpenMap}
+        />
       ))
     )}
   </View>
@@ -153,7 +191,7 @@ export const GeneratorScreen = ({
   const { history, record } = useGenerationHistory();
   const { state, generate } = useGenerator(apiBaseUrl, record);
   const map = useExternalMap();
-  const { dismiss: dismissMapFailure } = map;
+  const { dismiss: dismissMapFailure, failureCount } = map;
   const loading = state.status === "loading";
 
   const generateAgain = useCallback(() => {
@@ -173,14 +211,16 @@ export const GeneratorScreen = ({
   }, [state]);
 
   // The map failure is announced the same way, for the same reason: iOS
-  // does not read an alert that appears by itself.
+  // does not read an alert that appears by itself. It follows the count, not
+  // `failed`, so a second failure while the alert is still shown is announced
+  // too.
   useEffect(() => {
-    if (map.failed) {
+    if (failureCount > 0) {
       AccessibilityInfo.announceForAccessibility(
         `${generatorText.mapFailureHeading}。${generatorText.mapFailureBody}`,
       );
     }
-  }, [map.failed]);
+  }, [failureCount]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
