@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, jest, test } from "@jest/globals";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
-import { useAdsStartup } from "./use-ads-startup";
+import { useAdsStartup, type Ads } from "./use-ads-startup";
 
 // jest.mock factories may only reach variables whose names start with `mock`.
 // The fakes answer as the SDK does for a person in a region that requires the
@@ -63,6 +63,17 @@ const renderStarted = async () => {
   return result;
 };
 
+/**
+ * Presses the entry point and lets the form flow end.
+ * @param {{ current: Ads }} result - The hook result.
+ */
+const pressAndSettle = async (result: { current: Ads }) => {
+  await act(async () => {
+    result.current.openPrivacyOptions();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+};
+
 beforeEach(() => {
   mockSdk.getConsentInfo.mockResolvedValue(consentInfo(true));
   mockSdk.showPrivacyOptionsForm.mockResolvedValue(undefined);
@@ -109,6 +120,34 @@ describe("useAdsStartup privacy options", () => {
     });
 
     expect(mockSdk.showPrivacyOptionsForm).toHaveBeenCalledTimes(2);
+  });
+
+  test("keeps the revision when the form closes with the same decision", async () => {
+    const result = await renderStarted();
+    const before = result.current.state;
+
+    await pressAndSettle(result);
+
+    expect(mockSdk.showPrivacyOptionsForm).toHaveBeenCalledTimes(1);
+    expect(result.current.revision).toBe(0);
+    expect(result.current.state).toEqual(before);
+  });
+
+  test("raises the revision by one for each form that changes the decision", async () => {
+    const result = await renderStarted();
+
+    mockSdk.getConsentInfo.mockResolvedValue(consentInfo(false));
+    await pressAndSettle(result);
+    expect(result.current.revision).toBe(1);
+    expect(result.current.state).toEqual({ status: "unavailable" });
+
+    mockSdk.getConsentInfo.mockResolvedValue(consentInfo(true));
+    await pressAndSettle(result);
+    expect(result.current.revision).toBe(2);
+    expect(result.current.state.status).toBe("ready");
+
+    await pressAndSettle(result);
+    expect(result.current.revision).toBe(2);
   });
 
   test("leaves a screen that closed while the form was open alone", async () => {
