@@ -137,6 +137,29 @@ describe("startAds", () => {
       expect(result).toEqual({ status: "ready", nonPersonalizedOnly: true });
     });
 
+    // Only NOT_REQUIRED means the form never ran. Any other status, one this
+    // code does not know included, may have a stored refusal behind it.
+    test.each(["OBTAINED", "REQUIRED", "UNKNOWN", "SOMETHING_NEW"])(
+      "honours the form's choices when the consent status is %s",
+      async (status) => {
+        const calls: string[] = [];
+
+        const result = await startAds(
+          portsRecordingTo(calls, {
+            gatherConsent: () =>
+              Promise.resolve({ canRequestAds: true, status }),
+            choosesPersonalisedAds: () => {
+              calls.push("choices");
+              return Promise.resolve(false);
+            },
+          }),
+        );
+
+        expect(calls).toContain("choices");
+        expect(result).toEqual({ status: "ready", nonPersonalizedOnly: true });
+      },
+    );
+
     // Where no consent is needed the form never ran, so there are no
     // choices to honour and none are read.
     test("does not consult the form's choices when consent is not required", async () => {

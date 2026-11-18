@@ -20,15 +20,17 @@ export type AdsPorts = {
 export type AdsStartup =
   { status: "unavailable" } | { status: "ready"; nonPersonalizedOnly: boolean };
 
-// The status the SDK reports once the person has answered the consent form.
-const consentObtained = "OBTAINED";
+// The status the SDK reports where no consent form is needed at all.
+const consentNotRequired = "NOT_REQUIRED";
 
 const personalisationAllowed = async (
   ports: AdsPorts,
   consentStatus: string,
 ): Promise<boolean> => {
-  // Without a form there are no choices to honour.
-  if (consentStatus !== consentObtained) return true;
+  // Without a form there are no choices to honour. Every other status,
+  // including one this code does not know, may have a stored refusal behind
+  // it, so the choices decide.
+  if (consentStatus === consentNotRequired) return true;
   try {
     return await ports.choosesPersonalisedAds();
   } catch {
