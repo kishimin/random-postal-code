@@ -27,6 +27,8 @@
     ".storybook/main.ts",
     "playwright.config.ts",
     "playwright.production.config.ts",
+    "playwright.projects.ts",
+    "playwright.recording.config.ts",
     "e2e",
     "scripts"
   ]

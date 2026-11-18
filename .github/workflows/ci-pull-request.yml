@@ -246,6 +246,13 @@ jobs:
       - name: Run Issue #132 Firefox browser project acceptance test (Medium)
         run: bun test ./acceptance/firefox-browser-project.medium.test.ts
 
+      # Issue #132's recording runs against production, so CI never runs it.
+      # This test reads the recording config, its journeys, and the frontend's
+      # scripts to hold that the one command stays safe to run, so it needs no
+      # browser and is bound here (ADR-0077).
+      - name: Run Issue #132 demo recording acceptance test (Medium)
+        run: bun test ./acceptance/demo-recording.medium.test.ts
+
       # Issue #92's repository half reads design.md, deploy.yml, and
       # docs/deployment.md, runs the deploy settings check, and builds the
       # frontend with a measurement ID to read its policy, so it is bound here
