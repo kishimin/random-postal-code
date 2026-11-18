@@ -26,6 +26,8 @@ No production AdMob IDs exist yet, so every build uses Google's test IDs:
 
 When AdMob is set up, put the four IDs in the `env` of the `production` profile in [`eas.json`](eas.json) and nowhere else: a non-production profile must stay on the test IDs. A production Android build also blocks the permissions the app never uses (overlay, vibrate and external storage), which leaves the network and the advertising ID.
 
+Set the production AdMob IDs only for the EAS `production` profile, never in a local `.env`, the shell, or another profile. Pre-release builds rely on the IDs being unset to fall back to Google's test IDs, and a production ID in a development or preview build would count test traffic on the real AdMob account. The `production` profile enforces the other direction: its build fails, naming the variable, when any of the four IDs is unset or empty, so it can never ship with Google's test IDs.
+
 ## Development
 
 Run these from the repository root.
