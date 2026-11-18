@@ -121,7 +121,7 @@ jobs:
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
         with:
-          playwright-browsers: chromium webkit
+          playwright-browsers: chromium webkit firefox
 
       - name: Build frontend
         run: bun run build

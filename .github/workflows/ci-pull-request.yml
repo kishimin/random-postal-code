@@ -239,6 +239,13 @@ jobs:
       - name: Run Issue #90 pinned Pages wrangler acceptance test (Medium)
         run: bun test ./acceptance/pages-deploy-wrangler-pin.medium.test.ts
 
+      # Issue #132's Firefox criterion is proven by Frontend E2E (Medium)
+      # running the Firefox project. This test only reads playwright.config.ts
+      # and the workflows to hold that the project and its install stay, so it
+      # needs no browser and is bound here (ADR-0077).
+      - name: Run Issue #132 Firefox browser project acceptance test (Medium)
+        run: bun test ./acceptance/firefox-browser-project.medium.test.ts
+
       # Issue #92's repository half reads design.md, deploy.yml, and
       # docs/deployment.md, runs the deploy settings check, and builds the
       # frontend with a measurement ID to read its policy, so it is bound here
@@ -341,7 +348,7 @@ jobs:
       - name: Set up frontend toolchain
         uses: ./.github/actions/setup-frontend
         with:
-          playwright-browsers: chromium webkit
+          playwright-browsers: chromium webkit firefox
 
       - name: Build frontend
         run: bun run build
