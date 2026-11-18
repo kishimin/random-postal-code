@@ -6,7 +6,7 @@ import {
   TestIds,
 } from "react-native-google-mobile-ads";
 import { mobileConfig } from "../config/env";
-import { useAdsStartup } from "../hooks/use-ads-startup";
+import type { AdsState } from "../hooks/use-ads-startup";
 import {
   bannerRetryDelayMs,
   selectBannerUnitId,
@@ -67,21 +67,28 @@ const AdBanner = ({
 /**
  * The region reserved for the AdMob banner (Issue #15). It holds the banner
  * and nothing else, outside every action of the screen, and it is there
- * whether or not an ad is: the app never waits for one.
+ * whether or not an ad is: the app never waits for one. The privacy-options
+ * entry point (Issue #146) is therefore not here but beside it.
+ * @param {object} props - The component props.
+ * @param {AdsState} props.state - Whether a banner may be requested, and how.
+ * @param {number} props.revision - A new value is a new decision, which gets a new banner.
  */
-export const AdRegion = () => {
-  const ads = useAdsStartup();
-  return (
-    <View
-      accessibilityLabel={generatorText.adRegionLabel}
-      style={styles.region}
-    >
-      {ads.status === "ready" ? (
-        <AdBanner nonPersonalizedOnly={ads.nonPersonalizedOnly} />
-      ) : null}
-    </View>
-  );
-};
+export const AdRegion = ({
+  state,
+  revision,
+}: {
+  state: AdsState;
+  revision: number;
+}) => (
+  <View accessibilityLabel={generatorText.adRegionLabel} style={styles.region}>
+    {state.status === "ready" ? (
+      <AdBanner
+        key={revision}
+        nonPersonalizedOnly={state.nonPersonalizedOnly}
+      />
+    ) : null}
+  </View>
+);
 
 const styles = StyleSheet.create({
   region: { minHeight: 50 },

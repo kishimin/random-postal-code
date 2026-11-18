@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { mobileConfig } from "../config/env";
+import { useAdsStartup } from "../hooks/use-ads-startup";
 import { useExternalMap } from "../hooks/use-external-map";
 import { useGenerationHistory } from "../hooks/use-generation-history";
 import { useGenerator } from "../hooks/use-generator";
@@ -21,6 +22,7 @@ import { generatorText } from "../lib/generator-text";
 import { fullAddressText } from "../lib/map-url";
 import { formatPostalCode } from "../lib/postal-code-label";
 import { AdRegion } from "./AdRegion";
+import { PrivacyOptionsButton } from "./PrivacyOptionsButton";
 
 const actionLabelOf = (state: GeneratorState): string => {
   switch (state.status) {
@@ -192,6 +194,7 @@ export const GeneratorScreen = ({
   const { history, record } = useGenerationHistory();
   const { state, generate } = useGenerator(apiBaseUrl, record);
   const map = useExternalMap();
+  const ads = useAdsStartup();
   const { dismiss: dismissMapFailure, failureCount } = map;
   const loading = state.status === "loading";
 
@@ -278,7 +281,11 @@ export const GeneratorScreen = ({
         <HistoryList history={history} onOpenMap={map.open} />
       </View>
 
-      <AdRegion />
+      <AdRegion state={ads.state} revision={ads.revision} />
+
+      {ads.privacyOptionsRequired ? (
+        <PrivacyOptionsButton onPress={ads.openPrivacyOptions} />
+      ) : null}
 
       <Link href="/info" style={styles.link}>
         {generatorText.infoLink}

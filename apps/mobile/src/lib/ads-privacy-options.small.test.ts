@@ -124,7 +124,13 @@ describe("changePrivacyOptions", () => {
 
     const result = await changePrivacyOptions(portsRecordingTo(calls));
 
-    expect(calls).toEqual(["form", "info", "choices", "tracking", "initialize"]);
+    expect(calls).toEqual([
+      "form",
+      "info",
+      "choices",
+      "tracking",
+      "initialize",
+    ]);
     expect(result).toEqual({
       ads: { status: "ready", nonPersonalizedOnly: false },
       privacyOptionsRequired: true,
