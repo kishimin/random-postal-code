@@ -251,6 +251,10 @@ describe("Issue #14: what the mobile app is built from", () => {
     // The introspected manifest is really there, so the absences above are
     // about a permission list, not about a missing one.
     expect(config).toContain('"android.permission.INTERNET"');
+    // The same for iOS: only the introspected Info.plist carries the app's
+    // display name, so the NSLocation* absences are not those of an empty or
+    // missing iOS config.
+    expect(config).toContain('"CFBundleDisplayName":"Zipnami"');
   });
 
   test("AC-9 the screen test runs under an iOS project and an Android project", () => {
