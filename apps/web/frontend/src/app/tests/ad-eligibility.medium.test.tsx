@@ -146,7 +146,7 @@ describe("ad eligibility (ui-design.md section 7.1)", () => {
     expect(adPushes()).toHaveLength(1);
   });
 
-  test("leaving a result for the privacy page leaves no ad unit behind and pushes nothing more", async () => {
+  test("leaving a result for the privacy page leaves no ad unit behind, pushes nothing more, and requests no loader of its own", async () => {
     // The loader is held mid-download, so the visitor leaves while it is
     // still in flight. The shared substitute answers at once, and whether its
     // load event had fired by the time of the click decided this test's
@@ -166,7 +166,7 @@ describe("ad eligibility (ui-design.md section 7.1)", () => {
     await screen.findByRole("region", { name: "広告" });
     await flushEffects();
     const pushesOnResult = adPushes().length;
-    const loadersOnResult = loaderScripts().length;
+    const loadersOnResult = loaderScripts();
 
     await user.click(
       screen.getByRole("link", { name: "プライバシーポリシー" }),
@@ -179,7 +179,14 @@ describe("ad eligibility (ui-design.md section 7.1)", () => {
       screen.queryByRole("region", { name: "広告" }),
     ).not.toBeInTheDocument();
     expect(adPushes()).toHaveLength(pushesOnResult);
-    expect(loaderScripts()).toHaveLength(loadersOnResult);
+    // Compared by element, not by count. Leaving removes a loader that is
+    // still downloading (use-adsense-script.ts's cleanup) and keeps one that
+    // has finished, so the count may drop and still be correct. What the
+    // privacy page must not do is request a loader of its own, and that
+    // shows as an element the result did not have.
+    expect(
+      loaderScripts().filter((script) => !loadersOnResult.includes(script)),
+    ).toEqual([]);
   });
 
   test("a privacy page opened directly requests no ad", async () => {
