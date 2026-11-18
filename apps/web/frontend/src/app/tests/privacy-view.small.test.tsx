@@ -76,6 +76,24 @@ describe("PrivacyView", () => {
     expect(section).not.toHaveTextContent(/AdSense|アドセンス/i);
   });
 
+  // Issue #20: the denial covers Zipnami itself. The AdMob SDK in the Android
+  // app collects more, and the Data safety form declares it, so this page
+  // must not read as a promise that nothing of the kind is collected.
+  test("1. 取得する情報 scopes the location denial to Zipnami and discloses what the Android app's AdMob SDK may collect", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.collectedInformation);
+
+    expect(section).toHaveTextContent(/Zipnami自身は位置情報を取得しません/);
+    expect(section).toHaveTextContent(
+      /Android[^。]*AdMob[^。]*おおよその位置情報/,
+    );
+    expect(section).toHaveTextContent(/AdMob[^。]*IPアドレス/);
+    expect(section).toHaveTextContent(
+      /AdMob[^。]*利用状況[^。]*診断[^。]*広告ID/,
+    );
+  });
+
   test("2. 利用目的 documents what Google Maps receives and when", () => {
     render(<PrivacyView />);
 
@@ -90,6 +108,19 @@ describe("PrivacyView", () => {
     // Each disclosure sits in the section it belongs to, not in all of them.
     expect(section).not.toHaveTextContent(/AdSense|Analytics|アドセンス/i);
     expect(section).not.toHaveTextContent(/履歴|位置情報/);
+  });
+
+  // apps/mobile/src/hooks/use-external-map.ts hands the chosen address to
+  // Google Maps, which is a purpose of use the Web sentence above does not
+  // cover for the Android app.
+  test("2. 利用目的 says the Android app sends the chosen address to Google Maps when it opens it", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.purposeOfUse);
+
+    expect(section).toHaveTextContent(
+      /Android[^。]*住所[^。]*Google[^。]*送信/,
+    );
   });
 
   // Issue #92: design.md section 8 names Google Analytics among the services
@@ -117,6 +148,55 @@ describe("PrivacyView", () => {
     // Each disclosure sits in the section it belongs to, not in all of them.
     expect(section).not.toHaveTextContent(/Google\s*(?:Maps|マップ)/i);
     expect(section).not.toHaveTextContent(/履歴|位置情報/);
+  });
+
+  // Issue #20: the Google Play listing links this page as the Android app's
+  // privacy policy, so it has to describe what the app does that the Web
+  // site does not. Each statement keeps its subject in the sentence.
+  test("3. 広告とアクセス解析 says the Android app shows Google AdMob ads that use the advertising ID", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.advertisingAndAnalytics);
+
+    expect(section).toHaveTextContent(/Android[^。]*AdMob/);
+    expect(section).toHaveTextContent(
+      /(?:アプリ|AdMob)[^。]*広告ID|広告ID[^。]*(?:アプリ|AdMob)/,
+    );
+    // Zipnami's own API is outside what the advertising ID reaches.
+    expect(section).toHaveTextContent(
+      /広告ID[^。]*API[^。]*送信され(?:ません|ない)/,
+    );
+  });
+
+  test("3. 広告とアクセス解析 says the Android app asks for consent before ads and otherwise shows non-personalized ads", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.advertisingAndAnalytics);
+
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*欧州経済領域[^。]*英国[^。]*スイス[^。]*広告[^。]*同意/,
+    );
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*同意[^。]*パーソナライズされていない広告または制限付き広告/,
+    );
+  });
+
+  // apps/mobile/src/lib/ads-startup.ts shows no banner when a consent step
+  // fails or ads are not allowed, and falls back to non-personalized ads only
+  // when the stored choices cannot be read. One sentence for both would say
+  // the app shows ads in a case where it shows none.
+  test("3. 広告とアクセス解析 tells a failed consent step (no banner) apart from unreadable stored choices (non-personalized ads)", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.advertisingAndAnalytics);
+
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*(?:失敗した場合|許可されない場合)[^。]*広告を表示しません/,
+    );
+    expect(section).not.toHaveTextContent(/失敗[^。]*パーソナライズ/);
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*読み取れない場合[^。]*パーソナライズされていない広告/,
+    );
   });
 
   test("4. 履歴 documents that the history is saved in the browser and never sent to the server", () => {
@@ -147,6 +227,19 @@ describe("PrivacyView", () => {
     // Each disclosure sits in the section it belongs to, not in all of them.
     expect(section).not.toHaveTextContent(/AdSense|Analytics|アドセンス/i);
     expect(section).not.toHaveTextContent(/Google\s*(?:Maps|マップ)|Cookie/i);
+  });
+
+  test("4. 履歴 says the Android app keeps its history on the device and never sends it to the server", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.history);
+
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*履歴[^。]*(?:端末|デバイス)|アプリ[^。]*(?:端末|デバイス)[^。]*履歴/,
+    );
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*履歴[^。]*(?:サーバー|サーバ)[^。]*送信し(?:ません|ない)/,
+    );
   });
 
   // Issue #105: the contact method is a Google Form, linked and not embedded.

@@ -68,6 +68,12 @@ bunx eas-cli build --platform android --profile production
 
 The `production` profile in [`eas.json`](eas.json) builds an Android App Bundle for Google Play (Issue #20). App Store delivery is not planned (`docs/design.md` §6.3), so there is no iOS production profile beyond EAS's defaults; `export:ios` checks that the iOS bundle builds.
 
+Everything else a Google Play release needs is written down, not scripted:
+
+- [`docs/google-play-release-checklist.md`](../../docs/google-play-release-checklist.md) lists every step only the owner can run (production AdMob IDs, the build, screenshots, Play Console forms, the test track, and the checks on a device).
+- [`docs/google-play-data-safety.md`](../../docs/google-play-data-safety.md) is the answer sheet for the Data safety and ads declarations. It names the exact SDK versions, so it has to change when one of them does.
+- [`fastlane/metadata/android/ja-JP`](fastlane/metadata/android/ja-JP) holds the Japanese store listing: the title, the short and full descriptions, the 512px icon and the feature graphic. The app icon, adaptive icon and splash image in [`assets`](assets) are made from the Web logo; the phone screenshots are not in the repository.
+
 ## Checks
 
 | Command                                         | What it does                                                             |
