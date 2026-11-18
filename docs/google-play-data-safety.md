@@ -35,7 +35,7 @@ Answer the form's first questions as follows.
 
 ### Data types
 
-These are the data types Google lists for the Google Mobile Ads SDK. Each is declared as collected and shared, because the SDK sends it to Google for the purposes shown. Data collected by the SDK is not required to use the app's features, so each type is declared as optional where the form asks.
+These are the data types Google lists for the Google Mobile Ads SDK. Each is declared as collected and shared, because the SDK sends it to Google for the purposes shown. Each type is declared as required (not optional) where the form asks. The SDK collects it automatically whenever ads load, and outside the regions where UMP shows a consent form the app offers no way to decline that collection. Consent only switches between personalized and non-personalized or limited ads, and Play counts collection as optional only when every user, in every region, can decline it. Revisit this answer if the app ever adds a way for everyone to turn ads off.
 
 | Category                 | Data type            | Purposes                                                           |
 | ------------------------ | -------------------- | ------------------------------------------------------------------ |

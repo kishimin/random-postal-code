@@ -46,7 +46,7 @@ Run these on the production build installed from the test track, on an emulator 
 - [ ] History: each generated postal code is added to the history, newest first, the history keeps the 20 newest, it is still there after the app is closed and opened again, and the app does not send it anywhere.
 - [ ] External maps: choosing an address opens Google Maps with that address, outside the app, and the app asks for no location permission.
 - [ ] Ads: the 広告 region shows a banner from the production ad unit, and the banner does not cover the generate button or the result. A new install on a device in the EEA, the UK or Switzerland shows the consent form before the banner appears; elsewhere the banner appears without a form. Record the device's region.
-- [ ] Consent: where the consent form appears, refusing it still leaves every feature of the app working and shows only non-personalized ads. Skip this step, and say so under Evidence, when no test device is in a region that shows the form.
+- [ ] Consent: where the consent form appears, refusing it still leaves every feature of the app working and shows only non-personalized or limited ads, or none. Skip this step, and say so under Evidence, when no test device is in a region that shows the form.
 - [ ] Offline: with airplane mode on, generating shows an error and keeps the last result and the history, and generating works again once the network is back.
 
 ## Production release
