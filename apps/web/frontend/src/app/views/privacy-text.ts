@@ -79,6 +79,14 @@ const purposeOfUse: PrivacySection = {
  * `adsbygoogle` and leaves the decision to the platform), so the sentence is
  * true only once that message is published. The release review in design.md
  * section 12 confirms it.
+ *
+ * The last three paragraphs are the Android app's (Issue #20). The Google Play
+ * listing links this page as the app's privacy policy, and Play requires it to
+ * cover what the app does: AdMob banners that may read the advertising ID, and
+ * the consent the app asks for with Google's UMP before ads
+ * (apps/mobile/src/lib/ads-startup.ts). The Zipnami API receives neither, as
+ * design.md section 7 says. They name "アプリ" in each sentence so that no
+ * statement about the Web site can be read as one about the app.
  */
 const advertisingAndAnalytics: PrivacySection = {
   headingId: "privacy-advertising-and-analytics-heading",
@@ -89,6 +97,9 @@ const advertisingAndAnalytics: PrivacySection = {
     "欧州経済領域（EEA）、英国、スイスからのアクセスでは、Googleの同意管理プラットフォーム（プライバシーとメッセージ）で同意が得られるまで、Cookieを保存せず、個人を特定しない範囲の情報のみをGoogleへ送信します。それ以外の地域からのアクセスは、同意を求めずに計測します。",
     "計測を望まない場合は、同意メッセージで同意しないか、Googleが提供するGoogle Analyticsオプトアウトアドオンをブラウザに導入することで、オプトアウトできます。",
     "欧州経済領域（EEA）、英国、スイスからのアクセスには、Googleの同意管理プラットフォーム（プライバシーとメッセージ）が同意を求めるメッセージを表示します。パーソナライズ広告に同意しない場合や同意が得られる前は、パーソナライズされていない広告または制限付き広告が表示されます。選択はこのメッセージからいつでも変更できます。",
+    "Android版アプリでは、広告の配信にGoogle AdMobのバナー広告を利用しています。AdMobは、お使いのAndroid端末の広告IDなどを利用して、広告を選んだり、広告の効果を測ったりする場合があります。",
+    "アプリが利用するAdMobの広告IDは、ZipnamiのAPIには送信されません。",
+    "Android版アプリでは、欧州経済領域（EEA）、英国、スイスで広告を表示する前に、Googleのユーザーメッセージングプラットフォーム（UMP）を使って同意をおたずねします。アプリは、同意が得られない場合や同意の状態を確認できない場合、パーソナライズされていない広告のみを表示します。",
   ],
 };
 
@@ -101,12 +112,17 @@ const advertisingAndAnalytics: PrivacySection = {
  * The history is the visitor's own browser storage (`localStorage`), which
  * the Worker never receives, so the sentence names both where it lives and
  * where it does not go.
+ *
+ * The Android app keeps its own history in the device's storage
+ * (`@react-native-async-storage/async-storage`, design.md section 6.3) and
+ * never sends it to the server either; the second sentence says so.
  */
 const history: PrivacySection = {
   headingId: "privacy-history-heading",
   heading: "4. 履歴",
   paragraphs: [
     "生成した郵便番号の履歴は、お使いのブラウザ内にのみ保存し、サーバーには送信しません。",
+    "Android版アプリの履歴は、お使いの端末内にのみ保存し、サーバーには送信しません。",
   ],
 };
 
