@@ -63,7 +63,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ...(config.plugins ?? []),
       [
         "react-native-google-mobile-ads",
-        { androidAppId: appIds.android, iosAppId: appIds.ios },
+        {
+          androidAppId: appIds.android,
+          iosAppId: appIds.ios,
+          // Without this the SDK starts measuring when the app launches,
+          // before the person has answered the consent form. initialize()
+          // starts it once consent has been gathered.
+          delayAppMeasurementInit: true,
+        },
       ],
       [
         "expo-tracking-transparency",
