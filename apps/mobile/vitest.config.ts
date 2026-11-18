@@ -14,6 +14,7 @@ export default defineConfig({
       "../../acceptance/mobile-random-postal-code-bundle.medium.test.ts",
       "../../acceptance/mobile-generation-history-bundle.medium.test.ts",
       "../../acceptance/mobile-admob-banner-bundle.medium.test.ts",
+      "../../acceptance/mobile-google-play-release.medium.test.ts",
     ],
     // This package's screen acceptance tests, run by Jest (jest.config.js),
     // not by Vitest. They are named here so this file stays the one list of
