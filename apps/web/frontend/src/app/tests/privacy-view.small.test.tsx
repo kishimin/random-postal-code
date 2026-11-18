@@ -119,6 +119,37 @@ describe("PrivacyView", () => {
     expect(section).not.toHaveTextContent(/履歴|位置情報/);
   });
 
+  // Issue #20: the Google Play listing links this page as the Android app's
+  // privacy policy, so it has to describe what the app does that the Web
+  // site does not. Each statement keeps its subject in the sentence.
+  test("3. 広告とアクセス解析 says the Android app shows Google AdMob ads that use the advertising ID", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.advertisingAndAnalytics);
+
+    expect(section).toHaveTextContent(/Android[^。]*AdMob/);
+    expect(section).toHaveTextContent(
+      /(?:アプリ|AdMob)[^。]*広告ID|広告ID[^。]*(?:アプリ|AdMob)/,
+    );
+    // Zipnami's own API is outside what the advertising ID reaches.
+    expect(section).toHaveTextContent(
+      /広告ID[^。]*API[^。]*送信され(?:ません|ない)/,
+    );
+  });
+
+  test("3. 広告とアクセス解析 says the Android app asks for consent before ads and otherwise shows non-personalized ads", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.advertisingAndAnalytics);
+
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*欧州経済領域[^。]*英国[^。]*スイス[^。]*広告[^。]*同意/,
+    );
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*同意[^。]*パーソナライズ[^。]*されていない広告/,
+    );
+  });
+
   test("4. 履歴 documents that the history is saved in the browser and never sent to the server", () => {
     render(<PrivacyView />);
 
@@ -147,6 +178,19 @@ describe("PrivacyView", () => {
     // Each disclosure sits in the section it belongs to, not in all of them.
     expect(section).not.toHaveTextContent(/AdSense|Analytics|アドセンス/i);
     expect(section).not.toHaveTextContent(/Google\s*(?:Maps|マップ)|Cookie/i);
+  });
+
+  test("4. 履歴 says the Android app keeps its history on the device and never sends it to the server", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.history);
+
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*履歴[^。]*(?:端末|デバイス)|アプリ[^。]*(?:端末|デバイス)[^。]*履歴/,
+    );
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*履歴[^。]*(?:サーバー|サーバ)[^。]*送信し(?:ません|ない)/,
+    );
   });
 
   // Issue #105: the contact method is a Google Form, linked and not embedded.
