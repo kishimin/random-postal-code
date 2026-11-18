@@ -170,6 +170,8 @@ Google Maps, AdSense, Google Analytics, and consent services are optional depend
 
 `/privacy` is divided into the five sections of its Figma frame: what is collected, what it is used for, advertising and analytics, history, and contact. It names Google Maps, AdSense, Google Analytics, and consent services, and documents browser-local history, the absence of location collection, and Japan Post attribution.
 
+It is also the privacy policy the Google Play listing of the Android app links (Issue #20), and Play requires it to cover the app. Under the same five headings it says that the app shows a Google AdMob banner that may use the advertising ID, which the Zipnami API never receives; that the app asks for consent through Google's UMP in the EEA, the UK, and Switzerland before ads and otherwise shows non-personalized ads; and that the app keeps its history only on the device. The Data safety answers are in `docs/google-play-data-safety.md`.
+
 The contact method is a Google Form (Issue #105, moved into the MVP by the owner on 2026-11-15). The contact section links to the form and does not embed it, so the Content-Security-Policy is unchanged. It says the form is a Google service, which fields it asks for, that what is entered is used only to handle the inquiry, and that no reply is possible. The form collects no email address. Its Apps Script (section 3) sends Discord only the selected inquiry type and a link to the responses page; the name and the content never leave Google.
 
 The Web uses semantic HTML, keyboard-operable controls, visible focus, meaningful names, and appropriate announcements for dynamic results and errors. State is not conveyed by color alone. Advertising areas are distinguishable from application content.
