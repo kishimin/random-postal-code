@@ -44,9 +44,11 @@ const consentInfo = (canRequestAds: boolean) => ({
  * @returns {{ promise: Promise<void>, close: () => void }} The promise and the way to settle it.
  */
 const gate = () => {
-  let close = () => undefined;
+  let close: () => void = () => undefined;
   const promise = new Promise<void>((resolve) => {
-    close = resolve;
+    close = () => {
+      resolve();
+    };
   });
   return { promise, close };
 };
@@ -131,6 +133,22 @@ describe("useAdsStartup privacy options", () => {
     expect(mockSdk.showPrivacyOptionsForm).toHaveBeenCalledTimes(1);
     expect(result.current.revision).toBe(0);
     expect(result.current.state).toEqual(before);
+  });
+
+  test("goes on as it was when the form fails to open, without an unhandled rejection", async () => {
+    mockSdk.showPrivacyOptionsForm.mockRejectedValue(new Error("no form"));
+    const unhandled = jest.fn();
+    process.on("unhandledRejection", unhandled);
+    const result = await renderStarted();
+    const before = result.current.state;
+
+    await pressAndSettle(result);
+
+    process.off("unhandledRejection", unhandled);
+    expect(unhandled).not.toHaveBeenCalled();
+    expect(result.current.revision).toBe(0);
+    expect(result.current.state).toEqual(before);
+    expect(result.current.privacyOptionsRequired).toBe(true);
   });
 
   test("raises the revision by one for each form that changes the decision", async () => {

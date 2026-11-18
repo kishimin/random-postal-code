@@ -87,6 +87,20 @@ describe("launchAds", () => {
     });
   });
 
+  test("offers no ad and no entry point when the consent flow and the consent information both fail", async () => {
+    const result = await launchAds(
+      portsRecordingTo([], {
+        gatherConsent: () => Promise.reject(new Error("unavailable")),
+        readConsentInfo: () => Promise.reject(new Error("unavailable")),
+      }),
+    );
+
+    expect(result).toEqual({
+      ads: { status: "unavailable" },
+      privacyOptionsRequired: false,
+    });
+  });
+
   test.each(["NOT_REQUIRED", "UNKNOWN", "SOMETHING_NEW"])(
     "reports privacy options as not required when the SDK says %s",
     async (requirement) => {
