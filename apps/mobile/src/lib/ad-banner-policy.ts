@@ -5,6 +5,8 @@
  * @param {object} options - The platform and the configured units.
  * @param {string} options.os - `Platform.OS`; anything but "ios" is Android's unit.
  * @param {object} options.unitIds - The production unit of each platform, when configured.
+ * @param {string | undefined} options.unitIds.android - Android's production unit.
+ * @param {string | undefined} options.unitIds.ios - iOS's production unit.
  * @returns {string | undefined} The unit of this platform, or undefined when it is unset.
  */
 export const selectPlatformUnitId = ({
