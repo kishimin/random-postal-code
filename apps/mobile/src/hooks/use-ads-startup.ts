@@ -20,6 +20,12 @@ export type Ads = {
    * new banner that requests an ad under the new decision.
    */
   revision: number;
+  /**
+   * Whether the privacy-options flow is under way, from the press until the
+   * new decision is applied or the flow fails. No ad may be requested
+   * meanwhile: consent may have been withdrawn and the decision is stale.
+   */
+  changingPrivacyOptions: boolean;
   /** Whether the privacy-options form is to be offered. */
   privacyOptionsRequired: boolean;
   /** Opens the privacy-options form; never rejects. */
@@ -71,6 +77,7 @@ const sameDecision = (a: Decision, b: Decision): boolean =>
 export const useAdsStartup = (): Ads => {
   const [decision, setDecision] = useState<Decision>(pending);
   const [revision, setRevision] = useState(0);
+  const [changing, setChanging] = useState(false);
   // The decision on screen, which the handler compares a new one with
   // without being recreated each time it changes.
   const current = useRef<Decision>(pending);
@@ -99,6 +106,7 @@ export const useAdsStartup = (): Ads => {
   const openPrivacyOptions = useCallback(() => {
     if (formOpen.current) return;
     formOpen.current = true;
+    setChanging(true);
     void changePrivacyOptions(ports)
       .then((snapshot) => {
         // Undefined means the form did not open: nothing has changed.
@@ -114,12 +122,14 @@ export const useAdsStartup = (): Ads => {
       })
       .finally(() => {
         formOpen.current = false;
+        if (mounted.current) setChanging(false);
       });
   }, []);
 
   return {
     state: decision.state,
     revision,
+    changingPrivacyOptions: changing,
     privacyOptionsRequired: decision.privacyOptionsRequired,
     openPrivacyOptions,
   };

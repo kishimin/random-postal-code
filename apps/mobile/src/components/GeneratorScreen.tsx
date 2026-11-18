@@ -281,7 +281,11 @@ export const GeneratorScreen = ({
         <HistoryList history={history} onOpenMap={map.open} />
       </View>
 
-      <AdRegion state={ads.state} revision={ads.revision} />
+      <AdRegion
+        state={ads.state}
+        revision={ads.revision}
+        changingPrivacyOptions={ads.changingPrivacyOptions}
+      />
 
       {ads.privacyOptionsRequired ? (
         <PrivacyOptionsButton onPress={ads.openPrivacyOptions} />

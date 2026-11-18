@@ -23,11 +23,16 @@ const productionUnitId = selectPlatformUnitId({
  * One banner. A banner that fails to load is requested again a bounded
  * number of times, after a growing wait, and then left alone: asking forever
  * would burn battery and data on a region that has no ad to show.
+ * While the privacy options are being changed the retry waits: the consent
+ * it would request under may already be withdrawn. Failures are kept, so the
+ * retry budget is the same afterwards.
  */
 const AdBanner = ({
   nonPersonalizedOnly,
+  paused,
 }: {
   nonPersonalizedOnly: boolean;
+  paused: boolean;
 }) => {
   const [failures, setFailures] = useState(0);
   // A new key is a new banner, which requests an ad again.
@@ -36,14 +41,14 @@ const AdBanner = ({
   // The timer is an external system the retry is kept in step with.
   useEffect(() => {
     const delay = bannerRetryDelayMs(failures);
-    if (delay === undefined) return undefined;
+    if (paused || delay === undefined) return undefined;
     const timer = setTimeout(() => {
       setAttempt((previous) => previous + 1);
     }, delay);
     return () => {
       clearTimeout(timer);
     };
-  }, [failures]);
+  }, [failures, paused]);
 
   return (
     <BannerAd
@@ -72,19 +77,23 @@ const AdBanner = ({
  * @param {object} props - The component props.
  * @param {AdsState} props.state - Whether a banner may be requested, and how.
  * @param {number} props.revision - A new value is a new decision, which gets a new banner.
+ * @param {boolean} props.changingPrivacyOptions - Whether the privacy options are being changed, so no ad may be requested.
  */
 export const AdRegion = ({
   state,
   revision,
+  changingPrivacyOptions,
 }: {
   state: AdsState;
   revision: number;
+  changingPrivacyOptions: boolean;
 }) => (
   <View accessibilityLabel={generatorText.adRegionLabel} style={styles.region}>
     {state.status === "ready" ? (
       <AdBanner
         key={revision}
         nonPersonalizedOnly={state.nonPersonalizedOnly}
+        paused={changingPrivacyOptions}
       />
     ) : null}
   </View>

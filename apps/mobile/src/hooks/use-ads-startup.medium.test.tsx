@@ -168,6 +168,49 @@ describe("useAdsStartup privacy options", () => {
     expect(result.current.revision).toBe(2);
   });
 
+  test("reports the change as in progress from the press until a changed decision is applied", async () => {
+    const form = gate();
+    mockSdk.showPrivacyOptionsForm.mockImplementation(() => form.promise);
+    const result = await renderStarted();
+    expect(result.current.changingPrivacyOptions).toBe(false);
+
+    await act(() => {
+      result.current.openPrivacyOptions();
+    });
+    expect(result.current.changingPrivacyOptions).toBe(true);
+
+    await act(async () => {
+      mockSdk.getConsentInfo.mockResolvedValue(consentInfo(false));
+      form.close();
+      await form.promise;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(result.current.changingPrivacyOptions).toBe(false);
+    expect(result.current.revision).toBe(1);
+  });
+
+  test("ends the in-progress report when the decision is unchanged or the form fails", async () => {
+    const form = gate();
+    mockSdk.showPrivacyOptionsForm.mockImplementation(() => form.promise);
+    const result = await renderStarted();
+    await act(() => {
+      result.current.openPrivacyOptions();
+    });
+    expect(result.current.changingPrivacyOptions).toBe(true);
+    await act(async () => {
+      form.close();
+      await form.promise;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(result.current.changingPrivacyOptions).toBe(false);
+    expect(result.current.revision).toBe(0);
+
+    mockSdk.showPrivacyOptionsForm.mockRejectedValue(new Error("no form"));
+    await pressAndSettle(result);
+    expect(result.current.changingPrivacyOptions).toBe(false);
+    expect(result.current.revision).toBe(0);
+  });
+
   test("leaves a screen that closed while the form was open alone", async () => {
     const form = gate();
     mockSdk.showPrivacyOptionsForm.mockImplementation(() => form.promise);
