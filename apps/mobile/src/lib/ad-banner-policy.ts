@@ -1,4 +1,24 @@
 /**
+ * Picks the production banner unit of the platform the app runs on. An AdMob
+ * unit belongs to one store's app, so the other platform's unit must never be
+ * requested with.
+ * @param {object} options - The platform and the configured units.
+ * @param {string} options.os - `Platform.OS`; anything but "ios" is Android's unit.
+ * @param {object} options.unitIds - The production unit of each platform, when configured.
+ * @returns {string | undefined} The unit of this platform, or undefined when it is unset.
+ */
+export const selectPlatformUnitId = ({
+  os,
+  unitIds,
+}: {
+  os: string;
+  unitIds: {
+    readonly android: string | undefined;
+    readonly ios: string | undefined;
+  };
+}): string | undefined => (os === "ios" ? unitIds.ios : unitIds.android);
+
+/**
  * Picks the unit a banner requests ads with.
  *
  * Only a release build may use a production unit. A development build or an

@@ -10,13 +10,14 @@ import { useAdsStartup } from "../hooks/use-ads-startup";
 import {
   bannerRetryDelayMs,
   selectBannerUnitId,
+  selectPlatformUnitId,
 } from "../lib/ad-banner-policy";
 import { generatorText } from "../lib/generator-text";
 
-const productionUnitId =
-  Platform.OS === "ios"
-    ? mobileConfig.adBannerUnitIds.ios
-    : mobileConfig.adBannerUnitIds.android;
+const productionUnitId = selectPlatformUnitId({
+  os: Platform.OS,
+  unitIds: mobileConfig.adBannerUnitIds,
+});
 
 /**
  * One banner. A banner that fails to load is requested again a bounded
