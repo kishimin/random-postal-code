@@ -7,10 +7,10 @@ merged to `main`, and versions follow [Semantic Versioning](https://semver.org/s
 `fix:` is a patch, `feat:` a minor, and `!` or `BREAKING CHANGE` a major release.
 All workspaces share one version, because they ship as one site.
 
-## [1.0.0] - Unreleased
+## [1.0.0] - 2026-11-18
 
-The first stable version of the Web MVP. The `v1.0.0` tag and GitHub Release
-are created once #39 and #120 are closed, from the draft in
+The first stable version of the Web MVP, released while the AdSense review is
+still pending. The release notes are in
 [docs/release-notes/v1.0.0.md](docs/release-notes/v1.0.0.md).
 
 ### Added
@@ -72,5 +72,5 @@ for the full list.
 - Separate Pages and Workers deploys with rollback (#19, #90), deployed
   automatically after CI passes on `main` (#108).
 
-[1.0.0]: https://github.com/kishimin/random-postal-code/compare/v0.1.0...main
+[1.0.0]: https://github.com/kishimin/random-postal-code/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/kishimin/random-postal-code/releases/tag/v0.1.0
