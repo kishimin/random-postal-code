@@ -32,6 +32,16 @@ const ADVERTISING_LABEL_ID = "advertising-region-label";
  * from application content was the word "広告" itself. ADR-0012 keeps
  * appearance out of automated tests, so nothing here asserts these classes;
  * the manual checklist in ui-design.md section 10 covers the visual result.
+ *
+ * Once AdSense marks the unit `data-ad-status="unfilled"`, the whole region
+ * is hidden. AdSense still sizes an unfilled unit to 280px, so a site under
+ * review, or a request with no ad to serve, otherwise shows a large empty box
+ * labelled 広告. Hiding it only after that verdict, rather than until the unit
+ * is filled, is deliberate: a unit inside a `display: none` ancestor has no
+ * width, and AdSense refuses to fill it ("No slot size for
+ * availableWidth=0", Issue #98). The loader and the unit stay in the page, so
+ * AdSense review still finds its code; hiding unfilled units is AdSense's own
+ * documented practice.
  */
 export const AdvertisingRegion = ({
   clientId,
@@ -43,7 +53,9 @@ export const AdvertisingRegion = ({
   return (
     <section
       aria-labelledby={ADVERTISING_LABEL_ID}
-      className={"mt-8 rounded-field bg-ad-surface p-4 text-center"}
+      className={
+        "mt-8 rounded-field bg-ad-surface p-4 text-center has-[ins[data-ad-status=unfilled]]:hidden"
+      }
     >
       <p
         id={ADVERTISING_LABEL_ID}
