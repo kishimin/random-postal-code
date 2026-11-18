@@ -1,7 +1,10 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 // Expo loads this file with Node, which does not resolve an extensionless
 // import of a TypeScript file.
-import { resolveAdMobAppIds } from "./src/config/admob-app-ids.ts";
+import {
+  assertProductionAdMobEnv,
+  resolveAdMobAppIds,
+} from "./src/config/admob-app-ids.ts";
 
 /*
  * app.json stays the static base (identifiers, icons, routing). This file
@@ -31,12 +34,22 @@ const unusedAndroidPermissions = [
  * @returns {ExpoConfig} The config with AdMob, tracking and permission settings.
  */
 export default ({ config }: ConfigContext): ExpoConfig => {
+  // EAS sets this while it resolves the configuration of a build.
+  const production = process.env.EAS_BUILD_PROFILE === "production";
+  if (production) {
+    assertProductionAdMobEnv({
+      ADMOB_ANDROID_APP_ID: process.env.ADMOB_ANDROID_APP_ID,
+      ADMOB_IOS_APP_ID: process.env.ADMOB_IOS_APP_ID,
+      EXPO_PUBLIC_AD_BANNER_UNIT_ID_ANDROID:
+        process.env.EXPO_PUBLIC_AD_BANNER_UNIT_ID_ANDROID,
+      EXPO_PUBLIC_AD_BANNER_UNIT_ID_IOS:
+        process.env.EXPO_PUBLIC_AD_BANNER_UNIT_ID_IOS,
+    });
+  }
   const appIds = resolveAdMobAppIds({
     ADMOB_ANDROID_APP_ID: process.env.ADMOB_ANDROID_APP_ID,
     ADMOB_IOS_APP_ID: process.env.ADMOB_IOS_APP_ID,
   });
-  // EAS sets this while it resolves the configuration of a build.
-  const production = process.env.EAS_BUILD_PROFILE === "production";
 
   return {
     ...config,

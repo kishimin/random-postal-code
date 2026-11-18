@@ -22,6 +22,11 @@ export type AdMobEnv = {
   readonly ADMOB_IOS_APP_ID?: string | undefined;
 };
 
+export type ProductionAdMobEnv = AdMobEnv & {
+  readonly EXPO_PUBLIC_AD_BANNER_UNIT_ID_ANDROID?: string | undefined;
+  readonly EXPO_PUBLIC_AD_BANNER_UNIT_ID_IOS?: string | undefined;
+};
+
 // An empty value, which a variable listed in .env with nothing after `=`
 // arrives as, means "not configured".
 const configured = (value: string | undefined): string | undefined =>
@@ -36,3 +41,29 @@ export const resolveAdMobAppIds = (env: AdMobEnv): AdMobAppIds => ({
   android: configured(env.ADMOB_ANDROID_APP_ID) ?? googleTestAppIds.android,
   ios: configured(env.ADMOB_IOS_APP_ID) ?? googleTestAppIds.ios,
 });
+
+const productionVariables = [
+  "ADMOB_ANDROID_APP_ID",
+  "ADMOB_IOS_APP_ID",
+  "EXPO_PUBLIC_AD_BANNER_UNIT_ID_ANDROID",
+  "EXPO_PUBLIC_AD_BANNER_UNIT_ID_IOS",
+] as const;
+
+/**
+ * Fails a production build that is missing any AdMob ID. Elsewhere an unset ID
+ * falls back to Google's test ID, which is right for development; in a
+ * production build the same fallback would ship the store app with ads that
+ * earn nothing, and nobody would notice until after release.
+ * @param {ProductionAdMobEnv} env - The environment the configuration is resolved in.
+ * @throws {Error} Naming every variable that is unset or empty.
+ */
+export const assertProductionAdMobEnv = (env: ProductionAdMobEnv): void => {
+  const missing = productionVariables.filter(
+    (name) => configured(env[name]) === undefined,
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      `A production build needs the AdMob IDs, but these are unset or empty: ${missing.join(", ")}. Set them in the env of the production profile in eas.json.`,
+    );
+  }
+};
