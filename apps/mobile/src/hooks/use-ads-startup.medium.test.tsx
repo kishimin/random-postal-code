@@ -110,4 +110,26 @@ describe("useAdsStartup privacy options", () => {
 
     expect(mockSdk.showPrivacyOptionsForm).toHaveBeenCalledTimes(2);
   });
+
+  test("leaves a screen that closed while the form was open alone", async () => {
+    const form = gate();
+    mockSdk.showPrivacyOptionsForm.mockImplementation(() => form.promise);
+    const error = jest.spyOn(console, "error").mockImplementation(() => {});
+    const { result, unmount } = await renderHook(() => useAdsStartup());
+    await waitFor(() => {
+      expect(result.current.privacyOptionsRequired).toBe(true);
+    });
+    await act(() => {
+      result.current.openPrivacyOptions();
+    });
+
+    await unmount();
+    mockSdk.getConsentInfo.mockResolvedValue(consentInfo(false));
+    form.close();
+    await form.promise;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
+  });
 });

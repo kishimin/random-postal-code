@@ -62,17 +62,20 @@ const decisionOf = (snapshot: AdsSnapshot): Decision => ({
 export const useAdsStartup = (): Ads => {
   const [decision, setDecision] = useState<Decision>(pending);
   const [revision, setRevision] = useState(0);
+  const mounted = useRef(false);
   // The form is modal, but a second press can land before it appears.
   const formOpen = useRef(false);
 
   // The SDKs are external systems: the effect starts them and keeps the
   // screen in step with the answer.
   useEffect(() => {
+    mounted.current = true;
     const unmounted = new AbortController();
     void launchAds(ports).then((snapshot) => {
       if (!unmounted.signal.aborted) setDecision(decisionOf(snapshot));
     });
     return () => {
+      mounted.current = false;
       unmounted.abort();
     };
   }, []);
@@ -85,7 +88,8 @@ export const useAdsStartup = (): Ads => {
     void changePrivacyOptions(ports)
       .then((snapshot) => {
         // Undefined means the form did not open: nothing has changed.
-        if (snapshot === undefined) return;
+        // The screen may have gone while the form was open.
+        if (snapshot === undefined || !mounted.current) return;
         setDecision(decisionOf(snapshot));
         setRevision((previous) => previous + 1);
       })
