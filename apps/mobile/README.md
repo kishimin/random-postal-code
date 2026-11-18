@@ -6,10 +6,27 @@ The Android and iOS app (Expo, React Native, Expo Router). `docs/design.md` §6.
 
 Build-time settings are `EXPO_PUBLIC_*` variables. [`.env.example`](.env.example) lists them. Copy it to `apps/mobile/.env`, which Git ignores, or set the variables in the shell. Expo inlines them into the bundle, so none of them may be a secret.
 
-| Variable                        | Used for                             |
-| ------------------------------- | ------------------------------------ |
-| `EXPO_PUBLIC_API_BASE_URL`      | The Zipnami API origin               |
-| `EXPO_PUBLIC_AD_BANNER_UNIT_ID` | The AdMob banner ad unit (Issue #15) |
+| Variable                                | Used for                                                                                  |
+| --------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_API_BASE_URL`              | The Zipnami API origin                                                                    |
+| `EXPO_PUBLIC_AD_BANNER_UNIT_ID_ANDROID` | The AdMob banner unit of the Android app, used by release builds only (Issue #15)         |
+| `EXPO_PUBLIC_AD_BANNER_UNIT_ID_IOS`     | The AdMob banner unit of the iOS app, used by release builds only (Issue #15)             |
+| `EXPO_PUBLIC_AD_BANNER_UNIT_ID`         | Deprecated alias for the Android unit, read only when the Android variable is unset       |
+| `ADMOB_ANDROID_APP_ID`                  | The AdMob app ID written into `AndroidManifest.xml`; not inlined, read by `app.config.ts` |
+| `ADMOB_IOS_APP_ID`                      | The AdMob app ID written into `Info.plist`; not inlined, read by `app.config.ts`          |
+
+## Ads
+
+The start screen shows one AdMob banner in its 「広告」 region (Issue #15). The owner chose `react-native-google-mobile-ads` for AdMob and its built-in `AdsConsent` for Google's User Messaging Platform consent, and `expo-tracking-transparency` for iOS App Tracking Transparency (Issue #15, option A, 2026-11-18). On every launch the app runs consent first, then (iOS only) the tracking prompt, then starts the SDK, and only then requests a banner. A refusal falls back to non-personalised ads, and a failure at any step shows no banner and never affects generating, history or the map links. A banner that fails to load is requested again at most twice.
+
+No production AdMob IDs exist yet, so every build uses Google's test IDs:
+
+- The app IDs fall back to Google's sample app IDs when `ADMOB_ANDROID_APP_ID` or `ADMOB_IOS_APP_ID` is unset or empty.
+- A development build or an automated run (`__DEV__`) always requests Google's test banner, even when a banner unit variable is set. A release build uses the unit of its platform when one is set, and the test banner otherwise.
+
+When AdMob is set up, put the four IDs in the `env` of the `production` profile in [`eas.json`](eas.json) and nowhere else: a non-production profile must stay on the test IDs. A production Android build also blocks the permissions the app never uses (overlay, vibrate and external storage), which leaves the network and the advertising ID.
+
+Set the production AdMob IDs only for the EAS `production` profile, never in a local `.env`, the shell, or another profile. Pre-release builds rely on the IDs being unset to fall back to Google's test IDs, and a production ID in a development or preview build would count test traffic on the real AdMob account. The `production` profile enforces the other direction: its build fails, naming the variable, when any of the four IDs is unset or empty, so it can never ship with Google's test IDs.
 
 ## Development
 

@@ -150,6 +150,7 @@ Android and iOS are one Expo (React Native) application in `apps/mobile`, tracke
 - Google Play delivery is Issue #20. App Store delivery is not planned. It is decided once the app is complete, because the Apple Developer Program has a yearly fee.
 - Manual checks through Expo Go are not planned.
 - Mobile history is stored on the device with `@react-native-async-storage/async-storage`, newest first, at most 20 entries as one JSON array under one key; it is never sent to the server or synchronized with Web. Each address opens an external Google Maps search URL through `expo-linking`; no map SDK or location permission is used (owner decision on #14, 2026-11-17).
+- Mobile ads are one AdMob banner through `react-native-google-mobile-ads`, with consent through its built-in `AdsConsent` (UMP) and, on iOS, `expo-tracking-transparency` (owner decision on #15, option A, 2026-11-18). AdMob app IDs come from `ADMOB_ANDROID_APP_ID` and `ADMOB_IOS_APP_ID` and banner units from `EXPO_PUBLIC_AD_BANNER_UNIT_ID_ANDROID` and `_IOS`; Google's test IDs are used until production IDs exist, and always in development and automated runs.
 
 ## 7. External Services and Failure Boundaries
 

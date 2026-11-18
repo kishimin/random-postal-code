@@ -15,12 +15,21 @@ const shared = {
   // An acceptance test resolves packages from acceptance/, and bun links
   // this package's dependencies only under apps/mobile/node_modules.
   modulePaths: ["<rootDir>/node_modules"],
+  // modulePaths is only a fallback: a `react` found in an ancestor directory
+  // of acceptance/ wins over it. A second copy of React has no hook
+  // dispatcher, so a fake component an acceptance test defines with
+  // `require("react")` would throw as soon as it uses a hook. One copy,
+  // this package's, is the one every module gets.
+  moduleNameMapper: {
+    "^react$": "<rootDir>/node_modules/react/index.js",
+  },
   // Globs rather than <rootDir> paths: Jest does not normalise the `..` of
   // a <rootDir>-relative pattern, so the acceptance directory never matched.
   testMatch: [
     "**/apps/mobile/src/**/*.medium.test.tsx",
     "**/acceptance/mobile-random-postal-code.medium.test.tsx",
     "**/acceptance/mobile-generation-history.medium.test.tsx",
+    "**/acceptance/mobile-admob-banner.medium.test.tsx",
   ],
   // The app persists the history in AsyncStorage (Issue #14), whose native
   // module does not exist under Jest. The library's own mock stands in for
