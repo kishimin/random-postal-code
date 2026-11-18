@@ -9,5 +9,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "vitest.config.ts", "expo-env.d.ts"]
+  "include": ["src", "app.config.ts", "vitest.config.ts", "expo-env.d.ts"]
 }
