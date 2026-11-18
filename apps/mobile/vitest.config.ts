@@ -13,6 +13,7 @@ export default defineConfig({
       "../../acceptance/mobile-app-identifier.medium.test.ts",
       "../../acceptance/mobile-random-postal-code-bundle.medium.test.ts",
       "../../acceptance/mobile-generation-history-bundle.medium.test.ts",
+      "../../acceptance/mobile-admob-banner-bundle.medium.test.ts",
     ],
     // This package's screen acceptance tests, run by Jest (jest.config.js),
     // not by Vitest. They are named here so this file stays the one list of
@@ -22,6 +23,7 @@ export default defineConfig({
       ...configDefaults.exclude,
       "../../acceptance/mobile-random-postal-code.medium.test.tsx",
       "../../acceptance/mobile-generation-history.medium.test.tsx",
+      "../../acceptance/mobile-admob-banner.medium.test.tsx",
     ],
     // Two `expo export` runs take about a minute locally. The bound stays
     // well inside the CI Medium job's 20 minutes, so a stuck export fails

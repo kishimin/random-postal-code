@@ -21,6 +21,7 @@ const shared = {
     "**/apps/mobile/src/**/*.medium.test.tsx",
     "**/acceptance/mobile-random-postal-code.medium.test.tsx",
     "**/acceptance/mobile-generation-history.medium.test.tsx",
+    "**/acceptance/mobile-admob-banner.medium.test.tsx",
   ],
   // The app persists the history in AsyncStorage (Issue #14), whose native
   // module does not exist under Jest. The library's own mock stands in for
