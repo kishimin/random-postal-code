@@ -7,6 +7,13 @@ merged to `main`, and versions follow [Semantic Versioning](https://semver.org/s
 `fix:` is a patch, `feat:` a minor, and `!` or `BREAKING CHANGE` a major release.
 All workspaces share one version, because they ship as one site.
 
+## [1.1.0](https://github.com/kishimin/random-postal-code/compare/v1.0.0...v1.1.0) (2026-11-18)
+
+
+### Features
+
+* run the browser tests on Firefox as a sixth project ([#153](https://github.com/kishimin/random-postal-code/issues/153)) ([48fc7f8](https://github.com/kishimin/random-postal-code/commit/48fc7f87d4270eba83f8adb43f3db2d82620f664))
+
 ## [1.0.0] - 2026-11-18
 
 The first stable version of the Web MVP, released while the AdSense review is
