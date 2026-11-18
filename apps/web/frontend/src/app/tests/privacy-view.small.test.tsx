@@ -168,6 +168,24 @@ describe("PrivacyView", () => {
     );
   });
 
+  // apps/mobile/src/lib/ads-startup.ts shows no banner when a consent step
+  // fails or ads are not allowed, and falls back to non-personalized ads only
+  // when the stored choices cannot be read. One sentence for both would say
+  // the app shows ads in a case where it shows none.
+  test("3. 広告とアクセス解析 tells a failed consent step (no banner) apart from unreadable stored choices (non-personalized ads)", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.advertisingAndAnalytics);
+
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*(?:失敗した場合|許可されない場合)[^。]*広告を表示しません/,
+    );
+    expect(section).not.toHaveTextContent(/失敗[^。]*パーソナライズ/);
+    expect(section).toHaveTextContent(
+      /アプリ[^。]*読み取れない場合[^。]*パーソナライズされていない広告/,
+    );
+  });
+
   test("4. 履歴 documents that the history is saved in the browser and never sent to the server", () => {
     render(<PrivacyView />);
 

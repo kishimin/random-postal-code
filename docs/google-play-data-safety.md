@@ -66,7 +66,8 @@ Device or other IDs covers the advertising ID, which the SDK reads when the pers
 The app asks for consent before any ad request, with Google's User Messaging Platform through `AdsConsent` (Issue #15).
 
 - In the EEA, the UK and Switzerland, the person sees Google's consent form first. Where no form is required, the SDK reports `NOT_REQUIRED` and ads are personalised.
-- When the person does not consent, or the consent state cannot be read, the app requests non-personalized ads only (`requestNonPersonalizedAdsOnly`). A failure at any consent step shows no banner.
+- When the person does not consent, or the stored choices cannot be read, the app requests non-personalized ads only (`requestNonPersonalizedAdsOnly`).
+- When a consent step fails, or the SDK reports that ads cannot be requested, the app shows no banner (`startAds` in `apps/mobile/src/lib/ads-startup.ts` returns `unavailable`).
 - `delayAppMeasurementInit` is `true` in the `react-native-google-mobile-ads` plugin of `apps/mobile/app.config.ts`. Without it the SDK starts app measurement when the app launches, before the person has answered. With it, measurement starts only when the app calls `initialize()`, after the consent flow has finished (`apps/mobile/src/lib/ads-startup.ts`).
 - The UMP messages are configured in the AdMob console (Privacy and messaging), outside this repository. They have to be published for the production app ID before release; the release checklist has the step.
 
