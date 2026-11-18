@@ -20,6 +20,7 @@ import { shownResultOf } from "../lib/generator-state";
 import { generatorText } from "../lib/generator-text";
 import { fullAddressText } from "../lib/map-url";
 import { formatPostalCode } from "../lib/postal-code-label";
+import { AdRegion } from "./AdRegion";
 
 const actionLabelOf = (state: GeneratorState): string => {
   switch (state.status) {
@@ -277,11 +278,7 @@ export const GeneratorScreen = ({
         <HistoryList history={history} onOpenMap={map.open} />
       </View>
 
-      {/* Reserved for the AdMob banner (Issue #15), outside every action. */}
-      <View
-        accessibilityLabel={generatorText.adRegionLabel}
-        style={styles.banner}
-      />
+      <AdRegion />
 
       <Link href="/info" style={styles.link}>
         {generatorText.infoLink}
@@ -324,6 +321,5 @@ const styles = StyleSheet.create({
   entry: { gap: 2 },
   entryCode: { fontSize: 20, fontWeight: "700" },
   caption: { fontSize: 12, color: "#526B78" },
-  banner: { minHeight: 50 },
   link: { fontSize: 16, color: "#0F6E9E", textAlign: "center", minHeight: 48 },
 });
