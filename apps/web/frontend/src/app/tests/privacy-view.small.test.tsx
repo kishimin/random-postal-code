@@ -76,6 +76,24 @@ describe("PrivacyView", () => {
     expect(section).not.toHaveTextContent(/AdSense|アドセンス/i);
   });
 
+  // Issue #20: the denial covers Zipnami itself. The AdMob SDK in the Android
+  // app collects more, and the Data safety form declares it, so this page
+  // must not read as a promise that nothing of the kind is collected.
+  test("1. 取得する情報 scopes the location denial to Zipnami and discloses what the Android app's AdMob SDK may collect", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.collectedInformation);
+
+    expect(section).toHaveTextContent(/Zipnami自身は位置情報を取得しません/);
+    expect(section).toHaveTextContent(
+      /Android[^。]*AdMob[^。]*おおよその位置情報/,
+    );
+    expect(section).toHaveTextContent(/AdMob[^。]*IPアドレス/);
+    expect(section).toHaveTextContent(
+      /AdMob[^。]*利用状況[^。]*診断[^。]*広告ID/,
+    );
+  });
+
   test("2. 利用目的 documents what Google Maps receives and when", () => {
     render(<PrivacyView />);
 

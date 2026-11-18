@@ -38,9 +38,10 @@ const collectedInformation: PrivacySection = {
   headingId: "privacy-collected-information-heading",
   heading: "1. 取得する情報",
   paragraphs: [
-    "Zipnamiは位置情報を取得しません。",
+    "Zipnami自身は位置情報を取得しません。",
     "Zipnamiは独自の利用者識別子を発行しません。",
     "広告配信のための識別子をサーバーに保存することはありません。",
+    "Android版アプリでは、Google AdMobのSDKが、IPアドレスから推定されるおおよその位置情報、アプリの利用状況、診断情報、広告IDを取得する場合があります。",
   ],
 };
 
