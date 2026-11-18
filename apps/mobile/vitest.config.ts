@@ -25,6 +25,7 @@ export default defineConfig({
       "../../acceptance/mobile-random-postal-code.medium.test.tsx",
       "../../acceptance/mobile-generation-history.medium.test.tsx",
       "../../acceptance/mobile-admob-banner.medium.test.tsx",
+      "../../acceptance/mobile-ad-privacy-options.medium.test.tsx",
     ],
     // Two `expo export` runs take about a minute locally. The bound stays
     // well inside the CI Medium job's 20 minutes, so a stuck export fails

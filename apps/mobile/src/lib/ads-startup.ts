@@ -4,6 +4,9 @@ export type UserChoices = {
   readonly storeAndAccessInformationOnDevice: boolean;
 };
 
+/** Where the consent flow ended. */
+export type ConsentOutcome = { canRequestAds: boolean; status: string };
+
 /**
  * The steps that must finish before the first ad request, as the app sees
  * them. The SDKs behind them are native modules, so the screen supplies them
@@ -11,7 +14,7 @@ export type UserChoices = {
  */
 export type AdsPorts = {
   /** Runs the consent flow (Google's UMP) and reports where it ended. */
-  gatherConsent: () => Promise<{ canRequestAds: boolean; status: string }>;
+  gatherConsent: () => Promise<ConsentOutcome>;
   /** What the person allowed in the consent form (UMP's user choices). */
   readUserChoices: () => Promise<UserChoices>;
   /**
@@ -59,15 +62,17 @@ const trackingAllowed = async (ports: AdsPorts): Promise<boolean> => {
 };
 
 /**
- * Runs consent, then the tracking prompt, then starts the SDK, and says what
- * ads may be requested. Every failure is absorbed: ads are an extra, and the
- * features of the app never wait on them or break with them.
+ * Says what ads may be requested once the consent flow has ended: the tracking
+ * prompt, then the SDK. Every failure is absorbed, as in {@link startAds}.
  * @param {AdsPorts} ports - The SDK steps.
+ * @param {ConsentOutcome} consent - Where the consent flow ended.
  * @returns {Promise<AdsStartup>} Whether to show a banner, and whether it may be personalised.
  */
-export const startAds = async (ports: AdsPorts): Promise<AdsStartup> => {
+export const adsAfterConsent = async (
+  ports: AdsPorts,
+  consent: ConsentOutcome,
+): Promise<AdsStartup> => {
   try {
-    const consent = await ports.gatherConsent();
     if (!consent.canRequestAds) return { status: "unavailable" };
 
     const personalised = await personalisationAllowed(ports, consent.status);
@@ -76,6 +81,21 @@ export const startAds = async (ports: AdsPorts): Promise<AdsStartup> => {
     const tracked = await trackingAllowed(ports);
     await ports.initialize();
     return { status: "ready", nonPersonalizedOnly: !(personalised && tracked) };
+  } catch {
+    return { status: "unavailable" };
+  }
+};
+
+/**
+ * Runs consent, then the tracking prompt, then starts the SDK, and says what
+ * ads may be requested. Every failure is absorbed: ads are an extra, and the
+ * features of the app never wait on them or break with them.
+ * @param {AdsPorts} ports - The SDK steps.
+ * @returns {Promise<AdsStartup>} Whether to show a banner, and whether it may be personalised.
+ */
+export const startAds = async (ports: AdsPorts): Promise<AdsStartup> => {
+  try {
+    return await adsAfterConsent(ports, await ports.gatherConsent());
   } catch {
     return { status: "unavailable" };
   }

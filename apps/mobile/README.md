@@ -19,6 +19,8 @@ Build-time settings are `EXPO_PUBLIC_*` variables. [`.env.example`](.env.example
 
 The start screen shows one AdMob banner in its 「広告」 region (Issue #15). The owner chose `react-native-google-mobile-ads` for AdMob and its built-in `AdsConsent` for Google's User Messaging Platform consent, and `expo-tracking-transparency` for iOS App Tracking Transparency (Issue #15, option A, 2026-11-18). On every launch the app runs consent first, then (iOS only) the tracking prompt, then starts the SDK, and only then requests a banner. A refusal falls back to non-personalised ads, and a failure at any step shows no banner and never affects generating, history or the map links. A banner that fails to load is requested again at most twice.
 
+Where Google's SDK reports that privacy options are required, the start screen also shows a 「広告のプライバシー設定」 button outside the ad region (Issue #146). It reopens the privacy-options form, and the next banner is requested under what the person chose there: non-personalised unless personalised ads and storing information on the device are both allowed, and no banner at all once consent is withdrawn. A failure to open the form changes nothing.
+
 No production AdMob IDs exist yet, so every build uses Google's test IDs:
 
 - The app IDs fall back to Google's sample app IDs when `ADMOB_ANDROID_APP_ID` or `ADMOB_IOS_APP_ID` is unset or empty.

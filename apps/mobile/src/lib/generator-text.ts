@@ -39,5 +39,6 @@ export const generatorText = {
   mapFailureBody:
     "Google マップを開けるアプリやブラウザが見つかりません。住所はこの画面の表示をご確認ください。",
   adRegionLabel: "広告",
+  privacyOptionsAction: "広告のプライバシー設定",
   infoLink: "Zipnami について",
 } as const;
