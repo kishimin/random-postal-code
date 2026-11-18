@@ -134,7 +134,9 @@ describe("startAds", () => {
       "is declined when the person refuses %s in the consent form",
       async (_purpose, choices) => {
         const result = await startAds(
-          portsRecordingTo([], { readUserChoices: () => Promise.resolve(choices) }),
+          portsRecordingTo([], {
+            readUserChoices: () => Promise.resolve(choices),
+          }),
         );
 
         expect(result).toEqual({ status: "ready", nonPersonalizedOnly: true });
