@@ -19,6 +19,8 @@ import { createAppRouter } from "../routes/app-router";
  */
 
 const RANDOM_ENDPOINT = "http://localhost:8787/api/random";
+const ADSENSE_LOADER_URL =
+  "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js";
 
 const result: PostalCode = {
   postalCode: "1000001",
@@ -145,7 +147,17 @@ describe("ad eligibility (ui-design.md section 7.1)", () => {
   });
 
   test("leaving a result for the privacy page leaves no ad unit behind and pushes nothing more", async () => {
-    worker.use(http.get(RANDOM_ENDPOINT, () => HttpResponse.json(result)));
+    // The loader is held mid-download, so the visitor leaves while it is
+    // still in flight. The shared substitute answers at once, and whether its
+    // load event had fired by the time of the click decided this test's
+    // outcome run by run (Issue #156).
+    worker.use(
+      http.get(RANDOM_ENDPOINT, () => HttpResponse.json(result)),
+      http.get(ADSENSE_LOADER_URL, async () => {
+        await delay("infinite");
+        return HttpResponse.text("");
+      }),
+    );
     const user = userEvent.setup();
     renderAt("/");
     await user.click(
