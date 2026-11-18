@@ -6,9 +6,9 @@ type Overrides = Partial<AdsPorts>;
 /**
  * Ports that answer "everything allowed" and write the order they were called
  * in to `calls`.
- * @param calls - Where each step records its name.
- * @param overrides - Steps to replace for one scenario.
- * @returns The ports.
+ * @param {string[]} calls - Where each step records its name.
+ * @param {Overrides} overrides - Steps to replace for one scenario.
+ * @returns {AdsPorts} The ports.
  */
 const portsRecordingTo = (
   calls: string[],

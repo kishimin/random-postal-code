@@ -18,8 +18,7 @@ export type AdsPorts = {
 };
 
 export type AdsStartup =
-  | { status: "unavailable" }
-  | { status: "ready"; nonPersonalizedOnly: boolean };
+  { status: "unavailable" } | { status: "ready"; nonPersonalizedOnly: boolean };
 
 // The status the SDK reports once the person has answered the consent form.
 const consentObtained = "OBTAINED";
@@ -51,8 +50,8 @@ const trackingAllowed = async (ports: AdsPorts): Promise<boolean> => {
  * Runs consent, then the tracking prompt, then starts the SDK, and says what
  * ads may be requested. Every failure is absorbed: ads are an extra, and the
  * features of the app never wait on them or break with them.
- * @param ports - The SDK steps.
- * @returns Whether to show a banner, and whether it may be personalised.
+ * @param {AdsPorts} ports - The SDK steps.
+ * @returns {Promise<AdsStartup>} Whether to show a banner, and whether it may be personalised.
  */
 export const startAds = async (ports: AdsPorts): Promise<AdsStartup> => {
   try {

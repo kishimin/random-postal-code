@@ -25,6 +25,11 @@ const unusedAndroidPermissions = [
   "android.permission.WRITE_EXTERNAL_STORAGE",
 ];
 
+/**
+ * Extends app.json with the environment-dependent native configuration.
+ * @param {ConfigContext} context - The static config Expo read from app.json.
+ * @returns {ExpoConfig} The config with AdMob, tracking and permission settings.
+ */
 export default ({ config }: ConfigContext): ExpoConfig => {
   const appIds = resolveAdMobAppIds({
     ADMOB_ANDROID_APP_ID: process.env.ADMOB_ANDROID_APP_ID,

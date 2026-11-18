@@ -17,6 +17,11 @@ export const googleTestAppIds: AdMobAppIds = {
   ios: "ca-app-pub-3940256099942544~1458002511",
 };
 
+export type AdMobEnv = {
+  readonly ADMOB_ANDROID_APP_ID?: string | undefined;
+  readonly ADMOB_IOS_APP_ID?: string | undefined;
+};
+
 // An empty value, which a variable listed in .env with nothing after `=`
 // arrives as, means "not configured".
 const configured = (value: string | undefined): string | undefined =>
@@ -24,13 +29,10 @@ const configured = (value: string | undefined): string | undefined =>
 
 /**
  * Picks each platform's AdMob app ID.
- * @param env - The environment the configuration is resolved in.
- * @returns The configured IDs, with Google's test ID for any that is unset.
+ * @param {AdMobEnv} env - The environment the configuration is resolved in.
+ * @returns {AdMobAppIds} The configured IDs, with Google's test ID for any that is unset.
  */
-export const resolveAdMobAppIds = (env: {
-  ADMOB_ANDROID_APP_ID?: string | undefined;
-  ADMOB_IOS_APP_ID?: string | undefined;
-}): AdMobAppIds => ({
+export const resolveAdMobAppIds = (env: AdMobEnv): AdMobAppIds => ({
   android: configured(env.ADMOB_ANDROID_APP_ID) ?? googleTestAppIds.android,
   ios: configured(env.ADMOB_IOS_APP_ID) ?? googleTestAppIds.ios,
 });

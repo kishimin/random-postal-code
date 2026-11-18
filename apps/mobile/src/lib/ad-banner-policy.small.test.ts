@@ -49,11 +49,11 @@ describe("bannerRetryDelayMs", () => {
   });
 
   test("backs off: each wait is longer than the one before", () => {
-    const delays = Array.from({ length: maxBannerRetries }, (_, index) =>
-      bannerRetryDelayMs(index + 1),
+    const waits = Array.from(
+      { length: maxBannerRetries },
+      (_, index) => bannerRetryDelayMs(index + 1) ?? 0,
     );
-    for (let index = 1; index < delays.length; index += 1) {
-      expect(delays[index]).toBeGreaterThan(delays[index - 1] ?? Infinity);
-    }
+    // Sorted and without repeats is strictly increasing.
+    expect(waits).toEqual([...new Set(waits)].sort((a, b) => a - b));
   });
 });

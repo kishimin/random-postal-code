@@ -29,7 +29,10 @@ describe("resolveAdMobAppIds", () => {
   // arrives as.
   test.each([undefined, ""])("falls back to the test IDs when %j", (value) => {
     expect(
-      resolveAdMobAppIds({ ADMOB_ANDROID_APP_ID: value, ADMOB_IOS_APP_ID: value }),
+      resolveAdMobAppIds({
+        ADMOB_ANDROID_APP_ID: value,
+        ADMOB_IOS_APP_ID: value,
+      }),
     ).toEqual(googleTestAppIds);
   });
 
