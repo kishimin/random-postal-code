@@ -1,5 +1,5 @@
 import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Platform } from "react-native";
 import mobileAds, { AdsConsent } from "react-native-google-mobile-ads";
 import {
@@ -62,6 +62,8 @@ const decisionOf = (snapshot: AdsSnapshot): Decision => ({
 export const useAdsStartup = (): Ads => {
   const [decision, setDecision] = useState<Decision>(pending);
   const [revision, setRevision] = useState(0);
+  // The form is modal, but a second press can land before it appears.
+  const formOpen = useRef(false);
 
   // The SDKs are external systems: the effect starts them and keeps the
   // screen in step with the answer.
@@ -78,12 +80,18 @@ export const useAdsStartup = (): Ads => {
   // A press is an event, not a sync with an external system, so it is a
   // handler and not an effect.
   const openPrivacyOptions = useCallback(() => {
-    void changePrivacyOptions(ports).then((snapshot) => {
-      // Undefined means the form did not open: nothing has changed.
-      if (snapshot === undefined) return;
-      setDecision(decisionOf(snapshot));
-      setRevision((previous) => previous + 1);
-    });
+    if (formOpen.current) return;
+    formOpen.current = true;
+    void changePrivacyOptions(ports)
+      .then((snapshot) => {
+        // Undefined means the form did not open: nothing has changed.
+        if (snapshot === undefined) return;
+        setDecision(decisionOf(snapshot));
+        setRevision((previous) => previous + 1);
+      })
+      .finally(() => {
+        formOpen.current = false;
+      });
   }, []);
 
   return {
