@@ -1,3 +1,9 @@
+/** The consent purposes that decide whether an ad may be personalised. */
+export type UserChoices = {
+  readonly selectPersonalisedAds: boolean;
+  readonly storeAndAccessInformationOnDevice: boolean;
+};
+
 /**
  * The steps that must finish before the first ad request, as the app sees
  * them. The SDKs behind them are native modules, so the screen supplies them
@@ -6,8 +12,8 @@
 export type AdsPorts = {
   /** Runs the consent flow (Google's UMP) and reports where it ended. */
   gatherConsent: () => Promise<{ canRequestAds: boolean; status: string }>;
-  /** Whether the person allowed personalised ads in the consent form. */
-  choosesPersonalisedAds: () => Promise<boolean>;
+  /** What the person allowed in the consent form (UMP's user choices). */
+  readUserChoices: () => Promise<UserChoices>;
   /**
    * Asks for App Tracking Transparency; true when the person allowed it.
    * Undefined where the platform has no such prompt.
@@ -32,7 +38,11 @@ const personalisationAllowed = async (
   // it, so the choices decide.
   if (consentStatus === consentNotRequired) return true;
   try {
-    return await ports.choosesPersonalisedAds();
+    const choices = await ports.readUserChoices();
+    // Personalising needs the device to be read as well as the ad selected.
+    return (
+      choices.selectPersonalisedAds && choices.storeAndAccessInformationOnDevice
+    );
   } catch {
     // Not knowing what the person chose is treated as a refusal.
     return false;

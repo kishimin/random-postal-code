@@ -8,8 +8,7 @@ export type AdsState = AdsStartup | { status: "pending" };
 
 const ports: AdsPorts = {
   gatherConsent: () => AdsConsent.gatherConsent(),
-  choosesPersonalisedAds: async () =>
-    (await AdsConsent.getUserChoices()).selectPersonalisedAds,
+  readUserChoices: () => AdsConsent.getUserChoices(),
   // Only iOS has App Tracking Transparency.
   askTracking:
     Platform.OS === "ios"

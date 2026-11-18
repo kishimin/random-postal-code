@@ -3,6 +3,11 @@ import { startAds, type AdsPorts } from "./ads-startup";
 
 type Overrides = Partial<AdsPorts>;
 
+const allAllowed = {
+  selectPersonalisedAds: true,
+  storeAndAccessInformationOnDevice: true,
+};
+
 /**
  * Ports that answer "everything allowed" and write the order they were called
  * in to `calls`.
@@ -18,9 +23,9 @@ const portsRecordingTo = (
     calls.push("consent");
     return Promise.resolve({ canRequestAds: true, status: "OBTAINED" });
   },
-  choosesPersonalisedAds: () => {
+  readUserChoices: () => {
     calls.push("choices");
-    return Promise.resolve(true);
+    return Promise.resolve(allAllowed);
   },
   askTracking: () => {
     calls.push("tracking");
@@ -117,20 +122,29 @@ describe("startAds", () => {
       expect(result).toEqual({ status: "ready", nonPersonalizedOnly: true });
     });
 
-    test("is declined when the person refuses it in the consent form", async () => {
-      const result = await startAds(
-        portsRecordingTo([], {
-          choosesPersonalisedAds: () => Promise.resolve(false),
-        }),
-      );
+    // Personalised ads need both purposes: selecting them and storing or
+    // reading information on the device. Each is denied on its own here.
+    test.each([
+      ["personalised ads", { ...allAllowed, selectPersonalisedAds: false }],
+      [
+        "storing and accessing information on the device",
+        { ...allAllowed, storeAndAccessInformationOnDevice: false },
+      ],
+    ])(
+      "is declined when the person refuses %s in the consent form",
+      async (_purpose, choices) => {
+        const result = await startAds(
+          portsRecordingTo([], { readUserChoices: () => Promise.resolve(choices) }),
+        );
 
-      expect(result).toEqual({ status: "ready", nonPersonalizedOnly: true });
-    });
+        expect(result).toEqual({ status: "ready", nonPersonalizedOnly: true });
+      },
+    );
 
     test("is declined when the choices cannot be read after consent was obtained", async () => {
       const result = await startAds(
         portsRecordingTo([], {
-          choosesPersonalisedAds: () => Promise.reject(new Error("unreadable")),
+          readUserChoices: () => Promise.reject(new Error("unreadable")),
         }),
       );
 
@@ -148,9 +162,12 @@ describe("startAds", () => {
           portsRecordingTo(calls, {
             gatherConsent: () =>
               Promise.resolve({ canRequestAds: true, status }),
-            choosesPersonalisedAds: () => {
+            readUserChoices: () => {
               calls.push("choices");
-              return Promise.resolve(false);
+              return Promise.resolve({
+                selectPersonalisedAds: false,
+                storeAndAccessInformationOnDevice: false,
+              });
             },
           }),
         );
@@ -174,7 +191,11 @@ describe("startAds", () => {
               status: "NOT_REQUIRED",
             });
           },
-          choosesPersonalisedAds: () => Promise.resolve(false),
+          readUserChoices: () =>
+            Promise.resolve({
+              selectPersonalisedAds: false,
+              storeAndAccessInformationOnDevice: false,
+            }),
         }),
       );
 
