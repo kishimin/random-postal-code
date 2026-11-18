@@ -110,6 +110,19 @@ describe("PrivacyView", () => {
     expect(section).not.toHaveTextContent(/履歴|位置情報/);
   });
 
+  // apps/mobile/src/hooks/use-external-map.ts hands the chosen address to
+  // Google Maps, which is a purpose of use the Web sentence above does not
+  // cover for the Android app.
+  test("2. 利用目的 says the Android app sends the chosen address to Google Maps when it opens it", () => {
+    render(<PrivacyView />);
+
+    const section = sectionOf(headings.purposeOfUse);
+
+    expect(section).toHaveTextContent(
+      /Android[^。]*住所[^。]*Google[^。]*送信/,
+    );
+  });
+
   // Issue #92: design.md section 8 names Google Analytics among the services
   // /privacy distinguishes from what Zipnami itself stores.
   test("3. 広告とアクセス解析 documents AdSense, Google Analytics, and consent", () => {

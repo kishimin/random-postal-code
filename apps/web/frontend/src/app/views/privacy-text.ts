@@ -60,6 +60,7 @@ const purposeOfUse: PrivacySection = {
   heading: "2. 利用目的",
   paragraphs: [
     "選択した住所を地図に表示するため、Google Maps（Maps Embed API）を利用しています。地図の領域が画面に表示されると、選択した住所がGoogleへ送信され、Googleのサーバーから地図が読み込まれます。Google側の設定により、お使いのブラウザにCookieが保存される場合があります。「Googleマップで開く」を選ぶと、その住所でGoogleマップのサイトを開きます。",
+    "Android版アプリで住所を選んでGoogleマップで開くと、その住所がGoogleへ送信されます。",
   ],
 };
 
