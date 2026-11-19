@@ -16,16 +16,19 @@
  * - DEMO_VIDEO_FONT: a font with Japanese glyphs for the captions.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 import { browserProjects } from "../playwright.projects.ts";
 import {
+  companionFiles,
   ffmpegArguments,
   MAX_TOTAL_SECONDS,
   MIN_TOTAL_SECONDS,
   planDemoVideo,
   recordingDirectoriesFor,
+  thumbnailArguments,
+  thumbnailSeconds,
 } from "./demo-video-plan.ts";
 
 const mediaDirectory = path.join(homedir(), ".zipnami-media", "v1.0.0");
@@ -95,7 +98,28 @@ const main = () => {
     );
   }
 
+  // upload:demo reads both: the plan for the chapters, so they follow the
+  // video that was built rather than the recordings as they are now.
+  const companions = companionFiles(outputFile);
+  writeFileSync(companions.plan, `${JSON.stringify(plan, null, 2)}\n`);
+  execFileSync(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      ...thumbnailArguments({
+        videoFile: outputFile,
+        atSeconds: thumbnailSeconds(plan),
+        outputFile: companions.thumbnail,
+        fontFile,
+      }),
+    ],
+    { stdio: "inherit" },
+  );
+
   console.error(`Demo video: ${outputFile} (${builtSeconds.toFixed(1)} s)`);
+  console.error(`Thumbnail: ${companions.thumbnail}`);
 };
 
 try {

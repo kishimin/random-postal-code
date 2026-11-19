@@ -202,6 +202,47 @@ export const recordingDirectoriesFor = (
     return only;
   });
 
+/**
+ * The files edit:demo writes beside the video, for upload:demo to read.
+ * @param {string} videoFile - The edited video's path.
+ * @returns {{ plan: string, thumbnail: string, upload: string }} The plan the
+ * video was encoded from, its thumbnail, and the record of its upload.
+ */
+export const companionFiles = (
+  videoFile: string,
+): { plan: string; thumbnail: string; upload: string } => {
+  const base = videoFile.replace(/\.[^./\\]+$/, "");
+
+  return {
+    plan: `${base}.plan.json`,
+    thumbnail: `${base}.thumbnail.jpg`,
+    upload: `${base}.youtube.json`,
+  };
+};
+
+// Far enough into the first recording that the journey shows a generated
+// result, which says more about the site than its empty start screen.
+const THUMBNAIL_SECONDS_INTO_RECORDING = 17;
+
+/**
+ * Where in the edited video the thumbnail frame is taken.
+ * @param {DemoVideoPlan} plan - The plan the video was encoded from.
+ * @returns {number} Seconds from the start of the video.
+ */
+export const thumbnailSeconds = (plan: DemoVideoPlan): number => {
+  const [first] = plan.sections;
+  if (first === undefined) {
+    throw new Error("A plan with no sections has no thumbnail");
+  }
+  const recordingStart = first.startSeconds + first.caption.durationSeconds;
+  const recordingEnd = first.startSeconds + first.durationSeconds;
+
+  return Math.min(
+    recordingStart + THUMBNAIL_SECONDS_INTO_RECORDING,
+    recordingEnd - 1,
+  );
+};
+
 const WIDTH = 1920;
 const HEIGHT = 1080;
 const FPS = 30;
@@ -236,6 +277,40 @@ type EncodeRequest = {
   /** A font with Japanese glyphs; the captions are tofu without one. */
   fontFile: string;
 };
+
+/** The words on the thumbnail. */
+export const THUMBNAIL_TEXT = "6つのブラウザで使う Zipnami";
+
+/**
+ * The ffmpeg arguments that take the thumbnail from the edited video: one
+ * 1280x720 frame (YouTube's recommended size) with the title drawn on a band.
+ * @param {{ videoFile: string, atSeconds: number, outputFile: string, fontFile: string }} request -
+ * The video, where the frame is, the JPEG to write, and the font.
+ * @returns {string[]} Arguments for ffmpeg, without the program name.
+ */
+export const thumbnailArguments = (request: {
+  videoFile: string;
+  atSeconds: number;
+  outputFile: string;
+  fontFile: string;
+}): string[] => [
+  "-y",
+  "-ss",
+  String(request.atSeconds),
+  "-i",
+  request.videoFile,
+  "-frames:v",
+  "1",
+  "-vf",
+  [
+    "scale=1280:720",
+    `drawbox=x=0:y=ih-180:w=iw:h=180:color=${BACKGROUND}@0.88:t=fill`,
+    `drawtext=fontfile=${filterOptionValue(request.fontFile)}:text=${drawtextText(THUMBNAIL_TEXT)}:fontcolor=white:fontsize=72:x=(w-text_w)/2:y=h-90-text_h/2`,
+  ].join(","),
+  "-q:v",
+  "3",
+  request.outputFile,
+];
 
 /**
  * The ffmpeg arguments that encode a plan into one video.

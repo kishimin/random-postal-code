@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   CAPTION_SECONDS,
+  companionFiles,
   ffmpegArguments,
   filterOptionValue,
   isRecordingDirectoryOf,
   planDemoVideo,
   recordingDirectoriesFor,
+  THUMBNAIL_TEXT,
+  thumbnailArguments,
+  thumbnailSeconds,
 } from "./demo-video-plan.ts";
 
 const SIX_BROWSERS = [
@@ -191,6 +195,71 @@ describe("filterOptionValue", () => {
     expect(filterOptionValue("パソコンの Google Chrome")).toBe(
       "パソコンの Google Chrome",
     );
+  });
+});
+
+describe("companionFiles", () => {
+  it("writes the plan, thumbnail, and upload record beside the video", () => {
+    expect(companionFiles("C:/media/v1.0.0/demo.mp4")).toEqual({
+      plan: "C:/media/v1.0.0/demo.plan.json",
+      thumbnail: "C:/media/v1.0.0/demo.thumbnail.jpg",
+      upload: "C:/media/v1.0.0/demo.youtube.json",
+    });
+  });
+
+  it("keeps a dot in a directory name", () => {
+    expect(companionFiles("C:/media/v1.0.0/demo").plan).toBe(
+      "C:/media/v1.0.0/demo.plan.json",
+    );
+  });
+});
+
+describe("thumbnailSeconds", () => {
+  it("takes the frame 17 seconds into the first recording, past its caption", () => {
+    const plan = planDemoVideo(recordingsOf(32));
+
+    expect(thumbnailSeconds(plan)).toBeCloseTo(CAPTION_SECONDS + 17, 3);
+  });
+
+  it("stays inside the first section when its recording is shorter", () => {
+    const plan = planDemoVideo(recordingsOf(14));
+    const [first] = plan.sections;
+
+    expect(thumbnailSeconds(plan)).toBeLessThan(
+      (first?.startSeconds ?? 0) + (first?.durationSeconds ?? 0),
+    );
+  });
+});
+
+describe("thumbnailArguments", () => {
+  const args = thumbnailArguments({
+    videoFile: "out/demo.mp4",
+    atSeconds: 20,
+    outputFile: "out/demo.thumbnail.jpg",
+    fontFile: "C:/Windows/Fonts/meiryo.ttc",
+  });
+  const filter = args[args.indexOf("-vf") + 1] ?? "";
+
+  it("takes one frame at the given time from the edited video", () => {
+    expect(args.slice(args.indexOf("-ss"), args.indexOf("-ss") + 4)).toEqual([
+      "-ss",
+      "20",
+      "-i",
+      "out/demo.mp4",
+    ]);
+    expect(
+      args.slice(args.indexOf("-frames:v"), args.indexOf("-frames:v") + 2),
+    ).toEqual(["-frames:v", "1"]);
+  });
+
+  it("sizes it 1280x720 and draws the title with the given font", () => {
+    expect(filter).toContain("scale=1280:720");
+    expect(filter).toContain(`text=${THUMBNAIL_TEXT}:`);
+    expect(filter).toContain("fontfile=C\\\\:/Windows/Fonts/meiryo.ttc:");
+  });
+
+  it("writes the JPEG last", () => {
+    expect(args.at(-1)).toBe("out/demo.thumbnail.jpg");
   });
 });
 
