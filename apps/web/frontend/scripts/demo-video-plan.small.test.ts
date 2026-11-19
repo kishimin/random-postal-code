@@ -129,9 +129,9 @@ describe("isRecordingDirectoryOf", () => {
   });
 
   it("does not take the iPhone (Safari) directory for Safari", () => {
-    expect(isRecordingDirectoryOf(directoryOf("iPhone-Safari-"), "Safari")).toBe(
-      false,
-    );
+    expect(
+      isRecordingDirectoryOf(directoryOf("iPhone-Safari-"), "Safari"),
+    ).toBe(false);
   });
 });
 

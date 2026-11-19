@@ -99,7 +99,8 @@ const checkRecordings = (recordings: Recording[]) => {
  * browsers would otherwise read a slower section as a slower site.
  */
 const paceFor = (recordedSeconds: number, captionSeconds: number) => {
-  const towardTarget = (TARGET_TOTAL_SECONDS - captionSeconds) / recordedSeconds;
+  const towardTarget =
+    (TARGET_TOTAL_SECONDS - captionSeconds) / recordedSeconds;
   const slowed = Math.min(Math.max(towardTarget, 1), MAX_STRETCH);
   const longest =
     MAX_TOTAL_SECONDS - FRAME_ROUNDING_MARGIN_SECONDS - captionSeconds;
@@ -111,8 +112,9 @@ const paceFor = (recordedSeconds: number, captionSeconds: number) => {
 
 /**
  * Lays out one section per recording, in the order given.
- * @param recordings One per browser, in the order the video shows them.
- * @returns The sections and the length of the whole video.
+ * @param {Recording[]} recordings - One per browser, in the order the video
+ * shows them.
+ * @returns {DemoVideoPlan} The sections and the length of the whole video.
  */
 export const planDemoVideo = (recordings: Recording[]): DemoVideoPlan => {
   checkRecordings(recordings);
@@ -136,14 +138,16 @@ export const planDemoVideo = (recordings: Recording[]): DemoVideoPlan => {
     );
   }
 
-  let startSeconds = 0;
+  const durations = recordings.map(
+    (recording) => CAPTION_SECONDS + recording.durationSeconds * stretch,
+  );
   const sections = recordings.map((recording, index): Section => {
-    const durationSeconds =
-      CAPTION_SECONDS + recording.durationSeconds * stretch;
-    const section = {
+    const startSeconds = sum(durations.slice(0, index));
+
+    return {
       project: recording.project,
       startSeconds,
-      durationSeconds,
+      durationSeconds: durations[index] ?? 0,
       stretch,
       caption: {
         text: CAPTIONS.get(recording.project) ?? recording.project,
@@ -152,21 +156,18 @@ export const planDemoVideo = (recordings: Recording[]): DemoVideoPlan => {
         durationSeconds: CAPTION_SECONDS,
       },
     };
-    startSeconds += durationSeconds;
-
-    return section;
   });
 
   return { sections, totalSeconds };
 };
 
 /**
- * Whether a directory Playwright wrote is the recording of a project.
+ * Whether a directory Playwright wrote holds the recording of a project.
  * Playwright ends each test's output directory with the project name, every
  * run of other characters turned into one "-".
- * @param directoryName The directory's own name, not its path.
- * @param project The Playwright project name.
- * @returns True when the directory belongs to that project.
+ * @param {string} directoryName - The directory's own name, not its path.
+ * @param {string} project - The Playwright project name.
+ * @returns {boolean} True when the directory belongs to that project.
  */
 export const isRecordingDirectoryOf = (
   directoryName: string,
@@ -195,15 +196,13 @@ type EncodeRequest = {
 
 /**
  * The ffmpeg arguments that encode a plan into one video.
- * @param request The plan, its recordings, the output, and the caption font.
- * @returns Arguments for ffmpeg, without the program name.
+ * @param {EncodeRequest} request - The plan, its recordings, the output, and
+ * the caption font.
+ * @returns {string[]} Arguments for ffmpeg, without the program name.
  */
-export const ffmpegArguments = ({
-  plan,
-  videoFiles,
-  outputFile,
-  fontFile,
-}: EncodeRequest): string[] => {
+export const ffmpegArguments = (request: EncodeRequest): string[] => {
+  const { plan, videoFiles, outputFile, fontFile } = request;
+
   if (videoFiles.length !== plan.sections.length) {
     throw new Error(
       `${String(plan.sections.length)} sections need ${String(plan.sections.length)} recordings, got ${String(videoFiles.length)}`,
@@ -224,8 +223,7 @@ export const ffmpegArguments = ({
   const joined =
     plan.sections
       .map((_, index) => `[caption${String(index)}][recording${String(index)}]`)
-      .join("") +
-    `concat=n=${String(plan.sections.length * 2)}:v=1:a=0[video]`;
+      .join("") + `concat=n=${String(plan.sections.length * 2)}:v=1:a=0[video]`;
 
   return [
     "-y",
