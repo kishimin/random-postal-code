@@ -22,10 +22,10 @@ import path from "node:path";
 import { browserProjects } from "../playwright.projects.ts";
 import {
   ffmpegArguments,
-  isRecordingDirectoryOf,
   MAX_TOTAL_SECONDS,
   MIN_TOTAL_SECONDS,
   planDemoVideo,
+  recordingDirectoriesFor,
 } from "./demo-video-plan.ts";
 
 const mediaDirectory = path.join(homedir(), ".zipnami-media", "v1.0.0");
@@ -55,23 +55,6 @@ const durationOf = (file: string): number =>
     ).trim(),
   );
 
-const recordingOf = (project: string): string => {
-  const directories = readdirSync(recordingsDirectory, { withFileTypes: true })
-    .filter(
-      (entry) =>
-        entry.isDirectory() && isRecordingDirectoryOf(entry.name, project),
-    )
-    .map((entry) => entry.name);
-
-  if (directories.length !== 1) {
-    throw new Error(
-      `Expected one recording of ${project} in ${recordingsDirectory}, found ${String(directories.length)}; run bun run record:demo first.`,
-    );
-  }
-
-  return path.join(recordingsDirectory, directories[0] ?? "", "video.webm");
-};
-
 const main = () => {
   if (!existsSync(fontFile)) {
     throw new Error(
@@ -79,12 +62,16 @@ const main = () => {
     );
   }
 
-  const videoFiles = browserProjects.map((project) =>
-    recordingOf(project.name ?? ""),
+  const projects = browserProjects.map((project) => project.name ?? "");
+  const directories = readdirSync(recordingsDirectory, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+  const videoFiles = recordingDirectoriesFor(projects, directories).map(
+    (directory) => path.join(recordingsDirectory, directory, "video.webm"),
   );
   const plan = planDemoVideo(
-    browserProjects.map((project, index) => ({
-      project: project.name ?? "",
+    projects.map((project, index) => ({
+      project,
       durationSeconds: durationOf(videoFiles[index] ?? ""),
     })),
   );
@@ -114,6 +101,14 @@ const main = () => {
 try {
   main();
 } catch (error) {
-  console.error(error instanceof Error ? error.message : error);
+  const notInstalled =
+    error instanceof Error && "code" in error && error.code === "ENOENT";
+  console.error(
+    notInstalled
+      ? "ffmpeg or ffprobe was not found. Install ffmpeg (for example, winget install Gyan.FFmpeg) and make sure both are on PATH."
+      : error instanceof Error
+        ? error.message
+        : error,
+  );
   process.exit(1);
 }

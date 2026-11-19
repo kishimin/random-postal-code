@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   CAPTION_SECONDS,
   ffmpegArguments,
+  filterOptionValue,
   isRecordingDirectoryOf,
   planDemoVideo,
+  recordingDirectoriesFor,
 } from "./demo-video-plan.ts";
 
 const SIX_BROWSERS = [
@@ -135,6 +137,63 @@ describe("isRecordingDirectoryOf", () => {
   });
 });
 
+describe("recordingDirectoriesFor", () => {
+  const directoryOf = (suffix: string) => `demo-journey-89711-${suffix}`;
+
+  it("lists the directories in the order of the projects, not of the file system", () => {
+    expect(
+      recordingDirectoriesFor(
+        ["Google Chrome", "Android (Chrome)", "Safari"],
+        [
+          directoryOf("Android-Chrome-"),
+          directoryOf("Google-Chrome"),
+          directoryOf("Safari"),
+        ],
+      ),
+    ).toEqual([
+      directoryOf("Google-Chrome"),
+      directoryOf("Android-Chrome-"),
+      directoryOf("Safari"),
+    ]);
+  });
+
+  it("names a project with no recording", () => {
+    expect(() =>
+      recordingDirectoriesFor(["Firefox"], [directoryOf("Safari")]),
+    ).toThrow(/Firefox.*found 0/);
+  });
+
+  it("names a project recorded in two directories", () => {
+    expect(() =>
+      recordingDirectoriesFor(
+        ["Safari"],
+        ["first-run-Safari", "second-run-Safari"],
+      ),
+    ).toThrow(/Safari.*found 2/);
+  });
+});
+
+describe("filterOptionValue", () => {
+  it.each([
+    ["the option separator", "C:/Fonts/a.ttc", "C\\\\:/Fonts/a.ttc"],
+    ["a quote", "O'Neil", "O\\\\\\'Neil"],
+    [
+      "the characters that end a filter or name a pad",
+      "a,b[c];d",
+      "a\\,b\\[c\\]\\;d",
+    ],
+    ["a backslash", "a\\b", "a\\\\\\\\b"],
+  ])("escapes %s for both of ffmpeg's passes", (_, value, escaped) => {
+    expect(filterOptionValue(value)).toBe(escaped);
+  });
+
+  it("leaves Japanese text and spaces as they are", () => {
+    expect(filterOptionValue("パソコンの Google Chrome")).toBe(
+      "パソコンの Google Chrome",
+    );
+  });
+});
+
 describe("ffmpegArguments", () => {
   const plan = planDemoVideo(recordingsOf(20));
   const videoFiles = SIX_BROWSERS.map((project) => `in/${project}.webm`);
@@ -156,9 +215,9 @@ describe("ffmpegArguments", () => {
 
   it("draws every caption with the given font", () => {
     for (const section of plan.sections) {
-      expect(filter).toContain(`text='${section.caption.text}'`);
+      expect(filter).toContain(`text=${section.caption.text}:`);
     }
-    expect(filter).toContain("fontfile='C\\:/Windows/Fonts/meiryo.ttc'");
+    expect(filter).toContain("fontfile=C\\\\:/Windows/Fonts/meiryo.ttc:");
   });
 
   it("joins a caption card and a recording per section, with no sound", () => {
@@ -167,9 +226,11 @@ describe("ffmpegArguments", () => {
   });
 
   it("plays each recording at the planned pace", () => {
-    expect(filter).toContain(
-      `setpts=${String(plan.sections[0]?.stretch)}*(PTS-STARTPTS)`,
-    );
+    plan.sections.forEach((section, index) => {
+      expect(filter).toContain(
+        `[${String(index)}:v]setpts=${String(section.stretch)}*(PTS-STARTPTS),`,
+      );
+    });
   });
 
   it("writes the video last, overwriting an earlier build", () => {

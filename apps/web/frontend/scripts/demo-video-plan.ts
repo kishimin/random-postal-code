@@ -175,15 +175,58 @@ export const isRecordingDirectoryOf = (
 ): boolean =>
   directoryName.endsWith(`-${project.replace(/[^A-Za-z0-9]+/g, "-")}`);
 
+/**
+ * Picks each project's recording directory, in the order of the projects
+ * rather than the order the file system lists them, which is the order the
+ * video shows.
+ * @param {string[]} projects - The Playwright project names, in video order.
+ * @param {string[]} directoryNames - The directories the recording run wrote.
+ * @returns {string[]} One directory name per project, in the same order.
+ */
+export const recordingDirectoriesFor = (
+  projects: string[],
+  directoryNames: string[],
+): string[] =>
+  projects.map((project) => {
+    const matches = directoryNames.filter((name) =>
+      isRecordingDirectoryOf(name, project),
+    );
+    const [only] = matches;
+
+    if (matches.length !== 1 || only === undefined) {
+      throw new Error(
+        `Expected one recording of ${project}, found ${String(matches.length)}; run bun run record:demo first.`,
+      );
+    }
+
+    return only;
+  });
+
 const WIDTH = 1920;
 const HEIGHT = 1080;
 const FPS = 30;
 const BACKGROUND = "0x1c1917";
 
-// A value inside single quotes in a filter graph: only the quote itself, the
-// backslash, the option separator, and drawtext's own % expansion need it.
-const quoted = (value: string) =>
-  `'${value.replace(/[\\':%]/g, (character) => `\\${character}`)}'`;
+const escaping =
+  (special: RegExp) =>
+  (value: string): string =>
+    value.replace(special, (character) => `\\${character}`);
+
+/**
+ * Escapes a value for a filter option inside -filter_complex. ffmpeg unescapes
+ * it twice: first as the filter graph (where , ; [ ] end a filter or name a
+ * pad), then as the filter's options (where : ends an option). Single quotes
+ * are not used, because inside them a backslash is kept literally, so a quote
+ * in the value could never be escaped.
+ * @param {string} value - The option value as it should reach the filter.
+ * @returns {string} The value to write after `option=`.
+ */
+export const filterOptionValue = (value: string): string =>
+  escaping(/[\\'[\],;]/g)(escaping(/[\\':]/g)(value));
+
+// drawtext reads its text a third time, expanding %{...} and \ sequences.
+const drawtextText = (value: string) =>
+  filterOptionValue(escaping(/[\\%]/g)(value));
 
 type EncodeRequest = {
   plan: DemoVideoPlan;
@@ -209,11 +252,11 @@ export const ffmpegArguments = (request: EncodeRequest): string[] => {
     );
   }
 
-  const font = `fontfile=${quoted(fontFile)}`;
+  const font = `fontfile=${filterOptionValue(fontFile)}`;
   const chains = plan.sections.flatMap((section, index) => [
     `color=c=${BACKGROUND}:s=${String(WIDTH)}x${String(HEIGHT)}:r=${String(FPS)}:d=${String(section.caption.durationSeconds)},` +
-      `drawtext=${font}:text=${quoted(section.caption.text)}:fontcolor=white:fontsize=96:x=(w-text_w)/2:y=(h-text_h)/2-60,` +
-      `drawtext=${font}:text=${quoted(section.caption.subtitle)}:fontcolor=0xd6d3d1:fontsize=48:x=(w-text_w)/2:y=h/2+80,` +
+      `drawtext=${font}:text=${drawtextText(section.caption.text)}:fontcolor=white:fontsize=96:x=(w-text_w)/2:y=(h-text_h)/2-60,` +
+      `drawtext=${font}:text=${drawtextText(section.caption.subtitle)}:fontcolor=0xd6d3d1:fontsize=48:x=(w-text_w)/2:y=h/2+80,` +
       `setsar=1,format=yuv420p[caption${String(index)}]`,
     `[${String(index)}:v]setpts=${String(section.stretch)}*(PTS-STARTPTS),fps=${String(FPS)},` +
       `scale=${String(WIDTH)}:${String(HEIGHT)}:force_original_aspect_ratio=decrease,` +
