@@ -9,9 +9,9 @@
  * Never prints them: every message from Google passes through redactSecrets
  * first, since an error printed in a terminal is easily pasted into an Issue.
  *
- * Records the uploaded video's ID beside the video and refuses to upload the
- * same file twice, so running it again after a failure late in the run does
- * not leave two private copies on the channel.
+ * Records its progress beside the video and never sends the video twice: a
+ * run after a thumbnail failure sets only the thumbnail, and a run after an
+ * upload that may have half-finished stops and asks for a look at Studio.
  */
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -20,7 +20,9 @@ import { companionFiles } from "./demo-video-plan.ts";
 import {
   type ChapterSource,
   CREDENTIAL_VARIABLES,
+  nextUploadAction,
   redactSecrets,
+  type UploadRecord,
   type UploadStep,
   uploadSteps,
   videoResource,
@@ -38,6 +40,13 @@ const credentials = {
 };
 // Filled in once the token request answers, so later errors redact it too.
 const secrets = [credentials.clientSecret, credentials.refreshToken];
+
+const record = (progress: UploadRecord) => {
+  writeFileSync(companions.upload, `${JSON.stringify(progress, null, 2)}\n`);
+};
+
+const studioUrl = (videoId: string) =>
+  `https://studio.youtube.com/video/${encodeURIComponent(videoId)}/edit`;
 
 const stepUrl = (name: UploadStep["name"]): string => {
   const step = uploadSteps().find((candidate) => candidate.name === name);
@@ -138,25 +147,41 @@ const main = async () => {
       throw new Error(`${file} is missing; run bun run edit:demo first.`);
     }
   }
-  if (existsSync(companions.upload)) {
-    throw new Error(
-      `${videoFile} was already uploaded (${companions.upload}). Delete that file to upload it again.`,
+  const action = nextUploadAction(
+    existsSync(companions.upload)
+      ? (JSON.parse(readFileSync(companions.upload, "utf8")) as UploadRecord)
+      : undefined,
+  );
+  if (action.kind === "stop") {
+    throw new Error(`${action.reason} (${companions.upload})`);
+  }
+  if (action.kind === "nothing") {
+    console.error(
+      `Already uploaded with its thumbnail: ${studioUrl(action.videoId)}`,
     );
+    return;
   }
 
-  const plan = JSON.parse(
-    readFileSync(companions.plan, "utf8"),
-  ) as ChapterSource;
   const token = await accessToken();
-  const videoId = await uploadVideo(token, plan);
-  // Recorded before the thumbnail, so a thumbnail failure is retried by hand
-  // rather than by uploading the video again.
-  writeFileSync(companions.upload, `${JSON.stringify({ videoId }, null, 2)}\n`);
+  const videoId =
+    action.kind === "thumbnail"
+      ? action.videoId
+      : await (async () => {
+          const plan = JSON.parse(
+            readFileSync(companions.plan, "utf8"),
+          ) as ChapterSource;
+          record({ state: "started" });
+          const id = await uploadVideo(token, plan);
+          record({ state: "uploaded", videoId: id });
+          return id;
+        })();
+  // A thumbnail failure (for example, a channel not yet verified for custom
+  // thumbnails) leaves the record at "uploaded", so the next run sets only
+  // the thumbnail.
   await setThumbnail(token, videoId);
+  record({ state: "done", videoId });
 
-  console.error(
-    `Uploaded as private: https://studio.youtube.com/video/${videoId}/edit`,
-  );
+  console.error(`Uploaded as private: ${studioUrl(videoId)}`);
 };
 
 main().catch((error: unknown) => {

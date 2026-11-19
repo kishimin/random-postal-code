@@ -12,7 +12,7 @@
  * The token is printed rather than written to a file in the repository, so it
  * can never be committed. Do not paste it into an Issue, a PR, or a chat.
  */
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import {
@@ -33,6 +33,10 @@ if (clientId === "" || clientSecret === "") {
 }
 
 const state = randomUUID();
+const codeVerifier = randomBytes(48).toString("base64url");
+const codeChallenge = createHash("sha256")
+  .update(codeVerifier)
+  .digest("base64url");
 
 const exchange = async (code: string, redirectUri: string): Promise<string> => {
   const response = await fetch(TOKEN_URL, {
@@ -43,6 +47,7 @@ const exchange = async (code: string, redirectUri: string): Promise<string> => {
       client_secret: clientSecret,
       redirect_uri: redirectUri,
       grant_type: "authorization_code",
+      code_verifier: codeVerifier,
     }),
   });
   const text = await response.text();
@@ -99,7 +104,11 @@ const server = createServer((request, response) => {
     })
     .catch((error: unknown) => {
       finish(500, "失敗しました。ターミナルを確認してください。");
-      console.error(error instanceof Error ? error.message : String(error));
+      console.error(
+        redactSecrets(error instanceof Error ? error.message : String(error), [
+          clientSecret,
+        ]),
+      );
       process.exitCode = 1;
     });
 });
@@ -108,7 +117,12 @@ server.listen(0, "127.0.0.1", () => {
   const { port } = server.address() as AddressInfo;
   console.error(
     `Open this page, sign in with the channel's Google account, and allow the upload:\n\n${authorizationUrl(
-      { clientId, redirectUri: `http://127.0.0.1:${String(port)}`, state },
+      {
+        clientId,
+        redirectUri: `http://127.0.0.1:${String(port)}`,
+        state,
+        codeChallenge,
+      },
     )}\n`,
   );
 });

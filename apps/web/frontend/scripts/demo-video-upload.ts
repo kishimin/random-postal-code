@@ -101,6 +101,48 @@ export const uploadSteps = (): UploadStep[] => [
 ];
 
 /**
+ * How far an earlier run got, as upload-demo-video.ts records it beside the
+ * video. "started" is written before the video is sent, so a run that dies
+ * mid-upload is never mistaken for one that never began.
+ */
+export type UploadRecord =
+  | { state: "started" }
+  | { state: "uploaded"; videoId: string }
+  | { state: "done"; videoId: string };
+
+export type UploadAction =
+  | { kind: "upload" }
+  | { kind: "thumbnail"; videoId: string }
+  | { kind: "nothing"; videoId: string }
+  | { kind: "stop"; reason: string };
+
+/**
+ * What a run does, given how far the last one got. Never uploads the video a
+ * second time: a run that stopped after sending may already have created it.
+ * @param {UploadRecord | undefined} record - The record, if one exists.
+ * @returns {UploadAction} The one thing this run does.
+ */
+export const nextUploadAction = (
+  record: UploadRecord | undefined,
+): UploadAction => {
+  if (record === undefined) {
+    return { kind: "upload" };
+  }
+  switch (record.state) {
+    case "started":
+      return {
+        kind: "stop",
+        reason:
+          "An earlier upload started but did not finish. Check YouTube Studio for a private copy before deleting the upload record to try again.",
+      };
+    case "uploaded":
+      return { kind: "thumbnail", videoId: record.videoId };
+    case "done":
+      return { kind: "nothing", videoId: record.videoId };
+  }
+};
+
+/**
  * Removes every secret from text before it is printed. Google's error bodies
  * can echo what was sent, and an error printed in a terminal is easily pasted
  * into an Issue.
@@ -120,15 +162,19 @@ export const redactSecrets = (text: string, secrets: string[]): string =>
 
 /**
  * The consent page for authorize-youtube.ts, for a Desktop OAuth client that
- * redirects to a loopback address.
- * @param {{ clientId: string, redirectUri: string, state: string }} request -
- * The client, where Google sends the code, and a value to match it against.
+ * redirects to a loopback address. PKCE (S256) as well as state, as Google
+ * recommends for installed apps: another process on the machine that catches
+ * the code still cannot exchange it.
+ * @param {{ clientId: string, redirectUri: string, state: string, codeChallenge: string }} request -
+ * The client, where Google sends the code, a value to match it against, and
+ * the S256 challenge of the verifier the exchange will send.
  * @returns {string} The URL the owner opens once.
  */
 export const authorizationUrl = (request: {
   clientId: string;
   redirectUri: string;
   state: string;
+  codeChallenge: string;
 }): string =>
   `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
     client_id: request.clientId,
@@ -140,4 +186,6 @@ export const authorizationUrl = (request: {
     access_type: "offline",
     prompt: "consent",
     state: request.state,
+    code_challenge: request.codeChallenge,
+    code_challenge_method: "S256",
   }).toString()}`;

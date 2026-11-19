@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   authorizationUrl,
+  nextUploadAction,
   redactSecrets,
   UPLOAD_SCOPE,
   videoResource,
@@ -74,14 +75,46 @@ describe("redactSecrets", () => {
   });
 });
 
+describe("nextUploadAction", () => {
+  it("uploads when no earlier run left a record", () => {
+    expect(nextUploadAction(undefined)).toEqual({ kind: "upload" });
+  });
+
+  it("sets only the thumbnail when the video went up but the thumbnail did not", () => {
+    expect(nextUploadAction({ state: "uploaded", videoId: "abc" })).toEqual({
+      kind: "thumbnail",
+      videoId: "abc",
+    });
+  });
+
+  it("does nothing once the video and its thumbnail are up", () => {
+    expect(nextUploadAction({ state: "done", videoId: "abc" })).toEqual({
+      kind: "nothing",
+      videoId: "abc",
+    });
+  });
+
+  it("stops rather than upload again when an earlier upload may have half-finished", () => {
+    const action = nextUploadAction({ state: "started" });
+
+    expect(action.kind).toBe("stop");
+  });
+});
+
 describe("authorizationUrl", () => {
   const url = new URL(
     authorizationUrl({
       clientId: "client.apps.googleusercontent.com",
       redirectUri: "http://127.0.0.1:53682",
       state: "state-123",
+      codeChallenge: "challenge-abc",
     }),
   );
+
+  it("binds the code to a PKCE S256 challenge", () => {
+    expect(url.searchParams.get("code_challenge")).toBe("challenge-abc");
+    expect(url.searchParams.get("code_challenge_method")).toBe("S256");
+  });
 
   it("asks only for the upload scope", () => {
     expect(url.searchParams.get("scope")).toBe(UPLOAD_SCOPE);
