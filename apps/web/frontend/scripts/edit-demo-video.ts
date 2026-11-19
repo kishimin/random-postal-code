@@ -1,0 +1,119 @@
+/*
+ * Builds the edited v1.0.0 demo video from the six recordings that
+ * `bun run record:demo` keeps (Issue #132, step 4).
+ *
+ * Usage: bun run edit:demo
+ *
+ * Needs ffmpeg and ffprobe on PATH. The video is written outside git, next to
+ * the recordings, and its length is measured again after encoding, so a build
+ * that came out shorter or longer than 2 to 4 minutes fails here rather than
+ * on YouTube.
+ *
+ * Settings, all optional:
+ * - RECORDING_OUTPUT_DIR: where the recordings are (the recording config's
+ *   own setting, so both commands agree on one place).
+ * - DEMO_VIDEO_OUTPUT: the video to write.
+ * - DEMO_VIDEO_FONT: a font with Japanese glyphs for the captions.
+ */
+import { execFileSync } from "node:child_process";
+import { existsSync, readdirSync } from "node:fs";
+import { homedir } from "node:os";
+import path from "node:path";
+import { browserProjects } from "../playwright.projects.ts";
+import {
+  ffmpegArguments,
+  isRecordingDirectoryOf,
+  MAX_TOTAL_SECONDS,
+  MIN_TOTAL_SECONDS,
+  planDemoVideo,
+} from "./demo-video-plan.ts";
+
+const mediaDirectory = path.join(homedir(), ".zipnami-media", "v1.0.0");
+const recordingsDirectory =
+  process.env.RECORDING_OUTPUT_DIR ?? path.join(mediaDirectory, "recordings");
+const outputFile =
+  process.env.DEMO_VIDEO_OUTPUT ??
+  path.join(mediaDirectory, "zipnami-v1.0.0-demo.mp4");
+// Meiryo ships with every Japanese-capable Windows, the machine this is run
+// on; elsewhere, name a font with DEMO_VIDEO_FONT.
+const fontFile = process.env.DEMO_VIDEO_FONT ?? "C:/Windows/Fonts/meiryo.ttc";
+
+const durationOf = (file: string): number =>
+  Number(
+    execFileSync(
+      "ffprobe",
+      [
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "default=noprint_wrappers=1:nokey=1",
+        file,
+      ],
+      { encoding: "utf8" },
+    ).trim(),
+  );
+
+const recordingOf = (project: string): string => {
+  const directories = readdirSync(recordingsDirectory, { withFileTypes: true })
+    .filter(
+      (entry) =>
+        entry.isDirectory() && isRecordingDirectoryOf(entry.name, project),
+    )
+    .map((entry) => entry.name);
+
+  if (directories.length !== 1) {
+    throw new Error(
+      `Expected one recording of ${project} in ${recordingsDirectory}, found ${String(directories.length)}; run bun run record:demo first.`,
+    );
+  }
+
+  return path.join(recordingsDirectory, directories[0] ?? "", "video.webm");
+};
+
+const main = () => {
+  if (!existsSync(fontFile)) {
+    throw new Error(
+      `Caption font not found: ${fontFile}. Set DEMO_VIDEO_FONT to a font with Japanese glyphs.`,
+    );
+  }
+
+  const videoFiles = browserProjects.map((project) =>
+    recordingOf(project.name ?? ""),
+  );
+  const plan = planDemoVideo(
+    browserProjects.map((project, index) => ({
+      project: project.name ?? "",
+      durationSeconds: durationOf(videoFiles[index] ?? ""),
+    })),
+  );
+
+  execFileSync(
+    "ffmpeg",
+    [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-stats",
+      ...ffmpegArguments({ plan, videoFiles, outputFile, fontFile }),
+    ],
+    { stdio: "inherit" },
+  );
+
+  const builtSeconds = durationOf(outputFile);
+  if (builtSeconds < MIN_TOTAL_SECONDS || builtSeconds > MAX_TOTAL_SECONDS) {
+    throw new Error(
+      `The video came out ${builtSeconds.toFixed(1)} s long, outside 2 to 4 minutes.`,
+    );
+  }
+
+  console.error(`Demo video: ${outputFile} (${builtSeconds.toFixed(1)} s)`);
+};
+
+try {
+  main();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+}
