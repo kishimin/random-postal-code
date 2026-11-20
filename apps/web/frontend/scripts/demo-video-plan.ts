@@ -1,6 +1,7 @@
 /*
  * Plans the edited v1.0.0 demo video (Issue #132, step 4): which recording
  * plays when, at what pace, and the caption that opens each browser's section.
+ * The same recordings make a Japanese and an English video (Issue #165).
  *
  * Kept free of ffmpeg and the file system, so the plan can be tested on CI
  * without the recordings (kept outside git) or ffmpeg. edit-demo-video.ts
@@ -27,19 +28,87 @@ export type Section = {
 
 export type DemoVideoPlan = { sections: Section[]; totalSeconds: number };
 
-/*
- * The caption per Playwright project. It is also the list of browsers the
- * video must show: a project with no caption here, or a caption with no
- * recording, stops the build rather than leaving a section unnamed or out.
+const LANGUAGE = { japanese: "ja", english: "en" } as const;
+
+/** The languages the demo video is made in. */
+export type Language = (typeof LANGUAGE)[keyof typeof LANGUAGE];
+
+const LANGUAGES: readonly Language[] = Object.values(LANGUAGE);
+
+/**
+ * The language edit:demo and upload:demo were asked for, from their one
+ * argument. Japanese when none is given, so the commands the Japanese video
+ * was made with keep making it.
+ * @param {string | undefined} argument - The command's first argument.
+ * @returns {Language} The language to make or upload the video in.
  */
-const CAPTIONS: ReadonlyMap<string, string> = new Map([
-  ["Google Chrome", "パソコンの Google Chrome"],
-  ["Microsoft Edge", "パソコンの Microsoft Edge"],
-  ["Safari", "パソコンの Safari"],
-  ["Android (Chrome)", "Android スマートフォンの Chrome"],
-  ["iPhone (Safari)", "iPhone の Safari"],
-  ["Firefox", "パソコンの Firefox"],
-]);
+export const demoLanguage = (argument: string | undefined): Language => {
+  if (argument === undefined) {
+    return "ja";
+  }
+  const language = LANGUAGES.find((candidate) => candidate === argument);
+  if (language === undefined) {
+    throw new Error(
+      `No demo video in "${argument}"; the languages are ${LANGUAGES.join(", ")}.`,
+    );
+  }
+
+  return language;
+};
+
+/**
+ * Where edit:demo writes the video in a language, and upload:demo reads it.
+ * The Japanese file keeps the name it had before there was an English one, so
+ * its plan, thumbnail, and upload record (which companionFiles derives from
+ * it) still describe the video already on YouTube.
+ *
+ * Joined by hand rather than with node:path: the unit tests run in a browser.
+ * @param {string} mediaDirectory - The directory the recordings are kept in.
+ * @param {Language} language - The video's language.
+ * @returns {string} The video's path.
+ */
+export const demoVideoFile = (
+  mediaDirectory: string,
+  language: Language,
+): string => {
+  const separator =
+    mediaDirectory.lastIndexOf("\\") > mediaDirectory.lastIndexOf("/")
+      ? "\\"
+      : "/";
+  const name =
+    language === "ja"
+      ? "zipnami-v1.0.0-demo.mp4"
+      : `zipnami-v1.0.0-demo.${language}.mp4`;
+
+  return `${mediaDirectory}${separator}${name}`;
+};
+
+/*
+ * The caption per Playwright project, per language. Each is also the list of
+ * browsers the video must show: a project with no caption here, or a caption
+ * with no recording, stops the build rather than leaving a section unnamed or
+ * out.
+ */
+const CAPTIONS: Record<Language, ReadonlyMap<string, string>> = {
+  ja: new Map([
+    ["Google Chrome", "パソコンの Google Chrome"],
+    ["Microsoft Edge", "パソコンの Microsoft Edge"],
+    ["Safari", "パソコンの Safari"],
+    ["Android (Chrome)", "Android スマートフォンの Chrome"],
+    ["iPhone (Safari)", "iPhone の Safari"],
+    ["Firefox", "パソコンの Firefox"],
+  ]),
+  en: new Map([
+    ["Google Chrome", "Google Chrome on a computer"],
+    ["Microsoft Edge", "Microsoft Edge on a computer"],
+    // The Playwright project runs WebKit as desktop Safari, which only a Mac
+    // has; "on a computer" would suggest Windows to an English viewer.
+    ["Safari", "Safari on a Mac"],
+    ["Android (Chrome)", "Chrome on an Android phone"],
+    ["iPhone (Safari)", "Safari on an iPhone"],
+    ["Firefox", "Firefox on a computer"],
+  ]),
+};
 
 /** How long the caption card before each recording stays on screen. */
 export const CAPTION_SECONDS = 3;
@@ -60,10 +129,13 @@ const FRAME_ROUNDING_MARGIN_SECONDS = 2;
 const sum = (values: number[]) =>
   values.reduce((total, value) => total + value, 0);
 
-const checkRecordings = (recordings: Recording[]) => {
+const checkRecordings = (
+  recordings: Recording[],
+  captions: ReadonlyMap<string, string>,
+) => {
   const projects = recordings.map((recording) => recording.project);
 
-  const unknown = projects.filter((project) => !CAPTIONS.has(project));
+  const unknown = projects.filter((project) => !captions.has(project));
   if (unknown.length > 0) {
     throw new Error(`No caption for: ${unknown.join(", ")}`);
   }
@@ -75,7 +147,7 @@ const checkRecordings = (recordings: Recording[]) => {
     throw new Error(`Recorded more than once: ${duplicated.join(", ")}`);
   }
 
-  const missing = [...CAPTIONS.keys()].filter(
+  const missing = [...captions.keys()].filter(
     (project) => !projects.includes(project),
   );
   if (missing.length > 0) {
@@ -111,13 +183,19 @@ const paceFor = (recordedSeconds: number, captionSeconds: number) => {
 };
 
 /**
- * Lays out one section per recording, in the order given.
+ * Lays out one section per recording, in the order given. Only the captions
+ * depend on the language, so both videos cut the recordings the same way.
  * @param {Recording[]} recordings - One per browser, in the order the video
  * shows them.
+ * @param {Language} language - The language of the captions.
  * @returns {DemoVideoPlan} The sections and the length of the whole video.
  */
-export const planDemoVideo = (recordings: Recording[]): DemoVideoPlan => {
-  checkRecordings(recordings);
+export const planDemoVideo = (
+  recordings: Recording[],
+  language: Language = "ja",
+): DemoVideoPlan => {
+  const captions = CAPTIONS[language];
+  checkRecordings(recordings, captions);
 
   const recordedSeconds = sum(
     recordings.map((recording) => recording.durationSeconds),
@@ -150,7 +228,7 @@ export const planDemoVideo = (recordings: Recording[]): DemoVideoPlan => {
       durationSeconds: durations[index] ?? 0,
       stretch,
       caption: {
-        text: CAPTIONS.get(recording.project) ?? recording.project,
+        text: captions.get(recording.project) ?? recording.project,
         subtitle: `${String(index + 1)} / ${String(recordings.length)}`,
         startSeconds,
         durationSeconds: CAPTION_SECONDS,
@@ -278,14 +356,28 @@ type EncodeRequest = {
   fontFile: string;
 };
 
-/** The words on the thumbnail. */
-export const THUMBNAIL_TEXT = "6つのブラウザで使う Zipnami";
+const THUMBNAIL_TEXTS: Record<Language, string> = {
+  ja: "6つのブラウザで使う Zipnami",
+  en: "Zipnami in 6 browsers",
+};
+
+/**
+ * The words on the thumbnail of the video in a language.
+ * @param {Language} language - The video's language.
+ * @returns {string} The words drawn on the thumbnail's band.
+ */
+export const thumbnailText = (language: Language): string =>
+  THUMBNAIL_TEXTS[language];
+
+/** The words on the Japanese thumbnail. */
+export const THUMBNAIL_TEXT = thumbnailText("ja");
 
 /**
  * The ffmpeg arguments that take the thumbnail from the edited video: one
  * 1280x720 frame (YouTube's recommended size) with the title drawn on a band.
- * @param {{ videoFile: string, atSeconds: number, outputFile: string, fontFile: string }} request -
- * The video, where the frame is, the JPEG to write, and the font.
+ * @param {{ videoFile: string, atSeconds: number, outputFile: string, fontFile: string, language?: Language }} request -
+ * The video, where the frame is, the JPEG to write, the font, and the
+ * language of the title (Japanese when not given).
  * @returns {string[]} Arguments for ffmpeg, without the program name.
  */
 export const thumbnailArguments = (request: {
@@ -293,6 +385,7 @@ export const thumbnailArguments = (request: {
   atSeconds: number;
   outputFile: string;
   fontFile: string;
+  language?: Language;
 }): string[] => [
   "-y",
   "-ss",
@@ -305,7 +398,7 @@ export const thumbnailArguments = (request: {
   [
     "scale=1280:720",
     `drawbox=x=0:y=ih-180:w=iw:h=180:color=${BACKGROUND}@0.88:t=fill`,
-    `drawtext=fontfile=${filterOptionValue(request.fontFile)}:text=${drawtextText(THUMBNAIL_TEXT)}:fontcolor=white:fontsize=72:x=(w-text_w)/2:y=h-90-text_h/2`,
+    `drawtext=fontfile=${filterOptionValue(request.fontFile)}:text=${drawtextText(thumbnailText(request.language ?? "ja"))}:fontcolor=white:fontsize=72:x=(w-text_w)/2:y=h-90-text_h/2`,
   ].join(","),
   "-q:v",
   "3",

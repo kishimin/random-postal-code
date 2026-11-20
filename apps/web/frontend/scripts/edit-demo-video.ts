@@ -1,18 +1,20 @@
 /*
  * Builds the edited v1.0.0 demo video from the six recordings that
- * `bun run record:demo` keeps (Issue #132, step 4).
+ * `bun run record:demo` keeps (Issue #132, step 4), in Japanese or, from the
+ * same recordings, in English (Issue #165).
  *
- * Usage: bun run edit:demo
+ * Usage: bun run edit:demo        (Japanese)
+ *        bun run edit:demo en     (English)
  *
  * Needs ffmpeg and ffprobe on PATH. The video is written outside git, next to
- * the recordings, and its length is measured again after encoding, so a build
- * that came out shorter or longer than 2 to 4 minutes fails here rather than
- * on YouTube.
+ * the recordings, one file per language, and its length is measured again
+ * after encoding, so a build that came out shorter or longer than 2 to 4
+ * minutes fails here rather than on YouTube.
  *
  * Settings, all optional:
  * - RECORDING_OUTPUT_DIR: where the recordings are (the recording config's
  *   own setting, so both commands agree on one place).
- * - DEMO_VIDEO_OUTPUT: the video to write.
+ * - DEMO_VIDEO_OUTPUT: the video to write, in place of the language's own file.
  * - DEMO_VIDEO_FONT: a font with Japanese glyphs for the captions.
  */
 import { execFileSync } from "node:child_process";
@@ -22,6 +24,8 @@ import path from "node:path";
 import { browserProjects } from "../playwright.projects.ts";
 import {
   companionFiles,
+  demoLanguage,
+  demoVideoFile,
   ffmpegArguments,
   MAX_TOTAL_SECONDS,
   MIN_TOTAL_SECONDS,
@@ -31,12 +35,12 @@ import {
   thumbnailSeconds,
 } from "./demo-video-plan.ts";
 
+const language = demoLanguage(process.argv[2]);
 const mediaDirectory = path.join(homedir(), ".zipnami-media", "v1.0.0");
 const recordingsDirectory =
   process.env.RECORDING_OUTPUT_DIR ?? path.join(mediaDirectory, "recordings");
 const outputFile =
-  process.env.DEMO_VIDEO_OUTPUT ??
-  path.join(mediaDirectory, "zipnami-v1.0.0-demo.mp4");
+  process.env.DEMO_VIDEO_OUTPUT ?? demoVideoFile(mediaDirectory, language);
 // Meiryo ships with every Japanese-capable Windows, the machine this is run
 // on; elsewhere, name a font with DEMO_VIDEO_FONT.
 const fontFile = process.env.DEMO_VIDEO_FONT ?? "C:/Windows/Fonts/meiryo.ttc";
@@ -77,6 +81,7 @@ const main = () => {
       project,
       durationSeconds: durationOf(videoFiles[index] ?? ""),
     })),
+    language,
   );
 
   execFileSync(
@@ -113,6 +118,7 @@ const main = () => {
         atSeconds: thumbnailSeconds(plan),
         outputFile: companions.thumbnail,
         fontFile,
+        language,
       }),
     ],
     { stdio: "inherit" },

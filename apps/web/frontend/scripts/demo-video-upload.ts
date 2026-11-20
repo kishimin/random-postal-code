@@ -3,7 +3,10 @@
  * free of the network and the file system so it can be tested on CI, which
  * never holds the owner's credentials. upload-demo-video.ts sends it;
  * authorize-youtube.ts gets the refresh token it sends with.
+ * The English video (Issue #165) is sent the same way, with English words.
  */
+
+import type { Language } from "./demo-video-plan.ts";
 
 export const SITE_URL = "https://zipnami.pages.dev";
 
@@ -38,6 +41,42 @@ export type VideoResource = {
 const TITLE =
   "Zipnami を6つのブラウザで使ってみた｜ランダム郵便番号ジェネレーター v1.0.0";
 
+type Words = {
+  title: string;
+  /** The lines above the chapters. */
+  introduction: string[];
+};
+
+const WORDS: Record<Language, Words> = {
+  ja: {
+    title: TITLE,
+    introduction: [
+      "Zipnami（ジップナミ）は、日本の実在する郵便番号をランダムに1つ選び、その住所を地図と一緒に表示するWebサイトです。",
+      SITE_URL,
+      "",
+      "この動画では、同じ操作（郵便番号を出す → 住所を見る → もう一度出す → 住所をコピーする → ガイドを開く → トップへ戻る）を、6つのブラウザで順に行っています。",
+    ],
+  },
+  en: {
+    title: "Trying Zipnami in six browsers",
+    introduction: [
+      "Zipnami picks one real Japanese postal code at random and shows its address on a map.",
+      SITE_URL,
+      // The recordings show the site as it is, and it has no English yet
+      // (Issue #162); saying so keeps a viewer from expecting otherwise.
+      "The site is in Japanese for now.",
+      "",
+      "In this video, the same steps (get a postal code, read its address, get another, copy the address, open the guide, go back to the top) are done in six browsers, one after another.",
+    ],
+  },
+};
+
+const X_POSTS: Record<Language, (url: string) => string> = {
+  ja: (url) => `Zipnami を6つのブラウザで使ってみました。 ${url} #Zipnami`,
+  en: (url) =>
+    `Zipnami picks a random real Japanese postal code. Here it is in six browsers: ${url} #Zipnami`,
+};
+
 // YouTube reads a line as a chapter when it starts with m:ss (or h:mm:ss).
 const timestamp = (seconds: number) => {
   const whole = Math.floor(seconds);
@@ -51,19 +90,20 @@ const timestamp = (seconds: number) => {
 };
 
 /**
- * The video resource sent with the upload: private, in Japanese, with one
- * chapter per browser section.
+ * The video resource sent with the upload: private, in the video's language,
+ * with one chapter per browser section.
  * @param {ChapterSource} plan - The plan edit:demo encoded the video from.
+ * @param {Language} language - The video's language (Japanese when not given).
  * @returns {VideoResource} The snippet and status parts of the resource.
  */
-export const videoResource = (plan: ChapterSource): VideoResource => ({
+export const videoResource = (
+  plan: ChapterSource,
+  language: Language = "ja",
+): VideoResource => ({
   snippet: {
-    title: TITLE,
+    title: WORDS[language].title,
     description: [
-      "Zipnami（ジップナミ）は、日本の実在する郵便番号をランダムに1つ選び、その住所を地図と一緒に表示するWebサイトです。",
-      SITE_URL,
-      "",
-      "この動画では、同じ操作（郵便番号を出す → 住所を見る → もう一度出す → 住所をコピーする → ガイドを開く → トップへ戻る）を、6つのブラウザで順に行っています。",
+      ...WORDS[language].introduction,
       "",
       ...plan.sections.map(
         (section) =>
@@ -72,11 +112,29 @@ export const videoResource = (plan: ChapterSource): VideoResource => ({
     ].join("\n"),
     // Science & Technology.
     categoryId: "28",
-    defaultLanguage: "ja",
-    defaultAudioLanguage: "ja",
+    defaultLanguage: language,
+    defaultAudioLanguage: language,
   },
   status: { privacyStatus: "private", selfDeclaredMadeForKids: false },
 });
+
+/**
+ * The link to share a video by.
+ * @param {string} videoId - The ID YouTube gave the upload.
+ * @returns {string} The short watch link.
+ */
+export const youtubeUrl = (videoId: string): string =>
+  `https://youtu.be/${encodeURIComponent(videoId)}`;
+
+/**
+ * The X post the owner shares the video with: one sentence, the link, and
+ * #Zipnami, short as the owner asked for release posts (2026-11-19).
+ * @param {string} videoId - The ID YouTube gave the upload.
+ * @param {Language} language - The video's language.
+ * @returns {string} The text to post.
+ */
+export const xPost = (videoId: string, language: Language): string =>
+  X_POSTS[language](youtubeUrl(videoId));
 
 export type UploadStep = {
   name: "token" | "video" | "thumbnail";
