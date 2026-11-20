@@ -35,8 +35,9 @@ export type VideoResource = {
   status: { privacyStatus: "private"; selfDeclaredMadeForKids: false };
 };
 
-const TITLE =
-  "Zipnami を6つのブラウザで使ってみた｜ランダム郵便番号ジェネレーター v1.0.0";
+// The owner asked to drop the "｜ランダム郵便番号ジェネレーター v1.0.0" suffix
+// (2026-11-20): the product name and what the video shows are enough.
+const TITLE = "Zipnami を6つのブラウザで使ってみた";
 
 // YouTube reads a line as a chapter when it starts with m:ss (or h:mm:ss).
 const timestamp = (seconds: number) => {
