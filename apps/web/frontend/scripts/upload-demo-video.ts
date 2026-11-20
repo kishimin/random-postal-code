@@ -1,8 +1,10 @@
 /*
  * Uploads the edited v1.0.0 demo video to YouTube as private, with its
- * chapters and thumbnail (Issue #132, step 5).
+ * chapters and thumbnail (Issue #132, step 5), in Japanese or English
+ * (Issue #165).
  *
- * Usage: bun run upload:demo   (after bun run edit:demo)
+ * Usage: bun run upload:demo      (after bun run edit:demo)
+ *        bun run upload:demo en   (after bun run edit:demo en)
  *
  * Reads ZIPNAMI_YOUTUBE_CLIENT_ID, ZIPNAMI_YOUTUBE_CLIENT_SECRET, and
  * ZIPNAMI_YOUTUBE_REFRESH_TOKEN (see authorize-youtube.ts for the last).
@@ -12,11 +14,17 @@
  * Records its progress beside the video and never sends the video twice: a
  * run after a thumbnail failure sets only the thumbnail, and a run after an
  * upload that may have half-finished stops and asks for a look at Studio.
+ * Each language has its own video file and so its own record: uploading the
+ * English video never reads the Japanese one's record as its own.
  */
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
-import { companionFiles } from "./demo-video-plan.ts";
+import {
+  companionFiles,
+  demoLanguage,
+  demoVideoFile,
+} from "./demo-video-plan.ts";
 import {
   type ChapterSource,
   CREDENTIAL_VARIABLES,
@@ -26,11 +34,15 @@ import {
   type UploadStep,
   uploadSteps,
   videoResource,
+  xPost,
 } from "./demo-video-upload.ts";
 
-const videoFile =
-  process.env.DEMO_VIDEO_OUTPUT ??
-  path.join(homedir(), ".zipnami-media", "v1.0.0", "zipnami-v1.0.0-demo.mp4");
+const language = demoLanguage(process.argv[2]);
+const videoFile = demoVideoFile(
+  path.join(homedir(), ".zipnami-media", "v1.0.0"),
+  language,
+  process.env.DEMO_VIDEO_OUTPUT,
+);
 const companions = companionFiles(videoFile);
 
 const credentials = {
@@ -98,7 +110,7 @@ const uploadVideo = async (token: string, plan: ChapterSource) => {
       "X-Upload-Content-Type": "video/mp4",
       "X-Upload-Content-Length": String(statSync(videoFile).size),
     },
-    body: JSON.stringify(videoResource(plan)),
+    body: JSON.stringify(videoResource(plan, language)),
   });
   await failIfNotOk(started, "Starting the upload");
   const location = started.headers.get("location");
@@ -135,6 +147,12 @@ const setThumbnail = async (token: string, videoId: string) => {
   await failIfNotOk(response, "Setting the thumbnail");
 };
 
+const printXPost = (videoId: string) => {
+  console.error(
+    `X post, for when the video is public:\n${xPost(videoId, language)}`,
+  );
+};
+
 const main = async () => {
   const missing = Object.entries(CREDENTIAL_VARIABLES)
     .filter(([key]) => credentials[key as keyof typeof credentials] === "")
@@ -144,7 +162,8 @@ const main = async () => {
   }
   for (const file of [videoFile, companions.plan, companions.thumbnail]) {
     if (!existsSync(file)) {
-      throw new Error(`${file} is missing; run bun run edit:demo first.`);
+      const edit = language === "ja" ? "edit:demo" : `edit:demo ${language}`;
+      throw new Error(`${file} is missing; run bun run ${edit} first.`);
     }
   }
   const action = nextUploadAction(
@@ -159,6 +178,7 @@ const main = async () => {
     console.error(
       `Already uploaded with its thumbnail: ${studioUrl(action.videoId)}`,
     );
+    printXPost(action.videoId);
     return;
   }
 
@@ -182,6 +202,7 @@ const main = async () => {
   record({ state: "done", videoId });
 
   console.error(`Uploaded as private: ${studioUrl(videoId)}`);
+  printXPost(videoId);
 };
 
 main().catch((error: unknown) => {

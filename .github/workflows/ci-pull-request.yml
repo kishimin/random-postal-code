@@ -267,6 +267,13 @@ jobs:
       - name: Run Issue #132 demo video upload acceptance test (Medium)
         run: bun test ./acceptance/demo-video-upload.medium.test.ts
 
+      # Issue #165's English video is built and uploaded by the same commands,
+      # so CI runs neither. This test reads the plan, the upload, and the X
+      # post they make in English, so it needs no ffmpeg and no credentials
+      # and is bound here (ADR-0077).
+      - name: Run Issue #165 English demo video acceptance test (Medium)
+        run: bun test ./acceptance/demo-video-english.medium.test.ts
+
       # Issue #92's repository half reads design.md, deploy.yml, and
       # docs/deployment.md, runs the deploy settings check, and builds the
       # frontend with a measurement ID to read its policy, so it is bound here
