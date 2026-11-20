@@ -403,4 +403,22 @@ describe("demoVideoFile", () => {
     expect(Object.values(english)).not.toContain(japanese.thumbnail);
     expect(Object.values(english)).not.toContain(japanese.upload);
   });
+
+  it("writes the Japanese video to the file DEMO_VIDEO_OUTPUT names", () => {
+    expect(demoVideoFile("media", "ja", "C:/out/demo.mp4")).toBe(
+      "C:/out/demo.mp4",
+    );
+  });
+
+  it("marks the English video's name in DEMO_VIDEO_OUTPUT too, so it never overwrites the Japanese video or reads its upload record", () => {
+    expect(demoVideoFile("media", "en", "C:/out/demo.mp4")).toBe(
+      "C:/out/demo.en.mp4",
+    );
+  });
+
+  it("keeps a dot in the override's directory name", () => {
+    expect(demoVideoFile("media", "en", "C:/v1.0.0/demo")).toBe(
+      "C:/v1.0.0/demo.en",
+    );
+  });
 });
