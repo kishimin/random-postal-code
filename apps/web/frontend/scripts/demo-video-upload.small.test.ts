@@ -5,6 +5,8 @@ import {
   redactSecrets,
   UPLOAD_SCOPE,
   videoResource,
+  xPost,
+  youtubeUrl,
 } from "./demo-video-upload.ts";
 
 const planStartingAt = (...starts: number[]) => ({
@@ -58,6 +60,55 @@ describe("videoResource", () => {
     expect(
       [...videoResource(planStartingAt(0)).snippet.title].length,
     ).toBeLessThanOrEqual(100);
+  });
+});
+
+describe("videoResource in English", () => {
+  const english = videoResource(planStartingAt(0, 40), "en");
+
+  it("declares the video English", () => {
+    expect(english.snippet.defaultLanguage).toBe("en");
+    expect(english.snippet.defaultAudioLanguage).toBe("en");
+  });
+
+  it("keeps the title within YouTube's 100 characters", () => {
+    expect([...english.snippet.title].length).toBeLessThanOrEqual(100);
+  });
+
+  it("uses the plan's captions as the chapter titles", () => {
+    expect(
+      english.snippet.description
+        .split("\n")
+        .filter((line) => /^\d+:\d{2}/.test(line)),
+    ).toEqual(["0:00 ブラウザ 1", "0:40 ブラウザ 2"]);
+  });
+
+  it("is the same upload apart from its words", () => {
+    const japanese = videoResource(planStartingAt(0, 40));
+
+    expect(english.status).toEqual(japanese.status);
+    expect(english.snippet.categoryId).toBe(japanese.snippet.categoryId);
+  });
+});
+
+describe("youtubeUrl", () => {
+  it("is the short watch link, with the ID escaped", () => {
+    expect(youtubeUrl("fu29xlvOFZ8")).toBe("https://youtu.be/fu29xlvOFZ8");
+    expect(youtubeUrl("a/b")).toBe("https://youtu.be/a%2Fb");
+  });
+});
+
+describe("xPost", () => {
+  it("is one sentence, the video link, and #Zipnami", () => {
+    expect(xPost("abc", "en")).toBe(
+      "Zipnami picks a random real Japanese postal code. Here it is in six browsers: https://youtu.be/abc #Zipnami",
+    );
+  });
+
+  it("has a Japanese post for the Japanese video", () => {
+    expect(xPost("abc", "ja")).toContain("https://youtu.be/abc");
+    expect(xPost("abc", "ja")).toContain("#Zipnami");
+    expect(xPost("abc", "ja")).not.toBe(xPost("abc", "en"));
   });
 });
 

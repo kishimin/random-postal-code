@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   CAPTION_SECONDS,
   companionFiles,
+  demoLanguage,
+  demoVideoFile,
   ffmpegArguments,
   filterOptionValue,
   isRecordingDirectoryOf,
@@ -10,6 +12,7 @@ import {
   THUMBNAIL_TEXT,
   thumbnailArguments,
   thumbnailSeconds,
+  thumbnailText,
 } from "./demo-video-plan.ts";
 
 const SIX_BROWSERS = [
@@ -261,6 +264,26 @@ describe("thumbnailArguments", () => {
   it("writes the JPEG last", () => {
     expect(args.at(-1)).toBe("out/demo.thumbnail.jpg");
   });
+
+  it("draws the Japanese title when no language is given", () => {
+    expect(THUMBNAIL_TEXT).toBe(thumbnailText("ja"));
+  });
+
+  it("draws the English title for the English video", () => {
+    const english = thumbnailArguments({
+      videoFile: "out/demo.en.mp4",
+      atSeconds: 20,
+      outputFile: "out/demo.en.thumbnail.jpg",
+      fontFile: "C:/Windows/Fonts/meiryo.ttc",
+      language: "en",
+    });
+    const englishFilter = english[english.indexOf("-vf") + 1] ?? "";
+
+    expect(englishFilter).toContain(
+      `text=${filterOptionValue(thumbnailText("en"))}:`,
+    );
+    expect(englishFilter).not.toContain(THUMBNAIL_TEXT);
+  });
 });
 
 describe("ffmpegArguments", () => {
@@ -316,5 +339,68 @@ describe("ffmpegArguments", () => {
         fontFile: "font.ttc",
       }),
     ).toThrow(/6/);
+  });
+});
+
+describe("planDemoVideo in English", () => {
+  const english = planDemoVideo(recordingsOf(32), "en");
+
+  it("names each browser in English, in the same order as the Japanese video", () => {
+    expect(english.sections.map((section) => section.caption.text)).toEqual([
+      "Google Chrome on a computer",
+      "Microsoft Edge on a computer",
+      "Safari on a Mac",
+      "Chrome on an Android phone",
+      "Safari on an iPhone",
+      "Firefox on a computer",
+    ]);
+  });
+
+  it("numbers the sections the same way as the Japanese video", () => {
+    expect(english.sections.map((section) => section.caption.subtitle)).toEqual(
+      planDemoVideo(recordingsOf(32)).sections.map(
+        (section) => section.caption.subtitle,
+      ),
+    );
+  });
+});
+
+describe("demoLanguage", () => {
+  it.each([
+    [undefined, "ja"],
+    ["ja", "ja"],
+    ["en", "en"],
+  ])("reads %s as %s", (argument, language) => {
+    expect(demoLanguage(argument)).toBe(language);
+  });
+
+  it("names the languages it has when given another", () => {
+    expect(() => demoLanguage("EN")).toThrow(/"EN".*ja, en/);
+  });
+});
+
+describe("demoVideoFile", () => {
+  it("keeps the Japanese video where it has always been written", () => {
+    expect(demoVideoFile("/home/me/.zipnami-media/v1.0.0", "ja")).toBe(
+      "/home/me/.zipnami-media/v1.0.0/zipnami-v1.0.0-demo.mp4",
+    );
+  });
+
+  it("joins with the separator the directory already uses", () => {
+    expect(demoVideoFile("C:\\Users\\me\\media", "ja")).toBe(
+      "C:\\Users\\me\\media\\zipnami-v1.0.0-demo.mp4",
+    );
+  });
+
+  it("marks the English video's name, so its plan, thumbnail, and upload record are its own", () => {
+    const japanese = companionFiles(demoVideoFile("media", "ja"));
+    const english = companionFiles(demoVideoFile("media", "en"));
+
+    expect(demoVideoFile("media", "en")).toMatch(
+      /zipnami-v1\.0\.0-demo\.en\.mp4$/,
+    );
+    expect(Object.values(english)).not.toContain(japanese.plan);
+    expect(Object.values(english)).not.toContain(japanese.thumbnail);
+    expect(Object.values(english)).not.toContain(japanese.upload);
   });
 });
