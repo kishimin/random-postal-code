@@ -418,7 +418,15 @@ describe("demoVideoFile", () => {
 
   it("keeps a dot in the override's directory name", () => {
     expect(demoVideoFile("media", "en", "C:/v1.0.0/demo")).toBe(
-      "C:/v1.0.0/demo.en",
+      "C:/v1.0.0/demo.en.mp4",
     );
+  });
+
+  it("keeps the English plan, thumbnail, and upload record apart when DEMO_VIDEO_OUTPUT has no extension", () => {
+    const override = "C:/v1.0.0/demo";
+    const japanese = companionFiles(demoVideoFile("media", "ja", override));
+    const english = companionFiles(demoVideoFile("media", "en", override));
+
+    expect(Object.values(english)).not.toContain(japanese.upload);
   });
 });
