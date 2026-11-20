@@ -38,9 +38,11 @@ import {
 } from "./demo-video-upload.ts";
 
 const language = demoLanguage(process.argv[2]);
-const videoFile =
-  process.env.DEMO_VIDEO_OUTPUT ??
-  demoVideoFile(path.join(homedir(), ".zipnami-media", "v1.0.0"), language);
+const videoFile = demoVideoFile(
+  path.join(homedir(), ".zipnami-media", "v1.0.0"),
+  language,
+  process.env.DEMO_VIDEO_OUTPUT,
+);
 const companions = companionFiles(videoFile);
 
 const credentials = {
@@ -160,7 +162,8 @@ const main = async () => {
   }
   for (const file of [videoFile, companions.plan, companions.thumbnail]) {
     if (!existsSync(file)) {
-      throw new Error(`${file} is missing; run bun run edit:demo first.`);
+      const edit = language === "ja" ? "edit:demo" : `edit:demo ${language}`;
+      throw new Error(`${file} is missing; run bun run ${edit} first.`);
     }
   }
   const action = nextUploadAction(

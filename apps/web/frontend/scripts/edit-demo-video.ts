@@ -14,7 +14,8 @@
  * Settings, all optional:
  * - RECORDING_OUTPUT_DIR: where the recordings are (the recording config's
  *   own setting, so both commands agree on one place).
- * - DEMO_VIDEO_OUTPUT: the video to write, in place of the language's own file.
+ * - DEMO_VIDEO_OUTPUT: the Japanese video to write; the English one is
+ *   written beside it with .en before the extension.
  * - DEMO_VIDEO_FONT: a font with Japanese glyphs for the captions.
  */
 import { execFileSync } from "node:child_process";
@@ -39,8 +40,11 @@ const language = demoLanguage(process.argv[2]);
 const mediaDirectory = path.join(homedir(), ".zipnami-media", "v1.0.0");
 const recordingsDirectory =
   process.env.RECORDING_OUTPUT_DIR ?? path.join(mediaDirectory, "recordings");
-const outputFile =
-  process.env.DEMO_VIDEO_OUTPUT ?? demoVideoFile(mediaDirectory, language);
+const outputFile = demoVideoFile(
+  mediaDirectory,
+  language,
+  process.env.DEMO_VIDEO_OUTPUT,
+);
 // Meiryo ships with every Japanese-capable Windows, the machine this is run
 // on; elsewhere, name a font with DEMO_VIDEO_FONT.
 const fontFile = process.env.DEMO_VIDEO_FONT ?? "C:/Windows/Fonts/meiryo.ttc";

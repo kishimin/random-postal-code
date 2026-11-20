@@ -62,25 +62,35 @@ export const demoLanguage = (argument: string | undefined): Language => {
  * its plan, thumbnail, and upload record (which companionFiles derives from
  * it) still describe the video already on YouTube.
  *
+ * DEMO_VIDEO_OUTPUT, when set, names the Japanese file, and the English one
+ * is marked beside it like the default. Used as given for every language, it
+ * would let the English build overwrite the Japanese video and the English
+ * upload read the Japanese upload record as its own.
+ *
  * Joined by hand rather than with node:path: the unit tests run in a browser.
  * @param {string} mediaDirectory - The directory the recordings are kept in.
  * @param {Language} language - The video's language.
+ * @param {string | undefined} override - DEMO_VIDEO_OUTPUT, if it is set.
  * @returns {string} The video's path.
  */
 export const demoVideoFile = (
   mediaDirectory: string,
   language: Language,
+  override?: string,
 ): string => {
   const separator =
     mediaDirectory.lastIndexOf("\\") > mediaDirectory.lastIndexOf("/")
       ? "\\"
       : "/";
-  const name =
-    language === "ja"
-      ? "zipnami-v1.0.0-demo.mp4"
-      : `zipnami-v1.0.0-demo.${language}.mp4`;
+  const japanese =
+    override ?? `${mediaDirectory}${separator}zipnami-v1.0.0-demo.mp4`;
 
-  return `${mediaDirectory}${separator}${name}`;
+  return language === "ja"
+    ? japanese
+    : japanese.replace(
+        /(\.[^./\\]+)?$/,
+        (extension) => `.${language}${extension}`,
+      );
 };
 
 /*
