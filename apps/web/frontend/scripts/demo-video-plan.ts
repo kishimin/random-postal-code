@@ -87,9 +87,12 @@ export const demoVideoFile = (
 
   return language === "ja"
     ? japanese
-    : japanese.replace(
+    : // An override with no extension still gets one: companionFiles strips
+      // the last extension, and stripping ".en" would hand the English video
+      // the Japanese plan, thumbnail, and upload record.
+      japanese.replace(
         /(\.[^./\\]+)?$/,
-        (extension) => `.${language}${extension}`,
+        (extension) => `.${language}${extension || ".mp4"}`,
       );
 };
 
