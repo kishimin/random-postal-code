@@ -7,6 +7,16 @@ merged to `main`, and versions follow [Semantic Versioning](https://semver.org/s
 `fix:` is a patch, `feat:` a minor, and `!` or `BREAKING CHANGE` a major release.
 All workspaces share one version, because they ship as one site.
 
+## [1.2.0](https://github.com/kishimin/random-postal-code/compare/v1.1.0...v1.2.0) (2026-11-20)
+
+
+### Features
+
+* build and upload an English demo video with the same commands ([#167](https://github.com/kishimin/random-postal-code/issues/167)) ([877cf92](https://github.com/kishimin/random-postal-code/commit/877cf9298a8012d6e1c8ff1e30b753ff89a31853)), closes [#165](https://github.com/kishimin/random-postal-code/issues/165)
+* build the edited demo video from the six recordings with one command ([#163](https://github.com/kishimin/random-postal-code/issues/163)) ([a20179a](https://github.com/kishimin/random-postal-code/commit/a20179ab19ba323c2febcaef0455e63447ee4034))
+* record the v1.0.0 demo journey in all six browsers with one command ([#155](https://github.com/kishimin/random-postal-code/issues/155)) ([1f2ff1f](https://github.com/kishimin/random-postal-code/commit/1f2ff1f10b224ba287d84ee76a5e314224529dc3))
+* upload the demo video to YouTube as private with chapters and a thumbnail ([#164](https://github.com/kishimin/random-postal-code/issues/164)) ([d9b0b41](https://github.com/kishimin/random-postal-code/commit/d9b0b4149a74390ba1de4f8f0db938f7f7824ddb))
+
 ## [1.1.0](https://github.com/kishimin/random-postal-code/compare/v1.0.0...v1.1.0) (2026-11-18)
 
 
