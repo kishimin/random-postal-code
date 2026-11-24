@@ -9,7 +9,8 @@
       "android": { "buildType": "apk" }
     },
     "production": {
-      "android": { "buildType": "app-bundle" }
+      "android": { "buildType": "app-bundle" },
+      "autoIncrement": true
     }
   }
 }
