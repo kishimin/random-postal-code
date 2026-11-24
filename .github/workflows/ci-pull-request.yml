@@ -253,6 +253,27 @@ jobs:
       - name: Run Issue #132 demo recording acceptance test (Medium)
         run: bun test ./acceptance/demo-recording.medium.test.ts
 
+      # Issue #132's editing runs ffmpeg over recordings kept outside git, so
+      # CI never runs it either. This test reads the frontend's scripts and the
+      # edit plan the encode follows, so it needs no browser and no ffmpeg and
+      # is bound here (ADR-0077).
+      - name: Run Issue #132 demo video editing acceptance test (Medium)
+        run: bun test ./acceptance/demo-video-editing.medium.test.ts
+
+      # Issue #132's upload needs the owner's OAuth credentials and sends a
+      # real video, so CI never runs it. This test reads the frontend's
+      # scripts and what the upload sends and prints, so it needs neither and
+      # is bound here (ADR-0077).
+      - name: Run Issue #132 demo video upload acceptance test (Medium)
+        run: bun test ./acceptance/demo-video-upload.medium.test.ts
+
+      # Issue #165's English video is built and uploaded by the same commands,
+      # so CI runs neither. This test reads the plan, the upload, and the X
+      # post they make in English, so it needs no ffmpeg and no credentials
+      # and is bound here (ADR-0077).
+      - name: Run Issue #165 English demo video acceptance test (Medium)
+        run: bun test ./acceptance/demo-video-english.medium.test.ts
+
       # Issue #92's repository half reads design.md, deploy.yml, and
       # docs/deployment.md, runs the deploy settings check, and builds the
       # frontend with a measurement ID to read its policy, so it is bound here
