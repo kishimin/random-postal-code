@@ -21,6 +21,16 @@ const trackingDescription =
 // app never uses. A production build asks for the network and the advertising
 // ID only. Development builds keep them: the dev client draws its menu over
 // other apps (SYSTEM_ALERT_WINDOW).
+// R8 shrinks the release build and removed the no-argument constructor of
+// WorkManager's generated Room database (WorkDatabase_Impl), which Room
+// creates by reflection. The Google Mobile Ads SDK starts WorkManager while
+// the app process starts, so the production build closed at launch with
+// "Failed to create an instance of androidx.work.impl.WorkDatabase"
+// (seen on a Pixel 9a, 2026-11-24). Keeping every Room database's
+// constructor is narrower than turning shrinking off.
+const androidProguardRules =
+  "-keep class * extends androidx.room.RoomDatabase { <init>(); }";
+
 const unusedAndroidPermissions = [
   "android.permission.SYSTEM_ALERT_WINDOW",
   "android.permission.VIBRATE",
@@ -75,6 +85,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-tracking-transparency",
         { userTrackingPermission: trackingDescription },
+      ],
+      [
+        "expo-build-properties",
+        { android: { extraProguardRules: androidProguardRules } },
       ],
     ],
   };
