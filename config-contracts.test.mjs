@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -186,26 +187,26 @@ test("apps/web/backend's vitest config still runs both acceptance tests", () => 
   }
 });
 
-test("Pages serves index.html for a path no file matches", () => {
-  const redirects = readRepositoryFile(
-    "apps",
-    "web",
-    "frontend",
-    "public",
-    "_redirects",
-  );
-  const rules = redirects
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line !== "" && !line.startsWith("#"));
+// Issue #169: each route is a file of its own, and a path no file matches gets
+// the prerendered 404.html with status 404. Pages assumes a single-page
+// application, and answers every path with index.html, only when the build has
+// no top-level 404.html; a rewrite to index.html would do the same and give
+// every unknown path the generator's 200 again.
+test("Pages has no rule that answers a path no file matches with a page and status 200", () => {
+  const redirectsFile = path.join(frontendRoot, "public", "_redirects");
+  const rules = existsSync(redirectsFile)
+    ? readFileSync(redirectsFile, "utf8")
+        .split("\n")
+        .map((line) => line.replace(/#.*$/, "").trim())
+        .filter((line) => line !== "")
+        .map((line) => line.split(/\s+/))
+    : [];
 
-  // Pages applies the first matching rule, so a catch-all placed after another
-  // rule would leave that rule's paths unhandled by the router.
-  assert.deepEqual(rules[0]?.split(/\s+/), ["/*", "/index.html", "200"]);
-  assert.equal(
-    rules.length,
-    1,
-    `expected only the SPA fallback, got ${JSON.stringify(rules)}`,
+  assert.deepEqual(
+    rules.filter(
+      ([source, , status]) => source?.includes("*") && status === "200",
+    ),
+    [],
   );
 });
 

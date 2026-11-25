@@ -1,6 +1,7 @@
-import { useDocumentTitle } from "../../hooks/use-document-title";
-import { pageTitle, siteText } from "../site-text";
+import { pageMetadataFor } from "../page-metadata";
+import { siteText } from "../site-text";
 import { contentLinkClass } from "../styles";
+import { usePageHead } from "../use-page-head";
 import { privacySections } from "./privacy-text";
 
 const sectionClass = "flex flex-col gap-3 rounded-card bg-card p-6";
@@ -16,7 +17,7 @@ const paragraphClass = "text-body-sm text-ink-muted";
  * same pattern AdvertisingRegion uses for its labelled region.
  */
 export const PrivacyView = () => {
-  useDocumentTitle(pageTitle(siteText.privacyLabel));
+  usePageHead(pageMetadataFor("/privacy"));
 
   return (
     <div className={"mx-auto flex max-w-[720px] flex-col gap-6"}>

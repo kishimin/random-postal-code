@@ -42,9 +42,9 @@ const privacyRoute = createRoute({
   component: PrivacyView,
 });
 
-// The guide pages (Issue #121, ui-design.md section 5.5): ordinary client
-// rendered routes like /privacy, so each answers a direct navigation and a
-// refresh through the same SPA fallback.
+// The guide pages (Issue #121, ui-design.md section 5.5): ordinary routes like
+// /privacy. Each is prerendered to its own HTML file at build time (Issue
+// #169), which is what answers a direct navigation and a refresh.
 const aboutRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/about",

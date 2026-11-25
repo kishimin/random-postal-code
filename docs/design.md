@@ -135,8 +135,10 @@ A successful regeneration replaces the current result and prepends it to history
 
 ### 6.2 Web
 
-- Use a React, TypeScript, and Vite SPA.
-- Support direct navigation and refresh through Pages SPA fallback.
+- Use a React, TypeScript, and Vite SPA whose content routes are prerendered at build time (Issue #169). The build renders each route in `docs/ui-design.md` section 3.1 to its own HTML file, holding that page's `h1`, body text, `<title>`, meta description, and canonical URL, so a crawler that runs no JavaScript reads each page's own content. The client then mounts and behaves as the SPA did.
+- Support direct navigation and refresh by serving each route's own prerendered file. A path no route claims answers HTTP 404 with the prerendered not-found screen; there is no catch-all SPA fallback.
+- Serve `robots.txt`, allowing every crawler and naming the sitemap, and `sitemap.xml`, listing exactly the prerendered content routes as absolute URLs on the production origin `https://zipnami.pages.dev`.
+- Name the AdSense publisher in the `<head>` of every page with `<meta name="google-adsense-account">`, from `VITE_GOOGLE_ADSENSE_CLIENT_ID`. The tag loads no ad code, so the screens that may request ads are unchanged (`docs/ui-design.md` section 7.1). A build without a real publisher ID emits no tag.
 - Display the selected address through Maps Embed API and provide an external map link for every address.
 - Copy the postal code to the clipboard.
 - Store history only in the browser, newest first, retaining duplicates, with a maximum of 20 entries.

@@ -2,6 +2,7 @@ import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
 import { act, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { guidePages, sourcesHeading } from "../../features/guides/guide-pages";
+import { siteDescription } from "../page-metadata";
 import { createAppRouter } from "../routes/app-router";
 
 /*
@@ -10,7 +11,9 @@ import { createAppRouter } from "../routes/app-router";
  * a guide whose route was never registered renders the not-found screen here
  * instead of only in the browser suite.
  */
-const siteDescription = "サイト全体の説明です。";
+// What the document ships before a screen sets its own. The generator now
+// sets the site's real default itself, so leaving a guide ends on that.
+const shippedDescription = "最初に読み込まれたページの説明です。";
 
 const renderAt = (path: string) => {
   const router = createAppRouter(
@@ -28,7 +31,7 @@ const descriptionMetas = () =>
 const addSiteDescription = (): HTMLMetaElement => {
   const meta = document.createElement("meta");
   meta.name = "description";
-  meta.content = siteDescription;
+  meta.content = shippedDescription;
   document.head.append(meta);
 
   return meta;
