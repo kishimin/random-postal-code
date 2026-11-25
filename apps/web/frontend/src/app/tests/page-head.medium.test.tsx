@@ -29,7 +29,10 @@ const addShippedHead = () => {
   const canonical = document.createElement("link");
   canonical.rel = "canonical";
   canonical.href = shippedHead.canonical;
-  document.head.append(description, canonical);
+  const robots = document.createElement("meta");
+  robots.name = "robots";
+  robots.content = "noindex";
+  document.head.append(description, canonical, robots);
 };
 
 const headElements = <Element extends HTMLElement>(selector: string) =>
@@ -44,6 +47,11 @@ const descriptions = () =>
 const canonicalUrls = () =>
   headElements<HTMLLinkElement>('link[rel="canonical"]').map(
     (link) => link.href,
+  );
+
+const robotsDirectives = () =>
+  headElements<HTMLMetaElement>('meta[name="robots"]').map(
+    (meta) => meta.content,
   );
 
 const renderAt = (path: string) => {
@@ -67,7 +75,7 @@ beforeEach(() => {
 
 afterEach(() => {
   for (const element of headElements(
-    'meta[name="description"], link[rel="canonical"]',
+    'meta[name="description"], link[rel="canonical"], meta[name="robots"]',
   )) {
     element.remove();
   }
@@ -110,6 +118,20 @@ describe("the head follows the screen shown", () => {
     });
     expect(canonicalUrls()).toEqual([canonicalUrlOf("/")]);
   });
+
+  // 404.html ships noindex; a visitor who lands there and follows a link to a
+  // real page must not leave that page asking to be left out of the index.
+  test.each(contentRoutePaths)(
+    "%s drops the noindex the not-found page shipped with",
+    async (path) => {
+      renderAt(path);
+      await screen.findByRole("heading", { level: 1 });
+
+      await waitFor(() => {
+        expect(robotsDirectives()).toEqual([]);
+      });
+    },
+  );
 
   test("a path no route claims keeps no canonical URL and the site's default description", async () => {
     const { router } = renderAt("/about");
