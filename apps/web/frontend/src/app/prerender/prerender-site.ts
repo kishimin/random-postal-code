@@ -1,11 +1,11 @@
-import { pageHtmlFor } from "../deployment/page-html";
 import {
   robotsTxtFor,
   sitemapXmlFor,
   SITEMAP_PATH,
 } from "../deployment/crawl-files";
+import { pageHtmlFor } from "../deployment/page-html";
 import { canonicalUrlOf } from "../deployment/site-origin";
-import { prerenderPages } from "./prerender-pages";
+import { buildPages } from "./prerender-pages";
 
 /** One file of the build output: its path inside the build, and its text. */
 export type SiteFile = {
@@ -26,11 +26,11 @@ export type SiteFile = {
  * @param {string | null} adSenseAccount - The publisher every page names in
  * its head, or null for a build without a real one.
  */
-export const prerenderSite = async (
+export const buildSiteFiles = async (
   template: string,
   adSenseAccount: string | null,
 ): Promise<SiteFile[]> => {
-  const pages = await prerenderPages();
+  const pages = await buildPages();
 
   const pageFiles = pages.map(({ file, path, body, metadata }) => ({
     file,

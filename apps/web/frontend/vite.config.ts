@@ -13,12 +13,12 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { build, type Plugin } from "vite";
-import { z } from "zod";
 import {
   configDefaults,
   coverageConfigDefaults,
   defineConfig,
 } from "vitest/config";
+import { z } from "zod";
 // Extension included because this file is type checked under module: nodenext,
 // where an extensionless relative specifier does not resolve.
 import { createApiClient } from "./src/api/api-client.ts";
@@ -155,14 +155,14 @@ const renderSiteFiles = async (
   if (
     typeof entry !== "object" ||
     entry === null ||
-    !("prerenderSite" in entry) ||
-    typeof entry.prerenderSite !== "function"
+    !("buildSiteFiles" in entry) ||
+    typeof entry.buildSiteFiles !== "function"
   ) {
-    throw new Error(`${builtModule} does not export prerenderSite.`);
+    throw new Error(`${builtModule} does not export buildSiteFiles.`);
   }
 
   return siteFilesSchema.parse(
-    await entry.prerenderSite(template, adSenseAccount),
+    await entry.buildSiteFiles(template, adSenseAccount),
   );
 };
 
@@ -285,7 +285,10 @@ const answerLikePages = (): Plugin => ({
     middlewares.use((request, response, next) => {
       if (request.method !== "GET" && request.method !== "HEAD") return next();
 
-      const { pathname, search } = new URL(request.url ?? "/", "http://preview");
+      const { pathname, search } = new URL(
+        request.url ?? "/",
+        "http://preview",
+      );
       const file = pagesFileFor(decodeURIComponent(pathname), isFile);
       if (file !== null) {
         request.url = `${file}${search}`;

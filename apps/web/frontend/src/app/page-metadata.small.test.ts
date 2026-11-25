@@ -42,13 +42,16 @@ describe("pageMetadataFor", () => {
     expect(metadata.description).not.toBe(siteDescription);
   });
 
-  test.each(guidePages)("gives $path the guide's own name and description", (page) => {
-    expect(pageMetadataFor(page.path)).toEqual({
-      title: pageTitle(page.name),
-      description: page.description,
-      canonicalPath: page.path,
-    });
-  });
+  test.each(guidePages)(
+    "gives $path the guide's own name and description",
+    (page) => {
+      expect(pageMetadataFor(page.path)).toEqual({
+        title: pageTitle(page.name),
+        description: page.description,
+        canonicalPath: page.path,
+      });
+    },
+  );
 
   // Two pages with one description describe neither of them.
   test("gives no two content pages the same title or description", () => {

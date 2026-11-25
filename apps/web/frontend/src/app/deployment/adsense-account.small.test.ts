@@ -14,10 +14,11 @@ describe("adSenseAccountFor", () => {
     expect(adSenseAccountFor(DEV_ADSENSE_CLIENT_ID_PLACEHOLDER)).toBeNull();
   });
 
-  test.each(["pub-8746223957326560", "ca-pub-123", "ca-pub-8746223957326560\nx"])(
-    "refuses a client ID that is not a publisher ID (%s)",
-    (clientId) => {
-      expect(() => adSenseAccountFor(clientId)).toThrow(/publisher ID/);
-    },
-  );
+  test.each([
+    "pub-8746223957326560",
+    "ca-pub-123",
+    "ca-pub-8746223957326560\nx",
+  ])("refuses a client ID that is not a publisher ID (%s)", (clientId) => {
+    expect(() => adSenseAccountFor(clientId)).toThrow(/publisher ID/);
+  });
 });

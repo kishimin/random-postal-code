@@ -54,7 +54,9 @@ export const pageHtmlFor = (template: string, page: PageHtml): string => {
     throw new Error(`The HTML template has no ${EMPTY_ROOT} to render into.`);
   }
   if (!template.includes("</head>")) {
-    throw new Error("The HTML template has no </head> to describe the page in.");
+    throw new Error(
+      "The HTML template has no </head> to describe the page in.",
+    );
   }
 
   const head = headTagsOf(page)

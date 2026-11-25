@@ -2,8 +2,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { applyInitialDocumentTitle } from "./app/document-title";
 import { RootErrorBoundary } from "./app/providers/RootErrorBoundary";
-import { startGoogleAnalytics } from "./app/start-google-analytics";
 import { createAppRouter } from "./app/routes/app-router";
+import { startGoogleAnalytics } from "./app/start-google-analytics";
 import { App } from "./app/views/App";
 import "./theme/globals.css";
 

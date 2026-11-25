@@ -47,10 +47,9 @@ describe("useCanonicalLink", () => {
   });
 
   test("follows the address it is given", () => {
-    const { rerender } = renderHook(
-      ({ href }) => useCanonicalLink(href),
-      { initialProps: { href: "https://example.test/a" } },
-    );
+    const { rerender } = renderHook(({ href }) => useCanonicalLink(href), {
+      initialProps: { href: "https://example.test/a" },
+    });
 
     rerender({ href: "https://example.test/b" });
 

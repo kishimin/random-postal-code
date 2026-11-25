@@ -33,8 +33,8 @@ const parse = (html: string) =>
   new DOMParser().parseFromString(html, "text/html");
 
 const metaContents = (html: string, name: string) =>
-  [...parse(html).head.querySelectorAll(`meta[name="${name}"]`)].map(
-    (meta) => meta.getAttribute("content"),
+  [...parse(html).head.querySelectorAll(`meta[name="${name}"]`)].map((meta) =>
+    meta.getAttribute("content"),
   );
 
 describe("pageHtmlFor", () => {
@@ -124,6 +124,6 @@ describe("pageHtmlFor", () => {
     ["root", template.replace('<div id="root"></div>', "")],
     ["head", template.replace("</head>", "")],
   ])("refuses a template without its %s", (_name, broken) => {
-    expect(() => pageHtmlFor(broken, page)).toThrow();
+    expect(() => pageHtmlFor(broken, page)).toThrow(/HTML template/);
   });
 });

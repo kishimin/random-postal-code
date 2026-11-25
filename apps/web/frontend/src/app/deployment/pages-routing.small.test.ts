@@ -34,12 +34,14 @@ describe("pagesFileFor", () => {
     expect(pagesFileFor("/docs", isBuilt)).toBe("/docs/index.html");
   });
 
-  test.each(["/nonexistent", "/guide", "/about.html.map", "/assets/missing.js"])(
-    "finds no file for %s, so the caller answers 404",
-    (pathname) => {
-      expect(pagesFileFor(pathname, isBuilt)).toBeNull();
-    },
-  );
+  test.each([
+    "/nonexistent",
+    "/guide",
+    "/about.html.map",
+    "/assets/missing.js",
+  ])("finds no file for %s, so the caller answers 404", (pathname) => {
+    expect(pagesFileFor(pathname, isBuilt)).toBeNull();
+  });
 
   test("never leaves the build directory", () => {
     expect(pagesFileFor("/../package.json", () => true)).toBeNull();

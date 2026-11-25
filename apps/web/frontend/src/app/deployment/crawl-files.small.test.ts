@@ -33,12 +33,17 @@ describe("sitemapXmlFor", () => {
     expect(sitemap).toContain(
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     );
-    expect([...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map(([, url]) => url)).toEqual(
-      ["https://zipnami.pages.dev/", "https://zipnami.pages.dev/guide/data"],
-    );
+    expect(
+      [...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map(([, url]) => url),
+    ).toEqual([
+      "https://zipnami.pages.dev/",
+      "https://zipnami.pages.dev/guide/data",
+    ]);
   });
 
   test("starts with an XML declaration", () => {
-    expect(sitemapXmlFor(["/"]).startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true);
+    expect(
+      sitemapXmlFor(["/"]).startsWith('<?xml version="1.0" encoding="UTF-8"?>'),
+    ).toBe(true);
   });
 });

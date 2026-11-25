@@ -7,9 +7,9 @@ import { primaryActionClass } from "../styles";
 /**
  * Destination for a path no route claims.
  *
- * Reached through the router rather than the server: Pages answers every path
- * with index.html, so the router is what distinguishes a mistyped address from
- * a real one.
+ * Prerendered as 404.html, which Pages answers a path no file matches with
+ * (status 404). The client renders the same screen for a path it is handed by
+ * the router, such as one the visitor types after the page has loaded.
  */
 export const NotFoundView = () => {
   useDocumentTitle(pageTitle(notFoundHeading));

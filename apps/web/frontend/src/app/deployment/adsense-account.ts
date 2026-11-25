@@ -13,10 +13,7 @@ import { publisherIdOf } from "./ads-txt.ts";
  * @param {string} clientId - The build's VITE_GOOGLE_ADSENSE_CLIENT_ID.
  */
 export const adSenseAccountFor = (clientId: string): string | null => {
-  const publisherId = publisherIdOf(
-    clientId,
-    "no account tag can name it",
-  );
+  const publisherId = publisherIdOf(clientId, "no account tag can name it");
 
   return publisherId === null ? null : `ca-${publisherId}`;
 };

@@ -1,8 +1,8 @@
-import { beforeAll, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { guidePages } from "../../features/guides/guide-pages";
 import { canonicalUrlOf } from "../deployment/site-origin";
 import { contentRoutePaths, pageMetadataFor } from "../page-metadata";
-import { prerenderSite, type SiteFile } from "./prerender-site";
+import { buildSiteFiles, type SiteFile } from "./prerender-site";
 
 /*
  * Everything the build writes next to the bundle for crawlers (Issue #169),
@@ -25,13 +25,8 @@ const template = `<!doctype html>
 
 const publisher = "ca-pub-1234567890123456";
 
-let files: readonly SiteFile[] = [];
-let filesWithoutPublisher: readonly SiteFile[] = [];
-
-beforeAll(async () => {
-  files = await prerenderSite(template, publisher);
-  filesWithoutPublisher = await prerenderSite(template, null);
-});
+const files = await buildSiteFiles(template, publisher);
+const filesWithoutPublisher = await buildSiteFiles(template, null);
 
 const contentsOf = (all: readonly SiteFile[], file: string) =>
   all.find((candidate) => candidate.file === file)?.contents ?? "";
@@ -42,7 +37,7 @@ const htmlFiles = (all: readonly SiteFile[]) =>
 const parse = (html: string) =>
   new DOMParser().parseFromString(html, "text/html");
 
-describe("prerenderSite", () => {
+describe("buildSiteFiles", () => {
   test("writes a file for each content route, the not-found page, robots.txt and sitemap.xml", () => {
     expect(files.map(({ file }) => file).sort()).toEqual(
       [

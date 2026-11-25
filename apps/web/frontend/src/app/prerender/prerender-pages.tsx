@@ -1,6 +1,10 @@
 import { createMemoryHistory } from "@tanstack/react-router";
 import { renderToString } from "react-dom/server";
-import { contentRoutePaths, pageMetadataFor, type PageMetadata } from "../page-metadata";
+import {
+  contentRoutePaths,
+  pageMetadataFor,
+  type PageMetadata,
+} from "../page-metadata";
 import { createAppRouter } from "../routes/app-router";
 import { App } from "../views/App";
 
@@ -43,7 +47,7 @@ const renderAt = async (path: string) => {
  * One at a time: each render builds its own router, and a failure should name
  * the route it came from instead of the one that lost a race.
  */
-export const prerenderPages = async (): Promise<PrerenderedPage[]> => {
+export const buildPages = async (): Promise<PrerenderedPage[]> => {
   const pages: PrerenderedPage[] = [];
 
   for (const path of contentRoutePaths) {

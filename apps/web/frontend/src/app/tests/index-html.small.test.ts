@@ -1,11 +1,13 @@
 import { describe, expect, test } from "vitest";
 import indexHtml from "../../../index.html?raw";
+import { siteDescription } from "../page-metadata";
 
 /*
- * index.html is what every route first ships, so what it carries is what a
- * crawler reads from a page that sets nothing of its own: the generator, the
- * privacy page, and whatever path the router does not claim. The guide pages
- * replace it while they are shown and hand it back (use-meta-description.ts).
+ * index.html is the template every prerendered page is made from (Issue #169)
+ * and what the dev server serves, so the description it carries is the site's
+ * default: what a page that sets nothing of its own tells a crawler, and what
+ * leaving a guide restores (use-meta-description.ts). It is held equal to the
+ * constant the application uses, so the two cannot drift.
  */
 describe("index.html", () => {
   test("ships the site's default description", () => {
@@ -18,8 +20,6 @@ describe("index.html", () => {
       document.head
         .querySelector('meta[name="description"]')
         ?.getAttribute("content"),
-    ).toBe(
-      "日本の郵便番号をランダムに1つ選び、その番号に対応するすべての住所と地図を表示します。",
-    );
+    ).toBe(siteDescription);
   });
 });

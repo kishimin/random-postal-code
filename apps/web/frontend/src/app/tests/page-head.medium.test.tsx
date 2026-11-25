@@ -17,33 +17,33 @@ import { createAppRouter } from "../routes/app-router";
  * (Issue #169). Rendered through the production route configuration
  * (ADR-0011).
  */
-const prerenderedHead = {
-  description: "the description the prerendered page shipped with",
-  canonical: "https://zipnami.pages.dev/prerendered-elsewhere",
+const shippedHead = {
+  description: "the description the landing page shipped with",
+  canonical: "https://zipnami.pages.dev/landed-elsewhere",
 };
 
-const addPrerenderedHead = () => {
+const addShippedHead = () => {
   const description = document.createElement("meta");
   description.name = "description";
-  description.content = prerenderedHead.description;
+  description.content = shippedHead.description;
   const canonical = document.createElement("link");
   canonical.rel = "canonical";
-  canonical.href = prerenderedHead.canonical;
+  canonical.href = shippedHead.canonical;
   document.head.append(description, canonical);
 };
 
-const headElements = (selector: string) =>
+const headElements = <Element extends HTMLElement>(selector: string) =>
   // eslint-disable-next-line testing-library/no-node-access -- a meta or link tag is not in the accessibility tree, and what a crawler reads is exactly these tags
-  [...document.head.querySelectorAll<HTMLElement>(selector)];
+  [...document.head.querySelectorAll<Element>(selector)];
 
 const descriptions = () =>
-  headElements('meta[name="description"]').map(
-    (meta) => (meta as HTMLMetaElement).content,
+  headElements<HTMLMetaElement>('meta[name="description"]').map(
+    (meta) => meta.content,
   );
 
 const canonicalUrls = () =>
-  headElements('link[rel="canonical"]').map(
-    (link) => (link as HTMLLinkElement).href,
+  headElements<HTMLLinkElement>('link[rel="canonical"]').map(
+    (link) => link.href,
   );
 
 const renderAt = (path: string) => {
@@ -62,7 +62,7 @@ const goTo = async (
 };
 
 beforeEach(() => {
-  addPrerenderedHead();
+  addShippedHead();
 });
 
 afterEach(() => {

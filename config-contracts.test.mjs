@@ -193,11 +193,7 @@ test("apps/web/backend's vitest config still runs both acceptance tests", () => 
 // no top-level 404.html; a rewrite to index.html would do the same and give
 // every unknown path the generator's 200 again.
 test("Pages has no rule that answers a path no file matches with a page and status 200", () => {
-  const redirectsFile = path.join(
-    frontendRoot,
-    "public",
-    "_redirects",
-  );
+  const redirectsFile = path.join(frontendRoot, "public", "_redirects");
   const rules = existsSync(redirectsFile)
     ? readFileSync(redirectsFile, "utf8")
         .split("\n")
@@ -207,7 +203,9 @@ test("Pages has no rule that answers a path no file matches with a page and stat
     : [];
 
   assert.deepEqual(
-    rules.filter(([source, , status]) => source?.includes("*") && status === "200"),
+    rules.filter(
+      ([source, , status]) => source?.includes("*") && status === "200",
+    ),
     [],
   );
 });

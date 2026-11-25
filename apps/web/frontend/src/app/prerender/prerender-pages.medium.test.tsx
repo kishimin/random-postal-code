@@ -1,12 +1,9 @@
-import { beforeAll, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { guidePages } from "../../features/guides/guide-pages";
 import { notFoundHeading } from "../document-title";
 import { contentRoutePaths, pageMetadataFor } from "../page-metadata";
 import { siteText } from "../site-text";
-import {
-  prerenderPages,
-  type PrerenderedPage,
-} from "./prerender-pages";
+import { buildPages, type PrerenderedPage } from "./prerender-pages";
 
 /*
  * What the build writes into each file Cloudflare Pages serves (Issue #169).
@@ -14,11 +11,7 @@ import {
  * build renders it, so a route added without a prerendered page fails here
  * and not only in a browser run against the built site.
  */
-let pages: readonly PrerenderedPage[] = [];
-
-beforeAll(async () => {
-  pages = await prerenderPages();
-});
+const pages = await buildPages();
 
 const bodyOf = (page: PrerenderedPage) =>
   new DOMParser().parseFromString(page.body, "text/html");
@@ -30,7 +23,7 @@ const headingsOf = (page: PrerenderedPage) =>
 
 const contentPages = () => pages.filter(({ path }) => path !== null);
 
-describe("prerenderPages", () => {
+describe("buildPages", () => {
   // Pages serves /about from about.html without a redirect, and a nested route
   // from the same shape under its directory; the root is index.html.
   test("writes one file per content route, named the way Pages looks for it, and a 404.html", () => {
