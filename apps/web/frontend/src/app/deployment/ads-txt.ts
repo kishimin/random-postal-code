@@ -8,6 +8,29 @@ const PUBLISHER_CLIENT_ID = /^ca-(pub-\d{16})$/;
 const GOOGLE_CERTIFICATION_AUTHORITY_ID = "f08c47fec0942fa0";
 
 /**
+ * The publisher ID (pub- followed by 16 digits) an AdSense client ID names, or
+ * null when the build has no real publisher.
+ * @param {string} clientId - The build's VITE_GOOGLE_ADSENSE_CLIENT_ID.
+ * @param {string} consequence - What a malformed ID makes impossible, which
+ * finishes the error message.
+ */
+export const publisherIdOf = (
+  clientId: string,
+  consequence: string,
+): string | null => {
+  if (clientId === DEV_ADSENSE_CLIENT_ID_PLACEHOLDER) return null;
+
+  const publisherId = PUBLISHER_CLIENT_ID.exec(clientId)?.[1];
+  if (publisherId === undefined) {
+    throw new Error(
+      `VITE_GOOGLE_ADSENSE_CLIENT_ID is not an AdSense publisher ID (ca-pub- followed by 16 digits), so ${consequence}`,
+    );
+  }
+
+  return publisherId;
+};
+
+/**
  * Returns the ads.txt that authorizes Google to sell the site's ad inventory
  * for the publisher the ad code names, or null when the build has no real
  * publisher.
@@ -18,14 +41,8 @@ const GOOGLE_CERTIFICATION_AUTHORITY_ID = "f08c47fec0942fa0";
  * until AdSense flagged the site.
  */
 export const adsTxtFor = (clientId: string): string | null => {
-  if (clientId === DEV_ADSENSE_CLIENT_ID_PLACEHOLDER) return null;
-
-  const publisherId = PUBLISHER_CLIENT_ID.exec(clientId)?.[1];
-  if (publisherId === undefined) {
-    throw new Error(
-      "VITE_GOOGLE_ADSENSE_CLIENT_ID is not an AdSense publisher ID (ca-pub- followed by 16 digits), so no ads.txt can name it",
-    );
-  }
+  const publisherId = publisherIdOf(clientId, "no ads.txt can name it");
+  if (publisherId === null) return null;
 
   return `google.com, ${publisherId}, DIRECT, ${GOOGLE_CERTIFICATION_AUTHORITY_ID}\n`;
 };
