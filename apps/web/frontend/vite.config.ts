@@ -160,6 +160,10 @@ export default defineConfig({
       "lucide-react",
       "lz-string",
       "pretty-format",
+      // Only the prerender test renders to a string. Found late, it makes Vite
+      // re-optimize and reload mid-run, which leaves two copies of React in
+      // the page ("Cannot read properties of null (reading 'useState')").
+      "react-dom/server",
     ],
   },
   test: {
