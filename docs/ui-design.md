@@ -35,14 +35,23 @@ Two further destinations have no route of their own.
 | Not found    | A requested path matches no route above                 | State that the address is wrong and offer a way back to the generator |
 | Global error | A render fails in a way that would leave no usable page | State that the screen could not be shown and offer a way back         |
 
-Direct navigation and refresh must resolve both routes through the Pages SPA fallback.
+Every route in the first table is prerendered at build time into its own HTML
+file (Issue #169, superseding the SPA fallback of Issue #5). A direct navigation
+or a refresh of a route receives that route's own HTML: its `h1`, its body text,
+its document title, its meta description, and a canonical URL on the production
+origin, all readable without running JavaScript. The client application then
+mounts over that markup and behaves exactly as the client-rendered SPA did,
+including in-app navigation between routes.
 
-The fallback answers every path with `index.html`, so Pages cannot distinguish a
-mistyped address from a real one and never returns a 404 itself. The router is
-what draws that line: a path it does not claim renders the not-found
-destination. Both destinations keep the header, the main landmark, and the
-footer attribution that the routed screens carry. Neither exposes internal error
-detail.
+A path that matches no route answers HTTP 404 with the not-found destination,
+also prerendered. Pages no longer answers every path with `index.html`. The
+global error destination keeps its client-side reach (section 3.2). Both
+destinations keep the header, the main landmark, and the footer attribution
+that the routed screens carry. Neither exposes internal error detail.
+
+The site also serves a `robots.txt` that allows every crawler and names the
+sitemap, and a `sitemap.xml` that lists exactly the routes of the first table as
+absolute production URLs.
 
 Android routes and navigation are V2 work tracked by Issues #12 through #15 and #20. They are not Web MVP requirements.
 
@@ -162,7 +171,7 @@ The history is one list, closed until the `履歴を展開` control opens it. Th
 
 ### 5.5 Guide Pages and the Generator's Overview
 
-AdSense rejected the site for screens without publisher content (Issue #120). Issue #121 adds the site's own written content: five guide pages and an overview on the generator. The owner decided on 2026-11-10 to add the pages as ordinary client-rendered SPA routes, like `/privacy`, with no build-time prerendering (answer B on Issue #121). The pages need no generation and no API request to show their content.
+AdSense rejected the site for screens without publisher content (Issue #120). Issue #121 adds the site's own written content: five guide pages and an overview on the generator. The owner decided on 2026-11-10 to add the pages as ordinary client-rendered SPA routes, like `/privacy`, with no build-time prerendering (answer B on Issue #121), and to add prerendering only if AdSense rejected the site again for missing publisher content. It did on 2026-11-25, so every route is now prerendered (section 3.1, Issue #169). The pages need no generation and no API request to show their content.
 
 **Navigation.** The footer of every screen carries one navigation landmark named `ガイド`, with five links in this order: `サイトについて` (`/about`), `郵便番号のしくみ` (`/guide/postal-code`), `郵便番号と住所` (`/guide/address`), `データについて` (`/guide/data`), and `使い方` (`/guide/how-to-use`). This applies to the generator in every state, `/privacy`, the guide pages themselves, the not-found destination, and the global error destination. On a guide page, the link to that page stays and carries `aria-current="page"`, so the five links read the same on every screen. The header is unchanged.
 
@@ -179,7 +188,7 @@ Once a result is shown, both sections are removed, so the result keeps the place
 - body sections, each a region named by its own visible `h2`;
 - a `参考にした資料` section that lists the sources it relies on as links;
 - after the sources, as the last thing in the page's own content, one link named `トップへ戻る` (the not-found destination's words) that opens `/`. It is not a region and has no heading. The header logo was the only way home from a guide page; the owner chose to add the link at the end of the article only, not to the header or the footer's `ガイド` navigation (Issue #121, 2026-11-11);
-- a document title built by `pageTitle` from the page's name (section 9.2), and a `<meta name="description">` whose text is that page's own one-sentence summary, set from JavaScript when the page mounts. Leaving a guide page restores the site's default description.
+- a document title built by `pageTitle` from the page's name (section 9.2), and a `<meta name="description">` whose text is that page's own one-sentence summary. Both are in the page's prerendered HTML and are kept in sync from JavaScript as the visitor navigates. Leaving a guide page restores the site's default description.
 
 Page names (the `h1`, the footer link, and the title) are: `サイトについて`, `郵便番号のしくみ`, `郵便番号と住所`, `データについて`, and `使い方`.
 
