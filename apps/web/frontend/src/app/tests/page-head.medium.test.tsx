@@ -1,0 +1,125 @@
+import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { canonicalUrlOf } from "../deployment/site-origin";
+import {
+  contentRoutePaths,
+  pageMetadataFor,
+  siteDescription,
+} from "../page-metadata";
+import { createAppRouter } from "../routes/app-router";
+
+/*
+ * The prerendered HTML names the page it was rendered for, and the client
+ * starts from that head. Whichever screen the visitor reaches next has to
+ * describe itself there, or a refresh of /about followed by a click to the
+ * privacy page would leave /about's description and canonical URL on it
+ * (Issue #169). Rendered through the production route configuration
+ * (ADR-0011).
+ */
+const prerenderedHead = {
+  description: "the description the prerendered page shipped with",
+  canonical: "https://zipnami.pages.dev/prerendered-elsewhere",
+};
+
+const addPrerenderedHead = () => {
+  const description = document.createElement("meta");
+  description.name = "description";
+  description.content = prerenderedHead.description;
+  const canonical = document.createElement("link");
+  canonical.rel = "canonical";
+  canonical.href = prerenderedHead.canonical;
+  document.head.append(description, canonical);
+};
+
+const headElements = (selector: string) =>
+  // eslint-disable-next-line testing-library/no-node-access -- a meta or link tag is not in the accessibility tree, and what a crawler reads is exactly these tags
+  [...document.head.querySelectorAll<HTMLElement>(selector)];
+
+const descriptions = () =>
+  headElements('meta[name="description"]').map(
+    (meta) => (meta as HTMLMetaElement).content,
+  );
+
+const canonicalUrls = () =>
+  headElements('link[rel="canonical"]').map(
+    (link) => (link as HTMLLinkElement).href,
+  );
+
+const renderAt = (path: string) => {
+  const router = createAppRouter(
+    createMemoryHistory({ initialEntries: [path] }),
+  );
+
+  return { router, ...render(<RouterProvider router={router} />) };
+};
+
+const goTo = async (
+  router: ReturnType<typeof createAppRouter>,
+  path: string,
+) => {
+  await act(() => Promise.resolve(router.history.push(path)));
+};
+
+beforeEach(() => {
+  addPrerenderedHead();
+});
+
+afterEach(() => {
+  for (const element of headElements(
+    'meta[name="description"], link[rel="canonical"]',
+  )) {
+    element.remove();
+  }
+});
+
+describe("the head follows the screen shown", () => {
+  test.each(contentRoutePaths)(
+    "%s names its own description and canonical URL, replacing the ones it started with",
+    async (path) => {
+      renderAt(path);
+      await screen.findByRole("heading", { level: 1 });
+
+      await waitFor(() => {
+        expect(descriptions()).toEqual([pageMetadataFor(path).description]);
+      });
+      expect(canonicalUrls()).toEqual([canonicalUrlOf(path)]);
+    },
+  );
+
+  test("navigating from a guide to the privacy page moves the description and the canonical URL with it", async () => {
+    const { router } = renderAt("/about");
+    await screen.findByRole("heading", { level: 1 });
+
+    await goTo(router, "/privacy");
+
+    await waitFor(() => {
+      expect(descriptions()).toEqual([pageMetadataFor("/privacy").description]);
+    });
+    expect(canonicalUrls()).toEqual([canonicalUrlOf("/privacy")]);
+  });
+
+  test("leaving a guide for the home page restores the site's default description", async () => {
+    const { router } = renderAt("/guide/data");
+    await screen.findByRole("heading", { level: 1 });
+
+    await goTo(router, "/");
+
+    await waitFor(() => {
+      expect(descriptions()).toEqual([siteDescription]);
+    });
+    expect(canonicalUrls()).toEqual([canonicalUrlOf("/")]);
+  });
+
+  test("a path no route claims keeps no canonical URL and the site's default description", async () => {
+    const { router } = renderAt("/about");
+    await screen.findByRole("heading", { level: 1 });
+
+    await goTo(router, "/nonexistent");
+
+    await waitFor(() => {
+      expect(canonicalUrls()).toEqual([]);
+    });
+    expect(descriptions()).toEqual([siteDescription]);
+  });
+});
