@@ -283,6 +283,14 @@ jobs:
       - name: Run Issue #92 Google Analytics release acceptance test (Medium)
         run: bun test ./acceptance/web-google-analytics-release.medium.test.ts
 
+      # Issue #169's build half builds the frontend with and without a
+      # publisher ID and reads every page it emits for the AdSense account tag,
+      # the loader, and what Pages is told about unknown paths, so it is bound
+      # here (ADR-0077). Its browser half is registered in
+      # apps/web/frontend/playwright.config.ts.
+      - name: Run Issue #169 crawlable pages build acceptance test (Medium)
+        run: bun test ./acceptance/web-crawlable-pages-build.medium.test.ts
+
       # Issue #99's acceptance test reads design.md, the postal-data README,
       # the committed source and artifact, and runs check:postal-data, so it
       # belongs to no single package's vitest.config.ts (ADR-0077).
