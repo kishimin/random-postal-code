@@ -18,7 +18,11 @@ export const pagesFileFor = (
   pathname: string,
   isFile: (file: string) => boolean,
 ): string | null => {
-  if (pathname.split("/").includes("..")) return null;
+  // A backslash separates directories on Windows, where `/..\x` climbs out
+  // of the build directory past a check for `..` between slashes.
+  if (pathname.includes("\\") || pathname.split("/").includes("..")) {
+    return null;
+  }
 
   const route = pathname.replace(/\/+$/, "");
   const candidates = [
@@ -28,4 +32,25 @@ export const pagesFileFor = (
   ];
 
   return candidates.find(isFile) ?? null;
+};
+
+/**
+ * Decodes a request path for lookup, or returns null when no file Pages could
+ * serve has that name.
+ *
+ * Malformed percent-escapes make decodeURIComponent throw, which would answer
+ * the request with a 500. A backslash or NUL that arrives encoded (`%5C`,
+ * `%00`) only appears after decoding, so the check has to follow it: it is how
+ * `/..%5Cpackage.json` would otherwise reach a file outside the build
+ * directory on Windows.
+ * @param {string} pathname - The request path as received, without its query.
+ */
+export const decodePagesPathname = (pathname: string): string | null => {
+  try {
+    const decoded = decodeURIComponent(pathname);
+
+    return decoded.includes("\\") || decoded.includes("\0") ? null : decoded;
+  } catch {
+    return null;
+  }
 };

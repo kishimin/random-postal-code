@@ -1,6 +1,7 @@
 import {
   existsSync,
   mkdirSync,
+  mkdtempSync,
   readFileSync,
   rmSync,
   statSync,
@@ -12,7 +13,7 @@ import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
-import { build, type Plugin } from "vite";
+import { build, type Plugin, type ResolvedConfig } from "vite";
 import {
   configDefaults,
   coverageConfigDefaults,
@@ -25,7 +26,10 @@ import { createApiClient } from "./src/api/api-client.ts";
 import { adsTxtFor } from "./src/app/deployment/ads-txt.ts";
 import { adSenseAccountFor } from "./src/app/deployment/adsense-account.ts";
 import { fillCspReportEndpoint } from "./src/app/deployment/csp-headers.ts";
-import { pagesFileFor } from "./src/app/deployment/pages-routing.ts";
+import {
+  decodePagesPathname,
+  pagesFileFor,
+} from "./src/app/deployment/pages-routing.ts";
 import { parseAppEnv } from "./src/app/schemas/env.schema.ts";
 
 // A production bundle served over HTTPS cannot call these, but a build aimed at
@@ -65,6 +69,19 @@ const validateBuildEnvironment = (): Plugin => ({
 });
 
 /*
+ * Whether this build is the application's own: the one that bundles index.html
+ * for the browser and whose output is deployed.
+ *
+ * Storybook loads this file's plugins into its own `vite build`, with its own
+ * input (iframe.html) and output directory. The plugins below write deployment
+ * files into the output, so left running there they put robots.txt, sitemap.xml,
+ * ads.txt and a page per route into storybook-static, or fail on an index.html
+ * that Storybook has not written yet.
+ */
+const isAppClientBuild = ({ build: { rollupOptions, ssr } }: ResolvedConfig) =>
+  rollupOptions.input === undefined && !ssr;
+
+/*
  * Writes the Worker's CSP report endpoint into the built _headers (Issue
  * #72). public/_headers carries a placeholder because the Worker's URL is
  * only known per build. Vite copies public/ into the output first, and
@@ -73,12 +90,15 @@ const validateBuildEnvironment = (): Plugin => ({
  * never serves a policy with a broken endpoint.
  */
 const writeCspReportEndpoint = (): Plugin => {
-  const target = { headersFile: "", endpoint: "" };
+  const target = { enabled: false, headersFile: "", endpoint: "" };
 
   return {
     name: "zipnami:csp-report-endpoint",
     apply: "build",
     configResolved: (config) => {
+      target.enabled = isAppClientBuild(config);
+      if (!target.enabled) return;
+
       target.headersFile = path.resolve(
         config.root,
         config.build.outDir,
@@ -89,6 +109,8 @@ const writeCspReportEndpoint = (): Plugin => {
       ).resolveUrl("api/csp-report");
     },
     closeBundle: () => {
+      if (!target.enabled) return;
+
       writeFileSync(
         target.headersFile,
         fillCspReportEndpoint(
@@ -114,6 +136,8 @@ const writeAdsTxt = (): Plugin => {
     name: "zipnami:ads-txt",
     apply: "build",
     configResolved: (config) => {
+      if (!isAppClientBuild(config)) return;
+
       target.file = path.resolve(config.root, config.build.outDir, "ads.txt");
       target.contents = adsTxtFor(
         parseAppEnv(config.env).googleAdsenseClientId,
@@ -190,6 +214,7 @@ const renderSiteFiles = async (
  */
 const prerenderContentRoutes = (): Plugin => {
   const target = {
+    enabled: false,
     root: "",
     outDir: "",
     mode: "",
@@ -200,6 +225,9 @@ const prerenderContentRoutes = (): Plugin => {
     name: "zipnami:prerender-content-routes",
     apply: "build",
     configResolved: (config) => {
+      target.enabled = isAppClientBuild(config);
+      if (!target.enabled) return;
+
       target.root = config.root;
       target.outDir = path.resolve(config.root, config.build.outDir);
       target.mode = config.mode;
@@ -211,12 +239,16 @@ const prerenderContentRoutes = (): Plugin => {
     // written, so a failed build reports its own error and not a missing
     // index.html.
     writeBundle: async () => {
+      if (!target.enabled) return;
+
       // Under node_modules so the externalized dependencies (react, the
-      // router) resolve from where the application's own are installed.
-      const renderDir = path.join(
-        target.root,
-        "node_modules",
-        ".zipnami-prerender",
+      // router) resolve from where the application's own are installed. Unique
+      // to this build: two builds running at once (the acceptance tests start
+      // one each) would otherwise empty and delete each other's output.
+      const modulesDir = path.join(target.root, "node_modules");
+      mkdirSync(modulesDir, { recursive: true });
+      const renderDir = mkdtempSync(
+        path.join(modulesDir, ".zipnami-prerender-"),
       );
 
       try {
@@ -275,8 +307,12 @@ const answerLikePages = (): Plugin => ({
     const outDir = path.resolve(config.root, config.build.outDir);
     const notFoundFile = path.join(outDir, "404.html");
     const isFile = (file: string) => {
+      const resolved = path.join(outDir, file);
+      // Whatever the path spelled, never answer with a file outside the build.
+      if (!resolved.startsWith(`${outDir}${path.sep}`)) return false;
+
       try {
-        return statSync(path.join(outDir, file)).isFile();
+        return statSync(resolved).isFile();
       } catch {
         return false;
       }
@@ -289,7 +325,14 @@ const answerLikePages = (): Plugin => ({
         request.url ?? "/",
         "http://preview",
       );
-      const file = pagesFileFor(decodeURIComponent(pathname), isFile);
+      const decoded = decodePagesPathname(pathname);
+      if (decoded === null) {
+        response.statusCode = 400;
+        response.end();
+        return;
+      }
+
+      const file = pagesFileFor(decoded, isFile);
       if (file !== null) {
         request.url = `${file}${search}`;
         return next();

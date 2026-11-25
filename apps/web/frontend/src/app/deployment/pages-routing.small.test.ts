@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { pagesFileFor } from "./pages-routing";
+import { decodePagesPathname, pagesFileFor } from "./pages-routing";
 
 const built = new Set([
   "/index.html",
@@ -47,4 +47,32 @@ describe("pagesFileFor", () => {
     expect(pagesFileFor("/../package.json", () => true)).toBeNull();
     expect(pagesFileFor("/guide/../../x", () => true)).toBeNull();
   });
+
+  // On Windows a backslash separates directories, so it can climb out of the
+  // build directory where a slash-only check sees one harmless segment.
+  test("treats a backslash as a way out of the build directory", () => {
+    expect(pagesFileFor("/..\\package.json", () => true)).toBeNull();
+    expect(pagesFileFor("/guide\\data", () => true)).toBeNull();
+  });
+});
+
+describe("decodePagesPathname", () => {
+  test("decodes percent-escapes", () => {
+    expect(decodePagesPathname("/a%20b")).toBe("/a b");
+  });
+
+  // decodeURIComponent throws on these, which used to surface as a 500.
+  test.each(["/%", "/%E0%A4%A", "/%zz"])(
+    "returns null for the malformed escape in %s",
+    (pathname) => {
+      expect(decodePagesPathname(pathname)).toBeNull();
+    },
+  );
+
+  test.each(["/..%5Cpackage.json", "/a%5Cb", "/a\\b", "/a%00b"])(
+    "returns null for %s, which names no file Pages could serve",
+    (pathname) => {
+      expect(decodePagesPathname(pathname)).toBeNull();
+    },
+  );
 });
