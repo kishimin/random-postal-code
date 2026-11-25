@@ -21,9 +21,9 @@ import {
 import { generateActionLabel } from "../../features/postal-generator/generate-action-label";
 import type { GeneratorState } from "../../features/postal-generator/hooks/generator-state";
 import { useGenerator } from "../../features/postal-generator/hooks/use-generator";
-import { useDocumentTitle } from "../../hooks/use-document-title";
+import { pageMetadataFor } from "../page-metadata";
 import { parseAppEnv } from "../schemas/env.schema";
-import { pageTitle } from "../site-text";
+import { usePageHead } from "../use-page-head";
 import { GeneratorHero } from "./GeneratorHero";
 import { GeneratorOverview } from "./GeneratorOverview";
 
@@ -75,7 +75,7 @@ export const GeneratorView = () => {
     useGenerator(client, { onGenerated: addEntry });
   const { selectedAddress, selectAddress } = useMapSelection(currentResult);
 
-  useDocumentTitle(pageTitle());
+  usePageHead(pageMetadataFor("/"));
 
   const hasResult = currentResult !== undefined;
 

@@ -2,10 +2,9 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { sourcesHeading } from "../../features/guides/guide-pages";
 import type { GuidePage } from "../../features/guides/types";
-import { useDocumentTitle } from "../../hooks/use-document-title";
-import { useMetaDescription } from "../../hooks/use-meta-description";
-import { pageTitle } from "../site-text";
+import { guideMetadataOf } from "../page-metadata";
 import { contentLinkClass } from "../styles";
+import { usePageHead } from "../use-page-head";
 
 const SOURCES_HEADING_ID = "guide-sources-heading";
 
@@ -31,8 +30,7 @@ type GuideViewProps = {
  * needs no generation and makes no request.
  */
 export const GuideView = ({ page, children }: GuideViewProps) => {
-  useDocumentTitle(pageTitle(page.name));
-  useMetaDescription(page.description);
+  usePageHead(guideMetadataOf(page));
 
   return (
     <div className={"mx-auto flex max-w-[720px] flex-col gap-6"}>
