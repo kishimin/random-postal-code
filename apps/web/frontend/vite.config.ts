@@ -1,11 +1,19 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
-import type { Plugin } from "vite";
+import { build, type Plugin } from "vite";
+import { z } from "zod";
 import {
   configDefaults,
   coverageConfigDefaults,
@@ -15,7 +23,9 @@ import {
 // where an extensionless relative specifier does not resolve.
 import { createApiClient } from "./src/api/api-client.ts";
 import { adsTxtFor } from "./src/app/deployment/ads-txt.ts";
+import { adSenseAccountFor } from "./src/app/deployment/adsense-account.ts";
 import { fillCspReportEndpoint } from "./src/app/deployment/csp-headers.ts";
+import { pagesFileFor } from "./src/app/deployment/pages-routing.ts";
 import { parseAppEnv } from "./src/app/schemas/env.schema.ts";
 
 // A production bundle served over HTTPS cannot call these, but a build aimed at
@@ -94,8 +104,8 @@ const writeCspReportEndpoint = (): Plugin => {
  * Writes ads.txt from the AdSense client ID the bundle is built with. Not a
  * static file in public/: the publisher is known only per build, and a build
  * without a real one (the development placeholder) publishes none. Without
- * the file, the SPA fallback in public/_redirects answers /ads.txt with
- * index.html, which AdSense reports as a missing ads.txt.
+ * the file, Pages answers /ads.txt with its 404 page, which AdSense reports
+ * as a missing ads.txt.
  */
 const writeAdsTxt = (): Plugin => {
   const target = { file: "", contents: null as string | null };
@@ -120,6 +130,178 @@ const dirname =
     ? __dirname
     : path.dirname(fileURLToPath(import.meta.url));
 
+const sourceAlias = { "@": path.resolve(dirname, "./src") };
+
+const PRERENDER_ENTRY = "src/app/prerender/prerender-site.ts";
+const PRERENDER_MODULE = "prerender-site.mjs";
+
+const siteFilesSchema = z.array(
+  z.object({ file: z.string(), contents: z.string() }),
+);
+
+/*
+ * Runs the module the server-side build wrote and returns the files it
+ * produced. Checked at run time rather than cast: the module is built output
+ * this file only knows by name, and a wrong shape should fail the build with
+ * a message instead of writing nothing.
+ */
+const renderSiteFiles = async (
+  builtModule: string,
+  template: string,
+  adSenseAccount: string | null,
+) => {
+  const entry: unknown = await import(pathToFileURL(builtModule).href);
+
+  if (
+    typeof entry !== "object" ||
+    entry === null ||
+    !("prerenderSite" in entry) ||
+    typeof entry.prerenderSite !== "function"
+  ) {
+    throw new Error(`${builtModule} does not export prerenderSite.`);
+  }
+
+  return siteFilesSchema.parse(
+    await entry.prerenderSite(template, adSenseAccount),
+  );
+};
+
+/*
+ * Writes each content route, and the not-found screen, to the HTML file Pages
+ * serves for it, plus robots.txt and sitemap.xml (Issue #169). A crawler that
+ * runs no JavaScript then reads each page's own content instead of the empty
+ * root of one shared index.html.
+ *
+ * Inside `vite build` itself rather than a step `bun run build` adds, because
+ * the build is also run directly (the acceptance tests and the Large config
+ * do), and a deployment made that way must not serve the empty shell.
+ *
+ * The pages are rendered by a second, server-side build of the application
+ * that this one starts once its own bundle is written. It is a build of its
+ * own, with none of this file's plugins, so it neither recurses nor writes
+ * into the output a second time, and its asset URLs are the ones the client
+ * bundle uses (content-hashed). Rendering needs a Node module, and the
+ * application is TSX, which Node cannot import as it is.
+ *
+ * The built index.html is the template, so every page carries the bundle's
+ * script and style tags without this file knowing their names. The client
+ * still mounts with createRoot and replaces the markup, so no hydration
+ * mismatch is possible.
+ */
+const prerenderContentRoutes = (): Plugin => {
+  const target = {
+    root: "",
+    outDir: "",
+    mode: "",
+    adSenseAccount: null as string | null,
+  };
+
+  return {
+    name: "zipnami:prerender-content-routes",
+    apply: "build",
+    configResolved: (config) => {
+      target.root = config.root;
+      target.outDir = path.resolve(config.root, config.build.outDir);
+      target.mode = config.mode;
+      target.adSenseAccount = adSenseAccountFor(
+        parseAppEnv(config.env).googleAdsenseClientId,
+      );
+    },
+    // writeBundle rather than closeBundle: it runs only when the bundle was
+    // written, so a failed build reports its own error and not a missing
+    // index.html.
+    writeBundle: async () => {
+      // Under node_modules so the externalized dependencies (react, the
+      // router) resolve from where the application's own are installed.
+      const renderDir = path.join(
+        target.root,
+        "node_modules",
+        ".zipnami-prerender",
+      );
+
+      try {
+        await build({
+          configFile: false,
+          root: target.root,
+          mode: target.mode,
+          logLevel: "warn",
+          plugins: [react()],
+          resolve: { alias: sourceAlias },
+          build: {
+            ssr: PRERENDER_ENTRY,
+            outDir: renderDir,
+            emptyOutDir: true,
+            rollupOptions: { output: { entryFileNames: PRERENDER_MODULE } },
+          },
+        });
+
+        // Read before anything is written: the root's page replaces index.html.
+        const template = readFileSync(
+          path.join(target.outDir, "index.html"),
+          "utf8",
+        );
+        const files = await renderSiteFiles(
+          path.join(renderDir, PRERENDER_MODULE),
+          template,
+          target.adSenseAccount,
+        );
+
+        for (const { file, contents } of files) {
+          const destination = path.join(target.outDir, file);
+          mkdirSync(path.dirname(destination), { recursive: true });
+          writeFileSync(destination, contents);
+        }
+      } finally {
+        rmSync(renderDir, { recursive: true, force: true });
+      }
+    },
+  };
+};
+
+/*
+ * Makes `vite preview` answer a request the way Cloudflare Pages answers it
+ * for the same build (Issue #169): a route from its own .html file, and a path
+ * no file matches with 404.html and status 404. Without it the preview serves
+ * index.html for every unmatched path, as it does for a single-page
+ * application, and the tests that run against the preview would describe a
+ * deployment that no longer exists.
+ *
+ * Registered ahead of the preview's own file server, which would otherwise
+ * answer first.
+ */
+const answerLikePages = (): Plugin => ({
+  name: "zipnami:answer-like-pages",
+  configurePreviewServer: ({ config, middlewares }) => {
+    const outDir = path.resolve(config.root, config.build.outDir);
+    const notFoundFile = path.join(outDir, "404.html");
+    const isFile = (file: string) => {
+      try {
+        return statSync(path.join(outDir, file)).isFile();
+      } catch {
+        return false;
+      }
+    };
+
+    middlewares.use((request, response, next) => {
+      if (request.method !== "GET" && request.method !== "HEAD") return next();
+
+      const { pathname, search } = new URL(request.url ?? "/", "http://preview");
+      const file = pagesFileFor(decodeURIComponent(pathname), isFile);
+      if (file !== null) {
+        request.url = `${file}${search}`;
+        return next();
+      }
+      if (!existsSync(notFoundFile)) return next();
+
+      response.statusCode = 404;
+      response.setHeader("Content-Type", "text/html; charset=utf-8");
+      response.end(
+        request.method === "HEAD" ? undefined : readFileSync(notFoundFile),
+      );
+    });
+  },
+});
+
 /*
  * The browser that runs unit tests and stories cannot resolve the AdSense
  * host (Issue #61). MSW's stand-in loader (src/api/mocks/handlers.ts)
@@ -143,11 +325,11 @@ export default defineConfig({
     validateBuildEnvironment(),
     writeCspReportEndpoint(),
     writeAdsTxt(),
+    prerenderContentRoutes(),
+    answerLikePages(),
   ],
   resolve: {
-    alias: {
-      "@": path.resolve(dirname, "./src"),
-    },
+    alias: sourceAlias,
   },
   optimizeDeps: {
     include: [

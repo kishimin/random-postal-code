@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { applyInitialDocumentTitle } from "./app/document-title";
 import { RootErrorBoundary } from "./app/providers/RootErrorBoundary";
 import { startGoogleAnalytics } from "./app/start-google-analytics";
+import { createAppRouter } from "./app/routes/app-router";
 import { App } from "./app/views/App";
 import "./theme/globals.css";
 
@@ -42,10 +43,25 @@ startGoogleAnalytics(import.meta.env);
  * point could only fail in a bundle that was never built — and it would throw
  * above every boundary, which is the failure it was meant to prevent.
  */
-createRoot(rootElement).render(
-  <StrictMode>
-    <RootErrorBoundary>
-      <App />
-    </RootErrorBoundary>
-  </StrictMode>,
-);
+const mount = async (container: HTMLElement) => {
+  const router = createAppRouter();
+
+  /*
+   * The page arrives prerendered, and createRoot replaces it. A router that
+   * has not matched its route yet renders nothing, so mounting it at once
+   * would blank the page until the match committed. Loaded first, the first
+   * render already shows the screen the prerendered markup showed. A failed
+   * load is the router's to report: it renders its error component.
+   */
+  await router.load().catch(() => undefined);
+
+  createRoot(container).render(
+    <StrictMode>
+      <RootErrorBoundary>
+        <App router={router} />
+      </RootErrorBoundary>
+    </StrictMode>,
+  );
+};
+
+void mount(rootElement);
