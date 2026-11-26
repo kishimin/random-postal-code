@@ -118,7 +118,9 @@ describe("guide routes", () => {
       renderAt(page.path);
 
       await screen.findByRole("heading", { level: 1, name: page.name });
-      const related = screen.getByRole("region", { name: relatedGuidesHeading });
+      const related = screen.getByRole("region", {
+        name: relatedGuidesHeading,
+      });
       const links = within(related).getAllByRole("link");
 
       expect(links.map((link) => link.textContent)).toEqual(
@@ -142,7 +144,9 @@ describe("guide routes", () => {
       const region = screen.getByRole("region", { name: category.name });
       const links = within(region).getAllByRole("link");
 
-      expect(within(region).getByText(category.description)).toBeInTheDocument();
+      expect(
+        within(region).getByText(category.description),
+      ).toBeInTheDocument();
       expect(links.map((link) => link.textContent)).toEqual(
         category.pages.map(({ name }) => name),
       );

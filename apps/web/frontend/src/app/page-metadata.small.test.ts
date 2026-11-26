@@ -1,8 +1,5 @@
 import { describe, expect, test } from "vitest";
-import {
-  allGuidePages,
-  guideIndexPage,
-} from "../features/guides/guide-pages";
+import { allGuidePages, guideIndexPage } from "../features/guides/guide-pages";
 import { notFoundHeading } from "./document-title";
 import {
   contentRoutePaths,

@@ -110,7 +110,9 @@ describe("guideCategories", () => {
   });
 
   test("allGuidePages is every categorized guide once, in the categories' order", () => {
-    expect(allGuidePages).toEqual(guideCategories.flatMap(({ pages }) => pages));
+    expect(allGuidePages).toEqual(
+      guideCategories.flatMap(({ pages }) => pages),
+    );
     expect(new Set(allGuidePages.map(({ path }) => path)).size).toBe(10);
   });
 });
@@ -120,9 +122,9 @@ describe("guideIndexPage", () => {
     expect(guideIndexPage.name).toBe("ガイド一覧");
     expect(guideIndexPage.path).toBe("/guide");
     expect(guideIndexPage.lead).not.toBe("");
-    expect(
-      allGuidePages.map(({ description }) => description),
-    ).not.toContain(guideIndexPage.description);
+    expect(allGuidePages.map(({ description }) => description)).not.toContain(
+      guideIndexPage.description,
+    );
   });
 });
 

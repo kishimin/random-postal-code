@@ -18,6 +18,11 @@ type Row = {
   readonly oldPostalCode: string;
   readonly postalCode: string;
   readonly prefecture: string;
+  /*
+   * The four town flags, in the readme's order: one town over several codes,
+   * lot numbers per 小字, has 丁目, one code over several towns.
+   */
+  readonly townFlags: readonly string[];
   readonly numberedPerKoaza: boolean;
 };
 
@@ -35,6 +40,7 @@ const rows: readonly Row[] = readFileSync(
     oldPostalCode: fields[1].trim(),
     postalCode: fields[2],
     prefecture: fields[6],
+    townFlags: fields.slice(9, 13),
     numberedPerKoaza: fields[10] === "1",
   }));
 
@@ -75,14 +81,28 @@ describe("the KEN_ALL columns the guides quote", () => {
   });
 
   test.each([
+    // 八重洲（１丁目）: split over several codes, and has 丁目.
+    ["1030028", ["1", "0", "1", "0"]],
+    // 千代田: none of the four.
+    ["1000001", ["0", "0", "0", "0"]],
+  ])("%s carries the town flags %j", (code, flags) => {
+    expect(rowsOf(code).map((row) => row.townFlags)).toEqual([flags]);
+  });
+
+  test.each([
     ["東京都", "13"],
     ["北海道", "01"],
-  ])("every %s row's local government code starts with %s", (prefecture, prefix) => {
-    const ofPrefecture = rows.filter((row) => row.prefecture === prefecture);
+  ])(
+    "every %s row's local government code starts with %s",
+    (prefecture, prefix) => {
+      const ofPrefecture = rows.filter((row) => row.prefecture === prefecture);
 
-    expect(ofPrefecture.length).toBeGreaterThan(0);
-    expect(
-      ofPrefecture.filter((row) => !row.localGovernmentCode.startsWith(prefix)),
-    ).toEqual([]);
-  });
+      expect(ofPrefecture.length).toBeGreaterThan(0);
+      expect(
+        ofPrefecture.filter(
+          (row) => !row.localGovernmentCode.startsWith(prefix),
+        ),
+      ).toEqual([]);
+    },
+  );
 });

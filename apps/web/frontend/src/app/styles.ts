@@ -61,6 +61,17 @@ export const privacyLinkClass = `${tapTargetClass} rounded-full border border-br
  * card, where it is 5.61:1. The underline, not the color alone, marks it as a
  * link (WCAG 1.4.1).
  */
+/*
+ * A guide page's text on cards (Issue #121), laid out like the privacy page:
+ * each section a card, its heading, its paragraphs, and its lists. The guide
+ * index uses the same cards so the two read as one section of the site.
+ */
+export const guideSectionClass = "flex flex-col gap-3 rounded-card bg-card p-6";
+export const guideSectionHeadingClass = "text-heading font-bold text-ink";
+export const guideParagraphClass = "text-body-sm text-ink-muted";
+export const guideListClass =
+  "flex flex-col gap-2 pl-5 text-body-sm text-ink-muted";
+
 export const contentLinkClass = `${tapTargetClass} text-body-sm text-brand underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink`;
 
 /**

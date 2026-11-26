@@ -1,17 +1,23 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { sourcesHeading } from "../../features/guides/guide-pages";
+import {
+  guidePageAt,
+  relatedGuidesHeading,
+  sourcesHeading,
+} from "../../features/guides/guide-pages";
 import type { GuidePage } from "../../features/guides/types";
 import { guideMetadataOf } from "../page-metadata";
-import { contentLinkClass } from "../styles";
+import {
+  contentLinkClass,
+  guideListClass as listClass,
+  guideParagraphClass as paragraphClass,
+  guideSectionClass as sectionClass,
+  guideSectionHeadingClass as sectionHeadingClass,
+} from "../styles";
 import { usePageHead } from "../use-page-head";
 
 const SOURCES_HEADING_ID = "guide-sources-heading";
-
-const sectionClass = "flex flex-col gap-3 rounded-card bg-card p-6";
-const sectionHeadingClass = "text-heading font-bold text-ink";
-const paragraphClass = "text-body-sm text-ink-muted";
-const listClass = "flex flex-col gap-2 pl-5 text-body-sm text-ink-muted";
+const RELATED_HEADING_ID = "guide-related-heading";
 
 type GuideViewProps = {
   page: GuidePage;
@@ -21,8 +27,8 @@ type GuideViewProps = {
 
 /**
  * One guide page (Issue #121, ui-design.md section 5.5): a lead, body sections
- * each a region named by its own visible h2, the sources it relies on, and
- * whatever the route ends the page with.
+ * each a region named by its own visible h2, the related guides, the sources
+ * it relies on, and whatever the route ends the page with.
  *
  * Laid out like PrivacyView, which is also text on cards, and for the same
  * reason labelled the same way: aria-labelledby on the visible heading rather
@@ -76,6 +82,29 @@ export const GuideView = ({ page, children }: GuideViewProps) => {
           )}
         </section>
       ))}
+
+      {/* Navigation to other guides (Issue #170): each link carries the
+          guide's own name, and the summary after it says what the guide
+          covers, so the list reads on its own. Every shipped guide names
+          two or more (guide-pages.small.test.ts); an empty list renders no
+          empty region. */}
+      {page.related.length > 0 && (
+        <section aria-labelledby={RELATED_HEADING_ID} className={sectionClass}>
+          <h2 id={RELATED_HEADING_ID} className={sectionHeadingClass}>
+            {relatedGuidesHeading}
+          </h2>
+          <ul className={listClass}>
+            {page.related.map(guidePageAt).map((related) => (
+              <li key={related.path}>
+                <Link className={contentLinkClass} to={related.path}>
+                  {related.name}
+                </Link>
+                {`: ${related.summary}`}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section aria-labelledby={SOURCES_HEADING_ID} className={sectionClass}>
         <h2 id={SOURCES_HEADING_ID} className={sectionHeadingClass}>

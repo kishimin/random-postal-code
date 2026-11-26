@@ -54,12 +54,15 @@ describe("buildPages", () => {
     expect(contentPages().map(({ path }) => path)).toEqual(contentRoutePaths);
   });
 
-  test.each([...allGuidePages, guideIndexPage])("renders $path's own h1 and body text", (guide) => {
-    const page = contentPages().find(({ path }) => path === guide.path);
+  test.each([...allGuidePages, guideIndexPage])(
+    "renders $path's own h1 and body text",
+    (guide) => {
+      const page = contentPages().find(({ path }) => path === guide.path);
 
-    expect(page && headingsOf(page)).toEqual([guide.name]);
-    expect(page?.body).toContain(guide.lead);
-  });
+      expect(page && headingsOf(page)).toEqual([guide.name]);
+      expect(page?.body).toContain(guide.lead);
+    },
+  );
 
   test("renders the privacy page's own h1", () => {
     const page = contentPages().find(({ path }) => path === "/privacy");
