@@ -504,9 +504,13 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
 
     // The frame every screen shares: the wordmark home, and the footer's
     // privacy link (Figma removed the header's "このアプリについて").
+    // Issue #170 adds the footer's すべてのガイド navigation and its one
+    // link, ガイド一覧, to every screen. Owner-approved rewrite (ADR-0080):
+    // https://github.com/kishimin/random-postal-code/issues/170#issuecomment-7189578376
     const frameLinks = (between: readonly string[]) => [
       figmaCopy.wordmark,
       ...between,
+      "ガイド一覧",
       figmaCopy.privacyLink,
     ];
 
