@@ -1,6 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
 import { formatPostalCode } from "../lib/postal-code-label";
-import { mobileConfig } from "../config/env";
 
 // A real entry of the committed dataset (〒100-0001, 東京都千代田区千代田),
 // formatted through the shared contract rather than written out by hand.
@@ -16,9 +15,6 @@ export default function InfoScreen() {
       <Text style={styles.body}>郵便番号の例: {examplePostalCode}</Text>
       <Text style={styles.caption}>
         郵便番号データは日本郵便株式会社が公開するデータを利用しています。
-      </Text>
-      <Text style={styles.caption}>
-        API: {mobileConfig.apiBaseUrl ?? "未設定"}
       </Text>
     </View>
   );
