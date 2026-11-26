@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { generatedDatasetRepository } from "../infrastructures/generated-dataset-repository.ts";
 
 /*
- * Issue #121: the five guide pages cite entries of the bundled dataset as
+ * Issues #121 and #170: the guide pages cite entries of the bundled dataset as
  * examples and state its size (ui-design.md section 5.5, "Content rules").
  * The copy lives in the frontend workspace
  * (apps/web/frontend/src/features/guides), which cannot load this 13 MB
@@ -45,6 +45,21 @@ describe("the dataset facts the guide pages state", () => {
     ["4980000", ["愛知県弥富市", "三重県桑名郡木曽岬町"]],
     // 以下に掲載がない場合 is shown as the city alone.
     ["3400000", ["埼玉県草加市"]],
+    ["5250000", ["滋賀県草津市"]],
+    ["3510100", ["埼玉県和光市"]],
+    // A town split by 丁目, shown with its bracketed range.
+    ["0600906", ["北海道札幌市東区北六条東（１～７丁目）"]],
+    ["0650006", ["北海道札幌市東区北六条東（８～２０丁目）"]],
+    // Japan Post's manual: old 154 and 350-11 carried into seven digits.
+    ["1540023", ["東京都世田谷区若林"]],
+    ["3501106", ["埼玉県川越市小室"]],
+    // The （次のビルを除く） note is dropped from the town.
+    ["1000013", ["東京都千代田区霞が関"]],
+    // Japan Post's address-omission examples.
+    ["7900066", ["愛媛県松山市宮田町"]],
+    ["3330823", ["埼玉県川口市石神"]],
+    ["9660049", ["福島県喜多方市長面"]],
+    ["0383802", ["青森県南津軽郡藤崎町藤崎"]],
   ])("%s is shown as %j", (code, expected) => {
     expect(addressesOf(code)).toEqual(expected);
   });

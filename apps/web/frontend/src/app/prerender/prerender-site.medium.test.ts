@@ -1,5 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { guidePages } from "../../features/guides/guide-pages";
+import {
+  allGuidePages,
+  guideIndexPage,
+} from "../../features/guides/guide-pages";
 import { canonicalUrlOf } from "../deployment/site-origin";
 import { contentRoutePaths, pageMetadataFor } from "../page-metadata";
 import { buildSiteFiles, type SiteFile } from "./prerender-site";
@@ -98,7 +101,7 @@ describe("buildSiteFiles", () => {
   });
 
   test("leaves the content pages open to the index", () => {
-    for (const guide of guidePages) {
+    for (const guide of [...allGuidePages, guideIndexPage]) {
       const document = parse(contentsOf(files, `${guide.path.slice(1)}.html`));
 
       expect(document.head.querySelector('meta[name="robots"]')).toBeNull();
