@@ -164,14 +164,32 @@ const expectShowsResult = async (result: typeof tokyo): Promise<void> => {
 
 const originalFetch = globalThis.fetch;
 
+/**
+ * The fetch in place while the app mounts, before a test queues anything
+ * (Issue #142). It answers nothing: a request made then fails the test in
+ * afterEach rather than reaching the real network.
+ */
+let mountFetch: jest.Mock<typeof fetch>;
+
 // Expo Router's renderRouter and Testing Library's fireEvent are both
 // asynchronous: each settles React's updates before it resolves.
 beforeEach(async () => {
+  mountFetch = jest.fn<typeof fetch>(() =>
+    Promise.reject(new Error("the app made a request the test did not queue")),
+  );
+  globalThis.fetch = mountFetch;
   await renderRouter(appDirectory, { initialUrl: "/" });
 });
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  // Every test's queued fetch replaces this one, so any call it saw came
+  // from mounting, or from a test that requested before queueing.
+  expect(
+    mountFetch.mock.calls.map(([input]) =>
+      input instanceof Request ? input.url : String(input),
+    ),
+  ).toEqual([]);
 });
 
 describe(`Issue #13 on ${Platform.OS}: the mobile random postal-code experience`, () => {
@@ -196,17 +214,17 @@ describe(`Issue #13 on ${Platform.OS}: the mobile random postal-code experience`
   });
 
   test("AC-2 the first display does not request a postal code", async () => {
-    const fetchMock = queueFetch();
-
-    // Effects run inside the awaited render, so a request made on mount has
-    // already been made. Draining the microtask queue as well catches one
-    // started from a promise. Timers are not used to wait: Expo Router's
-    // testing library may install fake ones, and a timer would never fire.
+    // Nothing is queued, so the fetch installed before the render is still
+    // in place and sees a request made on mount (Issue #142). Effects run
+    // inside the awaited render; draining the microtask queue as well
+    // catches one started from a promise. Timers are not used to wait: Expo
+    // Router's testing library may install fake ones, and a timer would
+    // never fire.
     await act(async () => {
       for (let turn = 0; turn < 20; turn += 1) await Promise.resolve();
     });
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mountFetch).not.toHaveBeenCalled();
     expect(currentResult().queryByText(/〒\d{3}-\d{4}/)).toBeNull();
   });
 
