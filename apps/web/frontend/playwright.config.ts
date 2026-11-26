@@ -39,6 +39,7 @@ export default defineConfig({
     "acceptance/privacy-contact-section.medium.test.ts",
     "acceptance/mobile-app-privacy-policy.medium.test.ts",
     "acceptance/web-crawlable-pages.medium.test.ts",
+    "acceptance/web-guide-articles.medium.test.ts",
     "apps/web/frontend/e2e/tests/**/*.test.ts",
   ],
   fullyParallel: false,
