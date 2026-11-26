@@ -207,6 +207,19 @@ The pages are not eligible for ads (section 7.1).
 
 Android screen design, device-local history, external Android map intents, AdMob, UMP, and Google Play delivery are V2 work tracked by Issues #12 through #15 and #20. They are intentionally not implementation or acceptance requirements for this document.
 
+### 6.1 Mobile Map Links
+
+The mobile app's screen design is owned by its Issues, not by this document. The one exception is the map link, which follows the Web so both clients mark the same action the same way (Issue #174).
+
+Each address in the mobile current result and in each history entry is a link that opens Google Maps. It must look tappable without relying on its colour, as section 10 requires of every Web link (WCAG 1.4.1):
+
+- **At rest**, the address text is underlined, like the Web's map link (`MapAddressActions.tsx`). There is no icon and no extra visible text: the underline is the Web's cue, and a second cue would only make the two clients differ.
+- **While pressed**, the link's area takes a light tint of the link colour behind the text. The tint is a background, not a lowered opacity, so the text keeps its AA contrast while pressed.
+- **For screen readers**, the link stays one element with role `link` and the label `<address>をGoogle マップで開く`. Nothing inside it is announced on its own.
+- **Size**, the link's touch target stays at least 44pt high.
+
+The appearance is checked visually, on a device or emulator, not by tests that read colour or size values, in the same way as section 10's manual checks.
+
 ## 7. Web Maps, Advertising, and Consent
 
 The Web map occupies a labeled region after a result exists. Before generation, the region may be absent rather than displaying an empty iframe. Loading and failure states reserve enough space to avoid disruptive layout shifts. A map failure shows a fallback with the selected address and external link.
