@@ -5,7 +5,7 @@ import type { GuidePage } from "./types";
  * The structure, the check digit and the change rules are 総務省's 全国地方
  * 公共団体コード仕様. The KEN_ALL values quoted (13101, 01103, the prefixes 13
  * and 01) are rows of packages/postal-data/data/ken-all.source.csv, held by
- * packages/postal-data/data/guide-source-facts.medium.test.ts. The check
+ * packages/postal-data/scripts/guide-source-facts.medium.test.ts. The check
  * digits of 13101 and 01103 apply the specification's own method, worked out
  * on the page so a reader can follow every step.
  */

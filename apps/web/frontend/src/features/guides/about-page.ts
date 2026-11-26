@@ -1,3 +1,4 @@
+import { datasetRetrievalDate } from "./dataset-facts";
 import { japanPostDownload, japanPostReadme, japanPostSearch } from "./sources";
 import type { GuidePage } from "./types";
 
@@ -45,7 +46,7 @@ export const aboutPage: GuidePage = {
       paragraphs: [
         "郵便番号と住所は、日本郵便株式会社が公開している住所の郵便番号データ（全国一括のKEN_ALL.CSV）から作っています。日本郵便は、このデータの説明の中で、郵便番号データについては著作権を主張せず、自由に配布してよいとしています。",
         "日本郵便のデータには、町域ごとの郵便番号のほか、旧郵便番号や読み仮名、全国地方公共団体コードなども含まれています。Zipnamiはこのうち、郵便番号と、都道府県・市区町村・町域の漢字表記を使い、Webページで扱いやすい形に変換しています。",
-        "現在のデータは2026年11月3日に取得したもので、決まった日に自動で入れ替わることはありません。取得した日付、件数、加工のしかたは「データについて」のガイドに詳しく書いています。",
+        `現在のデータは${datasetRetrievalDate}に取得したもので、決まった日に自動で入れ替わることはありません。取得した日付、件数、加工のしかたは「データについて」のガイドに詳しく書いています。`,
       ],
     },
     {

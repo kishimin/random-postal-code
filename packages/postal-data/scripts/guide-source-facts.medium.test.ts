@@ -29,7 +29,7 @@ type Row = {
 const unquote = (field: string) => field.replace(/^"|"$/g, "");
 
 const rows: readonly Row[] = readFileSync(
-  new URL("./ken-all.source.csv", import.meta.url),
+  new URL("../data/ken-all.source.csv", import.meta.url),
   "utf8",
 )
   .split(/\r?\n/)

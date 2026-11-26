@@ -20,7 +20,7 @@ import { writingPage } from "./writing-page";
  * packages/postal-data/data/ken-all.source.csv, worded as Zipnami shows them.
  * apps/web/backend/src/data/guide-copy-facts.medium.test.ts holds that the
  * bundled dataset says what the copy says, and
- * packages/postal-data/data/guide-source-facts.medium.test.ts holds the
+ * packages/postal-data/scripts/guide-source-facts.medium.test.ts holds the
  * KEN_ALL columns Zipnami does not keep.
  */
 

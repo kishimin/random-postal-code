@@ -1,3 +1,4 @@
+import { datasetRetrievalDate } from "./dataset-facts";
 import {
   japanPostAddressOmission,
   japanPostDownload,
@@ -73,7 +74,7 @@ export const writingPage: GuidePage = {
       headingId: "writing-zipnami-heading",
       heading: "Zipnamiの番号を使うとき",
       paragraphs: [
-        "Zipnamiは郵便番号をランダムに選ぶサイトなので、特定の住所の番号を調べる用途には向きません。データも2026年11月3日に取得した時点のものです。郵便物を送るときは、必ず日本郵便の郵便番号検索で最新の番号を確かめてください。",
+        `Zipnamiは郵便番号をランダムに選ぶサイトなので、特定の住所の番号を調べる用途には向きません。データも${datasetRetrievalDate}に取得した時点のものです。郵便物を送るときは、必ず日本郵便の郵便番号検索で最新の番号を確かめてください。`,
         "Zipnamiの「郵便番号をコピー」でコピーされるのは、ハイフンを含まない7桁の数字です。郵便物に書くときは、3桁目と4桁目の間にハイフンを入れて書きます。",
         "Zipnamiに表示される住所は町域までなので、ランダムに選んだ番号と住所は、実在する町を指してはいても、具体的なあて先にはなりません。書き方を確かめる練習に使うのはかまいませんが、実際に郵便物を送るあて先には使わないでください。",
       ],

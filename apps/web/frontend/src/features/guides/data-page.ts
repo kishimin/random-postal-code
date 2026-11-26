@@ -1,3 +1,4 @@
+import { datasetRetrievalDate } from "./dataset-facts";
 import {
   japanPostDownload,
   japanPostOfficeReadme,
@@ -43,7 +44,7 @@ export const dataPage: GuidePage = {
       headingId: "data-retrieval-heading",
       heading: "取得日と件数",
       paragraphs: [
-        "現在のデータは、2026年11月3日に日本郵便のサイトから取得したものです。",
+        `現在のデータは、${datasetRetrievalDate}に日本郵便のサイトから取得したものです。`,
         "取得したデータは124,841行で、Zipnamiではこれを120,721件の郵便番号と124,526件の住所にまとめています。そのうち、2件以上の住所に対応する郵便番号は1,338件です。",
         "行の数が住所の件数より多いのは、長い町域名が複数の行に分かれているものを1件につなぎ直したり、同じ内容の行をまとめたりしているためです。住所の件数が郵便番号の件数より多いのは、一つの郵便番号が複数の住所に対応していることがあるためです。",
       ],
