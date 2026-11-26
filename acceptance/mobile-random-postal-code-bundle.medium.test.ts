@@ -77,8 +77,12 @@ type Export = {
   exportedText: string;
   /** Every source path the platform's source maps list. */
   sources: string[];
-  /** Every exported file, relative to the export, with its size. */
-  files: { name: string; bytes: number }[];
+  /**
+   * Every exported file, relative to the export, with its size and its type:
+   * the extension the export's metadata.json records for an asset, which
+   * Expo writes without one (`assets/<hash>`), or else the file's own.
+   */
+  files: { name: string; bytes: number; type: string }[];
 };
 
 const outputRoot = mkdtempSync(
@@ -98,6 +102,47 @@ const filesUnder = (directory: string): string[] =>
         return statSync(entry).isDirectory() ? filesUnder(entry) : [entry];
       })
     : [];
+
+/**
+ * Reads one field of a parsed JSON value, if it is an object.
+ * @param value - The parsed value.
+ * @param key - The field.
+ * @returns The field's value, or undefined.
+ */
+const field = (value: unknown, key: string): unknown =>
+  typeof value === "object" && value !== null && key in value
+    ? (Reflect.get(value, key) as unknown)
+    : undefined;
+
+/**
+ * The type of each asset an export lists in its metadata.json. Native
+ * exports name assets by hash alone, so the metadata is the only place an
+ * asset's `.gz` or `.csv` survives.
+ * @param outputDir - The export's directory.
+ * @param platform - The exported platform.
+ * @returns Each asset's path in the export, mapped to its extension.
+ */
+const assetTypes = (
+  outputDir: string,
+  platform: "android" | "ios",
+): Map<string, string> => {
+  const file = path.join(outputDir, "metadata.json");
+  if (!existsSync(file)) return new Map();
+  const metadata: unknown = JSON.parse(readFileSync(file, "utf8"));
+  const assets = field(
+    field(field(metadata, "fileMetadata"), platform),
+    "assets",
+  );
+  return new Map(
+    (Array.isArray(assets) ? assets : []).flatMap((asset: unknown) => {
+      const assetPath = field(asset, "path");
+      const ext = field(asset, "ext");
+      return typeof assetPath === "string" && typeof ext === "string"
+        ? [[assetPath.replaceAll("\\", "/"), ext.replace(/^\./, "")] as const]
+        : [];
+    }),
+  );
+};
 
 /**
  * Exports one platform and reads back what it produced.
@@ -135,14 +180,19 @@ const exportPlatform = (platform: "android" | "ios"): Export => {
         : [];
     })
     .map((source) => source.replaceAll("\\", "/"));
+  const types = assetTypes(outputDir, platform);
   return {
     result,
     exportedText,
     sources,
-    files: files.map((file) => ({
-      name: path.relative(outputDir, file).replaceAll("\\", "/"),
-      bytes: statSync(file).size,
-    })),
+    files: files.map((file) => {
+      const name = path.relative(outputDir, file).replaceAll("\\", "/");
+      return {
+        name,
+        bytes: statSync(file).size,
+        type: types.get(name) ?? path.extname(name).replace(/^\./, ""),
+      };
+    }),
   };
 };
 
@@ -231,25 +281,33 @@ describe("Issue #13: what the mobile app is built from", () => {
 
   // Issue #142: the two checks above read only what JavaScript carries. A
   // dataset shipped as a compressed or data asset would pass them, so the
-  // exported files are bounded too. 256 KiB is far above Expo's own
-  // metadata JSON and far below the dataset (the API's generated JSON is
-  // tens of megabytes).
+  // exported files are bounded too, by the type metadata.json records for
+  // them: Expo writes native assets without their extension. 256 KiB is far
+  // above Expo's own metadata JSON and far below the dataset (the API's
+  // generated JSON is tens of megabytes).
   test.each(platforms)(
     "AC-5 on %s, the export carries no dataset-like asset",
     (platform) => {
       const { result, files } = exported(platform);
       expect(result.status).toBe(0);
-      // The export really lists its files, so the absence below is about
-      // the dataset, not about an empty list.
-      expect(files.length).toBeGreaterThan(0);
+      // The export really lists its files and their metadata, so the
+      // absence below is about the dataset, not about an empty list.
+      expect(files.map(({ name }) => name)).toContain("metadata.json");
+      // Every hashed asset got its type from the metadata; one without would
+      // slip past the filter below.
+      expect(
+        files
+          .filter(({ name, type }) => name.startsWith("assets/") && type === "")
+          .map(({ name }) => name),
+      ).toEqual([]);
 
       const jsonLimit = 256 * 1024;
       expect(
         files
           .filter(
-            ({ name, bytes }) =>
-              /\.(csv|gz|zip)$/i.test(name) ||
-              (/\.json$/i.test(name) && bytes > jsonLimit),
+            ({ type, bytes }) =>
+              /^(csv|gz|zip)$/i.test(type) ||
+              (/^json$/i.test(type) && bytes > jsonLimit),
           )
           .map(({ name }) => name),
       ).toEqual([]);
