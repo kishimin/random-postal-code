@@ -77,6 +77,8 @@ type Export = {
   exportedText: string;
   /** Every source path the platform's source maps list. */
   sources: string[];
+  /** Every exported file, relative to the export, with its size. */
+  files: { name: string; bytes: number }[];
 };
 
 const outputRoot = mkdtempSync(
@@ -133,7 +135,15 @@ const exportPlatform = (platform: "android" | "ios"): Export => {
         : [];
     })
     .map((source) => source.replaceAll("\\", "/"));
-  return { result, exportedText, sources };
+  return {
+    result,
+    exportedText,
+    sources,
+    files: files.map((file) => ({
+      name: path.relative(outputDir, file).replaceAll("\\", "/"),
+      bytes: statSync(file).size,
+    })),
+  };
 };
 
 /**
@@ -216,6 +226,33 @@ describe("Issue #13: what the mobile app is built from", () => {
       // dataset would bring nearly all of them.
       const carried = sample.filter((code) => exportedText.includes(code));
       expect(carried.length).toBeLessThanOrEqual(3);
+    },
+  );
+
+  // Issue #142: the two checks above read only what JavaScript carries. A
+  // dataset shipped as a compressed or data asset would pass them, so the
+  // exported files are bounded too. 256 KiB is far above Expo's own
+  // metadata JSON and far below the dataset (the API's generated JSON is
+  // tens of megabytes).
+  test.each(platforms)(
+    "AC-5 on %s, the export carries no dataset-like asset",
+    (platform) => {
+      const { result, files } = exported(platform);
+      expect(result.status).toBe(0);
+      // The export really lists its files, so the absence below is about
+      // the dataset, not about an empty list.
+      expect(files.length).toBeGreaterThan(0);
+
+      const jsonLimit = 256 * 1024;
+      expect(
+        files
+          .filter(
+            ({ name, bytes }) =>
+              /\.(csv|gz|zip)$/i.test(name) ||
+              (/\.json$/i.test(name) && bytes > jsonLimit),
+          )
+          .map(({ name }) => name),
+      ).toEqual([]);
     },
   );
 
