@@ -41,7 +41,7 @@ import { guideSelectors, guides } from "./selectors/guide-selectors.ts";
  * Each test name starts with the acceptance criteria it holds, numbered in
  * the Issue's order:
  *
- *   AC-2  Each of the seven content routes, fetched without running
+ *   AC-2  Each content route, fetched without running
  *         JavaScript, carries its own h1, body text, <title>, meta
  *         description and canonical URL, and no two responses are identical.
  *   AC-3  Once the client loads, each page behaves as before: direct
@@ -49,7 +49,7 @@ import { guideSelectors, guides } from "./selectors/guide-selectors.ts";
  *         console error (a hydration error included).
  *   AC-4  /robots.txt answers 200 as text/plain, allows every crawler and
  *         names the sitemap.
- *   AC-5  /sitemap.xml answers 200 as XML and lists exactly the seven routes
+ *   AC-5  /sitemap.xml answers 200 as XML and lists exactly the content routes
  *         as absolute production URLs.
  *   AC-6  An unknown path answers HTTP 404 and shows the not-found screen.
  *   AC-8  No content route's HTML loads the AdSense loader.
@@ -73,7 +73,7 @@ import { guideSelectors, guides } from "./selectors/guide-selectors.ts";
  *   origin https://zipnami.pages.dev (docs/design.md section 6.2), the root
  *   written with its slash.
  * - "That page's own meta description" is held as: one non-empty
- *   description per page, and no two of the seven alike. The wording is the
+ *   description per page, and no two content pages alike. The wording is the
  *   page's own and free to change.
  * - The client may replace the prerendered markup rather than hydrate it.
  *   Either way the console must stay free of errors on load, refresh and
@@ -282,7 +282,7 @@ test.describe("Issue #169: each content route answers with its own HTML, read wi
     });
   }
 
-  test("AC-2 without JavaScript, no two of the seven pages share a meta description", async ({
+  test("AC-2 without JavaScript, no two content pages share a meta description", async ({
     crawlablePage,
   }) => {
     const descriptions: Record<string, string> = {};
@@ -311,7 +311,7 @@ test.describe("Issue #169: each content route answers with its own HTML, read wi
 });
 
 test.describe("Issue #169: what a crawler fetches", () => {
-  test("AC-2 each of the seven routes answers 200 with HTML, and no two answers are identical", async ({
+  test("AC-2 each content route answers 200 with HTML, and no two answers are identical", async ({
     crawlablePage,
   }) => {
     const answers: RawResponse[] = [];
@@ -356,7 +356,7 @@ test.describe("Issue #169: what a crawler fetches", () => {
     expect(robotsValues(robots.body, "Sitemap")).toEqual([sitemapUrl]);
   });
 
-  test("AC-5 /sitemap.xml answers 200 as XML and lists exactly the seven content routes as production URLs", async ({
+  test("AC-5 /sitemap.xml answers 200 as XML and lists exactly the content routes as production URLs", async ({
     crawlablePage,
   }) => {
     const sitemap = await crawlablePage.fetchRaw("/sitemap.xml");

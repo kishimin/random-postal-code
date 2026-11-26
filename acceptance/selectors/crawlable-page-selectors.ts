@@ -1,4 +1,5 @@
 import { figmaCopy } from "./figma-copy.ts";
+import { guideIndex, newGuides } from "./guide-article-selectors.ts";
 import { guideSelectors, guides } from "./guide-selectors.ts";
 
 /*
@@ -43,8 +44,11 @@ export const productionUrlOf = (path: string) => `${productionOrigin}${path}`;
 export const sitemapUrl = productionUrlOf("/sitemap.xml");
 
 /*
- * The seven content routes, in ui-design.md section 3.1's order with the
- * guides in the footer's order.
+ * The content routes: the generator, the guides of the footer in its order,
+ * the guide index and the guides Issue #170 added (ui-design.md section 5.5),
+ * and the privacy page. Issue #170's routes were added with the owner's
+ * approval:
+ * https://github.com/kishimin/random-postal-code/issues/170#issuecomment-7176123461
  */
 export const contentRoutes: readonly ContentRoute[] = [
   {
@@ -54,7 +58,7 @@ export const contentRoutes: readonly ContentRoute[] = [
     // The generator is the product's home screen and carries the bare name.
     title: "Zipnami",
   },
-  ...guides.map((guide): ContentRoute => ({
+  ...[...guides, guideIndex, ...newGuides].map((guide): ContentRoute => ({
     path: guide.path,
     screen: "guide",
     name: guide.name,
