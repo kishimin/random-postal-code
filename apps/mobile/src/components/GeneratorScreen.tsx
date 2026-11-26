@@ -53,7 +53,12 @@ const AddressLink = ({
       onPress={() => {
         onOpen(address);
       }}
-      style={styles.addressLink}
+      // A tint, not lower opacity: opacity would take the text below AA
+      // while the finger is down (docs/ui-design.md section 6.1).
+      style={({ pressed }) => [
+        styles.addressLink,
+        pressed && styles.addressLinkPressed,
+      ]}
     >
       <Text style={styles.address}>{text}</Text>
     </Pressable>
@@ -305,8 +310,21 @@ const styles = StyleSheet.create({
   result: { gap: 8, alignItems: "center", paddingVertical: 16 },
   resultHeading: { fontSize: 14, color: "#526B78" },
   postalCode: { fontSize: 36, fontWeight: "700" },
-  address: { fontSize: 16, textAlign: "center", color: "#0F6E9E" },
-  addressLink: { minHeight: 44, justifyContent: "center" },
+  // Underlined like the Web's map link, so colour is not the only cue.
+  address: {
+    fontSize: 16,
+    textAlign: "center",
+    color: "#0F6E9E",
+    textDecorationLine: "underline",
+  },
+  addressLink: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  // #0F6E9E on this tint is 4.8:1.
+  addressLinkPressed: { backgroundColor: "#E3F0F7" },
   alert: {
     gap: 4,
     padding: 12,
