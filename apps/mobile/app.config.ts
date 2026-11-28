@@ -5,6 +5,7 @@ import {
   assertProductionAdMobEnv,
   resolveAdMobAppIds,
 } from "./src/config/admob-app-ids.ts";
+import { withExitTrace } from "./src/config/exit-trace-plugin.ts";
 
 /*
  * app.json stays the static base (identifiers, icons, routing). This file
@@ -31,6 +32,17 @@ const trackingDescription =
 const androidProguardRules =
   "-keep class * extends androidx.room.RoomDatabase { <init>(); }";
 
+// The diagnostic build shrinks and optimises like production, but keeps
+// class names, so the stack the exit trace logs is readable without the
+// R8 mapping of that one build (Issue #173). Obfuscation only renames.
+// R8 still inlines methods, so the source file and line table are kept too:
+// a frame then still points at the caller's real line.
+const diagnosticProguardRules = [
+  androidProguardRules,
+  "-dontobfuscate",
+  "-keepattributes SourceFile,LineNumberTable",
+].join("\n");
+
 const unusedAndroidPermissions = [
   "android.permission.SYSTEM_ALERT_WINDOW",
   "android.permission.VIBRATE",
@@ -45,7 +57,13 @@ const unusedAndroidPermissions = [
  */
 export default ({ config }: ConfigContext): ExpoConfig => {
   // EAS sets this while it resolves the configuration of a build.
-  const production = process.env.EAS_BUILD_PROFILE === "production";
+  const profile = process.env.EAS_BUILD_PROFILE;
+  const production = profile === "production";
+  // The release build of Issue #173 with the System.exit trace. It stays on
+  // Google's test AdMob IDs: only the production profile may hold the real
+  // ones (docs/google-play-release-checklist.md).
+  const diagnostic = profile === "diagnostic";
+  const releaseManifest = production || diagnostic;
   if (production) {
     assertProductionAdMobEnv({
       ADMOB_ANDROID_APP_ID: process.env.ADMOB_ANDROID_APP_ID,
@@ -61,13 +79,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ADMOB_IOS_APP_ID: process.env.ADMOB_IOS_APP_ID,
   });
 
-  return {
+  const resolved: ExpoConfig = {
     ...config,
     name: config.name ?? "Zipnami",
     slug: config.slug ?? "zipnami",
     android: {
       ...config.android,
-      ...(production ? { blockedPermissions: unusedAndroidPermissions } : {}),
+      ...(releaseManifest
+        ? { blockedPermissions: unusedAndroidPermissions }
+        : {}),
     },
     plugins: [
       ...(config.plugins ?? []),
@@ -88,8 +108,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ],
       [
         "expo-build-properties",
-        { android: { extraProguardRules: androidProguardRules } },
+        {
+          android: {
+            extraProguardRules: diagnostic
+              ? diagnosticProguardRules
+              : androidProguardRules,
+          },
+        },
       ],
     ],
   };
+  return diagnostic ? withExitTrace(resolved) : resolved;
 };
