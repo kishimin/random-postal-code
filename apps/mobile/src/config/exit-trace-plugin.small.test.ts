@@ -2,7 +2,9 @@ import { describe, expect, test } from "vitest";
 import {
   exitTraceSource,
   exitTraceSourcePath,
+  hookMainApplication,
   installExitTrace,
+  withExitTrace,
 } from "./exit-trace-plugin";
 
 // The shape of the MainApplication.kt that `expo prebuild` writes (SDK 58).
@@ -57,6 +59,32 @@ describe("exitTraceSource", () => {
     expect(source).toContain('frame.className == "java.lang.Runtime"');
     expect(source).toContain('frame.methodName == "exit"');
     expect(source).toContain("Thread.getAllStackTraces()");
+  });
+});
+
+describe("hookMainApplication", () => {
+  test("installs the trace into a Kotlin MainApplication", () => {
+    const hooked = hookMainApplication({
+      language: "kt",
+      contents: mainApplication,
+    });
+
+    expect(hooked.contents).toContain("ExitTrace.install()");
+  });
+
+  // ExitTrace is Kotlin; a Java MainApplication could not call it as written.
+  test("fails on a MainApplication that is not Kotlin", () => {
+    expect(() =>
+      hookMainApplication({ language: "java", contents: mainApplication }),
+    ).toThrow(/Kotlin/);
+  });
+});
+
+describe("withExitTrace", () => {
+  test("fails when the config names no Android package to put the trace in", () => {
+    expect(() => withExitTrace({ name: "Zipnami", slug: "zipnami" })).toThrow(
+      /android\.package/,
+    );
   });
 });
 

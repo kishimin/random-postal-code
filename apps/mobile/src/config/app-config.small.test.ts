@@ -1,6 +1,11 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
+import type { ModConfig } from "expo/config-plugins";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import appConfig from "../../app.config";
+
+// Plugins attach their mods to the config; ExpoConfig itself does not declare
+// the field.
+type ConfigWithMods = ExpoConfig & { mods?: ModConfig };
 
 const adMobNames = [
   "ADMOB_ANDROID_APP_ID",
@@ -19,7 +24,10 @@ const productionAdMobEnv: AdMobEnv = {
   EXPO_PUBLIC_AD_BANNER_UNIT_ID_IOS: "ca-app-pub-0000000000000000/4444444444",
 };
 
-const resolve = (profile: string | undefined, env: AdMobEnv = {}): ExpoConfig => {
+const resolve = (
+  profile: string | undefined,
+  env: AdMobEnv = {},
+): ConfigWithMods => {
   vi.stubEnv("EAS_BUILD_PROFILE", profile);
   // Unset unless given, so the developer's own shell cannot change the result.
   for (const name of adMobNames) {
