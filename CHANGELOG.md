@@ -7,6 +7,13 @@ merged to `main`, and versions follow [Semantic Versioning](https://semver.org/s
 `fix:` is a patch, `feat:` a minor, and `!` or `BREAKING CHANGE` a major release.
 All workspaces share one version, because they ship as one site.
 
+## [1.3.0](https://github.com/kishimin/random-postal-code/compare/v1.2.0...v1.3.0) (2026-11-28)
+
+
+### Features
+
+* expand the guides into ten sourced articles with a guide index ([#172](https://github.com/kishimin/random-postal-code/issues/172)) ([c511396](https://github.com/kishimin/random-postal-code/commit/c511396c9437624d3e0087115afa51e2a8063138))
+
 ## [1.2.0](https://github.com/kishimin/random-postal-code/compare/v1.1.0...v1.2.0) (2026-11-28)
 
 
