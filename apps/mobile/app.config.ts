@@ -35,9 +35,13 @@ const androidProguardRules =
 // The diagnostic build shrinks and optimises like production, but keeps
 // class names, so the stack the exit trace logs is readable without the
 // R8 mapping of that one build (Issue #173). Obfuscation only renames.
-const diagnosticProguardRules = [androidProguardRules, "-dontobfuscate"].join(
-  "\n",
-);
+// R8 still inlines methods, so the source file and line table are kept too:
+// a frame then still points at the caller's real line.
+const diagnosticProguardRules = [
+  androidProguardRules,
+  "-dontobfuscate",
+  "-keepattributes SourceFile,LineNumberTable",
+].join("\n");
 
 const unusedAndroidPermissions = [
   "android.permission.SYSTEM_ALERT_WINDOW",

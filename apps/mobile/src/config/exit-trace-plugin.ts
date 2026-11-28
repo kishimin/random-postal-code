@@ -13,13 +13,19 @@ import { withDangerousMod, withMainApplication } from "expo/config-plugins";
  * A shutdown hook rather than a SecurityManager: Android refuses to install
  * a SecurityManager, while Runtime.exit still starts every hook and waits for
  * it before the process ends.
+ *
+ * The hook is installed from MainApplication's constructor, not from
+ * onCreate: Android creates every ContentProvider (the ad SDK's and
+ * WorkManager's among them) after the constructor but before onCreate, and
+ * the first launches after install are when those providers do their
+ * one-time work.
  */
 
 const hookCall = "ExitTrace.install()";
-const superOnCreate = /^([ \t]*)super\.onCreate\(\)[ \t]*$/m;
+const classHeader = /^([ \t]*)class MainApplication\b[^\n]*\{[ \t]*$/m;
 
 /**
- * Calls the trace right after the application's super.onCreate().
+ * Calls the trace from an init block at the top of MainApplication.
  * @param {string} mainApplication - MainApplication.kt as prebuild wrote it.
  * @returns {string} The source with the trace installed once.
  */
@@ -27,15 +33,17 @@ export const installExitTrace = (mainApplication: string): string => {
   if (mainApplication.includes(hookCall)) {
     return mainApplication;
   }
-  const match = superOnCreate.exec(mainApplication);
+  const match = classHeader.exec(mainApplication);
   if (match === null) {
     throw new Error(
-      "Issue #173 exit trace: MainApplication.kt has no super.onCreate() to install the trace after.",
+      "Issue #173 exit trace: MainApplication.kt declares no `class MainApplication ... {` to install the trace in.",
     );
   }
-  const [line, indent] = match;
+  const [line, classIndent = ""] = match;
+  const indent = `${classIndent}  `;
   const end = match.index + line.length;
-  return `${mainApplication.slice(0, end)}\n${indent ?? ""}${hookCall}${mainApplication.slice(end)}`;
+  const initBlock = `\n${indent}init {\n${indent}  ${hookCall}\n${indent}}`;
+  return `${mainApplication.slice(0, end)}${initBlock}${mainApplication.slice(end)}`;
 };
 
 /**

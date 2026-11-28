@@ -82,6 +82,8 @@ describe("app.config for the diagnostic profile", () => {
 
     expect(rules).toContain("androidx.room.RoomDatabase");
     expect(rules).toContain("-dontobfuscate");
+    // R8 inlines callers; the line table keeps the logged frames honest.
+    expect(rules).toContain("-keepattributes SourceFile,LineNumberTable");
   });
 
   test("blocks the same unused permissions as a production build", () => {
@@ -113,8 +115,18 @@ describe("app.config for the other profiles", () => {
     (profile, env) => {
       const config = resolve(profile, env);
 
-      expect(config.mods?.android?.mainApplication).toBeUndefined();
+      // No other plugin of this file attaches a mod yet, so any mod here
+      // would be a piece of the exit trace.
+      expect(config.mods).toBeUndefined();
       expect(proguardRules(config)).not.toContain("-dontobfuscate");
+    },
+  );
+
+  // The dev client draws its menu over other apps (SYSTEM_ALERT_WINDOW).
+  test.each(["development", undefined])(
+    "the %s profile blocks no permission",
+    (profile) => {
+      expect(resolve(profile).android?.blockedPermissions).toBeUndefined();
     },
   );
 });

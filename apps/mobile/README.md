@@ -81,12 +81,19 @@ bunx eas-cli build --platform android --profile diagnostic
 
 It differs from `production` in four ways, all on purpose:
 
-- It installs the trace ([`src/config/exit-trace-plugin.ts`](src/config/exit-trace-plugin.ts)) from `MainApplication.onCreate`.
-- R8 shrinks and optimises as in production but does not rename classes (`-dontobfuscate`), so the logged stack is readable without that build's mapping file.
+- It installs the trace ([`src/config/exit-trace-plugin.ts`](src/config/exit-trace-plugin.ts)) from the `MainApplication` constructor, which runs before any library's ContentProvider starts.
+- R8 shrinks and optimises as in production but does not rename classes (`-dontobfuscate`) and keeps the line table, so the logged stack is readable without that build's mapping file.
 - It uses Google's test AdMob IDs and the EAS `preview` environment, because only the `production` profile may hold the real IDs. The ad SDK and the consent form still start as in production.
 - It is not marked debuggable. A debuggable build turns on `BuildConfig.DEBUG`, which switches React Native's developer support and the dev client's behaviour, and both are among the suspects.
 
-On the device, clear logcat with `adb logcat -c`, install the APK with `adb install -r`, launch the app until it closes by itself, and save the trace with `adb logcat -d -s ZipnamiExitTrace`. The line `Installed.` appears on every launch, which shows the diagnostic build is the one running; the stacks appear only when something calls `System.exit`.
+On the device:
+
+1. Uninstall the app first with `adb uninstall io.github.kishimin.zipnami`. The build from Google Play is signed with Google's key, so the diagnostic APK cannot update it, and the exit happens only on the first launches after an install.
+2. Clear logcat with `adb logcat -c` and install the APK with `adb install <the APK>`.
+3. Launch the app until it closes by itself, at most three times.
+4. Save the trace with `adb logcat -d -s ZipnamiExitTrace > exit-trace.txt`, and the whole log with `adb logcat -d > exit-full.txt`.
+
+The line `Installed.` appears on every launch, which shows the diagnostic build is the one running; the stacks appear only when something calls `System.exit`. The whole log keeps the lines around the exit, which matter if no stack appears.
 
 The diagnostic build is for the owner's device only. Never upload it to Google Play.
 
