@@ -7,6 +7,25 @@ merged to `main`, and versions follow [Semantic Versioning](https://semver.org/s
 `fix:` is a patch, `feat:` a minor, and `!` or `BREAKING CHANGE` a major release.
 All workspaces share one version, because they ship as one site.
 
+## [1.2.0](https://github.com/kishimin/random-postal-code/compare/v1.1.0...v1.2.0) (2026-11-28)
+
+
+### Features
+
+* build and upload an English demo video with the same commands ([#167](https://github.com/kishimin/random-postal-code/issues/167)) ([877cf92](https://github.com/kishimin/random-postal-code/commit/877cf9298a8012d6e1c8ff1e30b753ff89a31853)), closes [#165](https://github.com/kishimin/random-postal-code/issues/165)
+* build the edited demo video from the six recordings with one command ([#163](https://github.com/kishimin/random-postal-code/issues/163)) ([a20179a](https://github.com/kishimin/random-postal-code/commit/a20179ab19ba323c2febcaef0455e63447ee4034))
+* prerender the content routes with robots.txt, a sitemap and real 404s ([#171](https://github.com/kishimin/random-postal-code/issues/171)) ([630f51c](https://github.com/kishimin/random-postal-code/commit/630f51c7c3be7d179f8b5e842e8e8a2579176930))
+* record the v1.0.0 demo journey in all six browsers with one command ([#155](https://github.com/kishimin/random-postal-code/issues/155)) ([1f2ff1f](https://github.com/kishimin/random-postal-code/commit/1f2ff1f10b224ba287d84ee76a5e314224529dc3))
+* underline the mobile address links and tint them while pressed ([#176](https://github.com/kishimin/random-postal-code/issues/176)) ([d4f26b3](https://github.com/kishimin/random-postal-code/commit/d4f26b3c0660b483621825460ee4116c1d59244a))
+* upload the demo video to YouTube as private with chapters and a thumbnail ([#164](https://github.com/kishimin/random-postal-code/issues/164)) ([d9b0b41](https://github.com/kishimin/random-postal-code/commit/d9b0b4149a74390ba1de4f8f0db938f7f7824ddb))
+
+
+### Bug Fixes
+
+* drop the generator and version suffix from the demo video title ([#166](https://github.com/kishimin/random-postal-code/issues/166)) ([634e090](https://github.com/kishimin/random-postal-code/commit/634e090c84c385ddc7a61c02f93cf4ea131cd981))
+* keep Room database constructors so the Android release build starts ([#168](https://github.com/kishimin/random-postal-code/issues/168)) ([804adba](https://github.com/kishimin/random-postal-code/commit/804adbab99f27af7a3e161afd89312186dec6e7c)), closes [#20](https://github.com/kishimin/random-postal-code/issues/20)
+* stop showing the API address on the mobile information screen ([#177](https://github.com/kishimin/random-postal-code/issues/177)) ([663a2e5](https://github.com/kishimin/random-postal-code/commit/663a2e59afd41ec9cad46863d28fe9fc03db2ae4)), closes [#175](https://github.com/kishimin/random-postal-code/issues/175)
+
 ## [1.1.0](https://github.com/kishimin/random-postal-code/compare/v1.0.0...v1.1.0) (2026-11-18)
 
 
