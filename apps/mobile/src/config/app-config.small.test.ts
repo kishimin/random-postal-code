@@ -20,7 +20,8 @@ type AdMobEnv = Partial<Record<(typeof adMobNames)[number], string>>;
 const productionAdMobEnv: AdMobEnv = {
   ADMOB_ANDROID_APP_ID: "ca-app-pub-0000000000000000~1111111111",
   ADMOB_IOS_APP_ID: "ca-app-pub-0000000000000000~2222222222",
-  EXPO_PUBLIC_AD_BANNER_UNIT_ID_ANDROID: "ca-app-pub-0000000000000000/3333333333",
+  EXPO_PUBLIC_AD_BANNER_UNIT_ID_ANDROID:
+    "ca-app-pub-0000000000000000/3333333333",
   EXPO_PUBLIC_AD_BANNER_UNIT_ID_IOS: "ca-app-pub-0000000000000000/4444444444",
 };
 
@@ -107,10 +108,13 @@ describe("app.config for the other profiles", () => {
     ["production", productionAdMobEnv],
     ["development", {}],
     [undefined, {}],
-  ])("the %s profile carries no exit trace and keeps obfuscation", (profile, env) => {
-    const config = resolve(profile, env);
+  ])(
+    "the %s profile carries no exit trace and keeps obfuscation",
+    (profile, env) => {
+      const config = resolve(profile, env);
 
-    expect(config.mods?.android?.mainApplication).toBeUndefined();
-    expect(proguardRules(config)).not.toContain("-dontobfuscate");
-  });
+      expect(config.mods?.android?.mainApplication).toBeUndefined();
+      expect(proguardRules(config)).not.toContain("-dontobfuscate");
+    },
+  );
 });

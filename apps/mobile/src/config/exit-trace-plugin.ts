@@ -61,7 +61,9 @@ export const hookMainApplication = <
  * @param {string} packageName - The application's Android package.
  * @returns {string} ExitTrace.kt.
  */
-export const exitTraceSource = (packageName: string): string => `package ${packageName}
+export const exitTraceSource = (
+  packageName: string,
+): string => `package ${packageName}
 
 import android.util.Log
 
