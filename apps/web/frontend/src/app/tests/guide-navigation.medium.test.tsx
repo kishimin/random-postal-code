@@ -85,6 +85,42 @@ describe("the footer's guide navigation", () => {
     }
   });
 
+  // Issue #170: a second landmark, so the five above stay as they are.
+  test.each([
+    ["the generator", "/", /波に乗って/],
+    ["the privacy page", "/privacy", /プライバシー/],
+    ["the not-found screen", "/no-such-path", /ページが見つかりません/],
+    ["a guide in the footer", "/guide/address", /郵便番号と住所/],
+    ["a guide only on the index", "/guide/history", /7桁の郵便番号になるまで/],
+  ])(
+    "on %s the footer's すべてのガイド navigation links to ガイド一覧, not marked current",
+    async (_screen, path, heading) => {
+      renderAt(path);
+      await screen.findByRole("heading", { name: heading, level: 1 });
+
+      const navigation = within(screen.getByRole("contentinfo")).getByRole(
+        "navigation",
+        { name: "すべてのガイド" },
+      );
+      const links = within(navigation).getAllByRole("link");
+
+      expect(links.map((link) => link.textContent)).toEqual(["ガイド一覧"]);
+      expect(links[0]).toHaveAttribute("href", "/guide");
+      expect(links[0]).not.toHaveAttribute("aria-current");
+    },
+  );
+
+  test("on the guide index, ガイド一覧 is marked as the current page", async () => {
+    renderAt("/guide");
+    await screen.findByRole("heading", { name: "ガイド一覧", level: 1 });
+
+    expect(
+      within(screen.getByRole("contentinfo")).getByRole("link", {
+        name: "ガイド一覧",
+      }),
+    ).toHaveAttribute("aria-current", "page");
+  });
+
   test("keeps the footer's privacy link beside the guides, which the guide pages do not replace", async () => {
     renderAt("/guide/data");
     await screen.findByRole("heading", { name: "データについて", level: 1 });

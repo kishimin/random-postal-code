@@ -1,7 +1,15 @@
 import { RouterProvider, createMemoryHistory } from "@tanstack/react-router";
 import { act, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { guidePages, sourcesHeading } from "../../features/guides/guide-pages";
+import {
+  allGuidePages,
+  guideCategories,
+  guideIndexPage,
+  guidePageAt,
+  guidePages,
+  relatedGuidesHeading,
+  sourcesHeading,
+} from "../../features/guides/guide-pages";
 import { siteDescription } from "../page-metadata";
 import { createAppRouter } from "../routes/app-router";
 
@@ -45,7 +53,7 @@ afterEach(() => {
 });
 
 describe("guide routes", () => {
-  test.each(guidePages)(
+  test.each([...allGuidePages, guideIndexPage])(
     "$path renders its page in main, under one h1 with the page's name",
     async (page) => {
       renderAt(page.path);
@@ -63,7 +71,7 @@ describe("guide routes", () => {
     },
   );
 
-  test.each(guidePages)(
+  test.each([...allGuidePages, guideIndexPage])(
     "$path names the document by its page and the product",
     async (page) => {
       renderAt(page.path);
@@ -73,7 +81,7 @@ describe("guide routes", () => {
     },
   );
 
-  test.each(guidePages)(
+  test.each([...allGuidePages, guideIndexPage])(
     "$path shows its content without asking the API for anything",
     async (page) => {
       const fetchSpy = vi.spyOn(globalThis, "fetch");
@@ -104,7 +112,58 @@ describe("guide routes", () => {
   // on Issue #121, 2026-11-11). The label is written out rather than read
   // from siteText: it is the visible copy the owner chose, so a change to the
   // constant alone should fail here.
-  test.each(guidePages)(
+  test.each(allGuidePages)(
+    "$path lists its related guides by name, linking each to its route, just before the sources",
+    async (page) => {
+      renderAt(page.path);
+
+      await screen.findByRole("heading", { level: 1, name: page.name });
+      const related = screen.getByRole("region", {
+        name: relatedGuidesHeading,
+      });
+      const links = within(related).getAllByRole("link");
+
+      expect(links.map((link) => link.textContent)).toEqual(
+        page.related.map((path) => guidePageAt(path).name),
+      );
+      expect(links.map((link) => link.getAttribute("href"))).toEqual([
+        ...page.related,
+      ]);
+      // eslint-disable-next-line testing-library/no-node-access -- document order is what "just before the sources" means
+      expect(related.nextElementSibling).toBe(
+        screen.getByRole("region", { name: sourcesHeading }),
+      );
+    },
+  );
+
+  test("/guide lists each category under its own heading, linking every guide by name in order, and ends with トップへ戻る", async () => {
+    renderAt("/guide");
+
+    await screen.findByRole("heading", { level: 1, name: "ガイド一覧" });
+    for (const category of guideCategories) {
+      const region = screen.getByRole("region", { name: category.name });
+      const links = within(region).getAllByRole("link");
+
+      expect(
+        within(region).getByText(category.description),
+      ).toBeInTheDocument();
+      expect(links.map((link) => link.textContent)).toEqual(
+        category.pages.map(({ name }) => name),
+      );
+      expect(links.map((link) => link.getAttribute("href"))).toEqual(
+        category.pages.map(({ path }) => path),
+      );
+    }
+
+    const links = within(screen.getByRole("main")).getAllByRole("link");
+    expect(links.at(-1)?.textContent).toBe("トップへ戻る");
+    expect(links.at(-1)).toHaveAttribute("href", "/");
+    expect(
+      screen.queryByRole("region", { name: sourcesHeading }),
+    ).not.toBeInTheDocument();
+  });
+
+  test.each(allGuidePages)(
     "$path ends its content, after the sources, with one トップへ戻る link to the generator",
     async (page) => {
       renderAt(page.path);

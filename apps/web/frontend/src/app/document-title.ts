@@ -1,4 +1,4 @@
-import { guidePages } from "../features/guides/guide-pages";
+import { allGuidePages, guideIndexPage } from "../features/guides/guide-pages";
 import { pageTitle, siteText } from "./site-text";
 
 /**
@@ -57,7 +57,10 @@ export const titleForPathname = (pathname: string): string => {
   if (normalized === GENERATOR_PATH) return pageTitle();
   if (normalized === PRIVACY_PATH) return pageTitle(siteText.privacyLabel);
 
-  const guide = guidePages.find((page) => page.path === normalized);
+  // Every guide and the index, not only the footer's five (Issue #170).
+  const guide = [...allGuidePages, guideIndexPage].find(
+    (page) => page.path === normalized,
+  );
   if (guide) return pageTitle(guide.name);
 
   return pageTitle(notFoundHeading);

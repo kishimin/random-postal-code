@@ -1,10 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { aboutPage } from "../../features/guides/about-page";
 import { addressPage } from "../../features/guides/address-page";
+import { barcodePage } from "../../features/guides/barcode-page";
+import { businessCodePage } from "../../features/guides/business-code-page";
 import { dataPage } from "../../features/guides/data-page";
+import { historyPage } from "../../features/guides/history-page";
 import { howToUsePage } from "../../features/guides/how-to-use-page";
+import { municipalityCodePage } from "../../features/guides/municipality-code-page";
 import { postalCodePage } from "../../features/guides/postal-code-page";
 import type { GuidePage } from "../../features/guides/types";
+import { writingPage } from "../../features/guides/writing-page";
 import { siteText } from "../site-text";
 import { primaryActionClass } from "../styles";
 import { GuideView } from "./GuideView";
@@ -53,3 +58,22 @@ export const DataGuideView = () => <GuideRoute page={dataPage} />;
 
 /** The /guide/how-to-use route's screen. */
 export const HowToUseGuideView = () => <GuideRoute page={howToUsePage} />;
+
+/** The /guide/history route's screen. */
+export const HistoryGuideView = () => <GuideRoute page={historyPage} />;
+
+/** The /guide/business-code route's screen. */
+export const BusinessCodeGuideView = () => (
+  <GuideRoute page={businessCodePage} />
+);
+
+/** The /guide/writing route's screen. */
+export const WritingGuideView = () => <GuideRoute page={writingPage} />;
+
+/** The /guide/barcode route's screen. */
+export const BarcodeGuideView = () => <GuideRoute page={barcodePage} />;
+
+/** The /guide/municipality-code route's screen. */
+export const MunicipalityCodeGuideView = () => (
+  <GuideRoute page={municipalityCodePage} />
+);

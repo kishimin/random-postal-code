@@ -1,4 +1,4 @@
-import { guidePages } from "../features/guides/guide-pages";
+import { allGuidePages, guideIndexPage } from "../features/guides/guide-pages";
 import type { GuidePage } from "../features/guides/types";
 import { notFoundHeading } from "./document-title";
 import { pageTitle, siteText } from "./site-text";
@@ -32,6 +32,13 @@ export const guideMetadataOf = (page: GuidePage): PageMetadata => ({
   canonicalPath: page.path,
 });
 
+/** The guide index's metadata (Issue #170). */
+export const guideIndexMetadata: PageMetadata = {
+  title: pageTitle(guideIndexPage.name),
+  description: guideIndexPage.description,
+  canonicalPath: guideIndexPage.path,
+};
+
 const notFoundMetadata: PageMetadata = {
   title: pageTitle(notFoundHeading),
   description: siteDescription,
@@ -43,10 +50,11 @@ const contentMetadata: ReadonlyMap<string, PageMetadata> = new Map([
     "/",
     { title: pageTitle(), description: siteDescription, canonicalPath: "/" },
   ],
-  ...guidePages.map((page): [string, PageMetadata] => [
+  ...allGuidePages.map((page): [string, PageMetadata] => [
     page.path,
     guideMetadataOf(page),
   ]),
+  [guideIndexPage.path, guideIndexMetadata],
   [
     "/privacy",
     {

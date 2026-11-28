@@ -14,6 +14,7 @@ const page: GuidePage = {
   path: "/guide/data",
   name: "見本のページ",
   description: "見本のページの説明です。",
+  summary: "見本のページの要約です。",
   lead: "見本のページの導入です。",
   sections: [
     {
@@ -31,6 +32,9 @@ const page: GuidePage = {
       items: ["一つ目の項目です。", "二つ目の項目です。"],
     },
   ],
+  // No related guides: a link to one needs the router, and the region is
+  // held through the production routes (guide-routes.medium.test.tsx).
+  related: [],
   sources: [
     { label: "見本の資料", href: "https://www.post.japanpost.jp/sample/" },
   ],

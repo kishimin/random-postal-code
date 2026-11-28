@@ -504,9 +504,13 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
 
     // The frame every screen shares: the wordmark home, and the footer's
     // privacy link (Figma removed the header's "このアプリについて").
+    // Issue #170 adds the footer's すべてのガイド navigation and its one
+    // link, ガイド一覧, to every screen. Owner-approved rewrite (ADR-0080):
+    // https://github.com/kishimin/random-postal-code/issues/170#issuecomment-7189578376
     const frameLinks = (between: readonly string[]) => [
       figmaCopy.wordmark,
       ...between,
+      "ガイド一覧",
       figmaCopy.privacyLink,
     ];
 
@@ -613,11 +617,15 @@ test.describe("Issue #16: Web responsive and accessibility requirements", () => 
     // https://github.com/kishimin/random-postal-code/issues/105#issuecomment-6912936734).
     // The footer reads ホームに戻る here, not プライバシーポリシー (Issue #112;
     // approved there, issuecomment-6700995872).
+    // This list does not use frameLinks, so Issue #170's footer link
+    // ガイド一覧 is added here by hand. Owner-approved rewrite (ADR-0080):
+    // https://github.com/kishimin/random-postal-code/issues/170#issuecomment-7234200420
     await expectControls("link", [
       figmaCopy.wordmark,
       privacyContactSelectors.linkName,
       privacyFooterSelectors.homeLink,
       ...footerGuideLinks,
+      "ガイド一覧",
     ]);
 
     await notFoundPage.navigate();

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { guidePages } from "../features/guides/guide-pages";
+import { allGuidePages, guideIndexPage } from "../features/guides/guide-pages";
 import { notFoundHeading } from "./document-title";
 import {
   contentRoutePaths,
@@ -9,7 +9,7 @@ import {
 import { pageTitle, siteText } from "./site-text";
 
 describe("contentRoutePaths", () => {
-  test("lists the home page, the five guides and the privacy page", () => {
+  test("lists the home page, the ten guides, the guide index and the privacy page", () => {
     expect([...contentRoutePaths].sort()).toEqual(
       [
         "/",
@@ -18,6 +18,12 @@ describe("contentRoutePaths", () => {
         "/guide/address",
         "/guide/data",
         "/guide/how-to-use",
+        "/guide",
+        "/guide/history",
+        "/guide/business-code",
+        "/guide/writing",
+        "/guide/barcode",
+        "/guide/municipality-code",
         "/privacy",
       ].sort(),
     );
@@ -42,7 +48,15 @@ describe("pageMetadataFor", () => {
     expect(metadata.description).not.toBe(siteDescription);
   });
 
-  test.each(guidePages)(
+  test("gives the guide index its own name and description", () => {
+    expect(pageMetadataFor("/guide")).toEqual({
+      title: pageTitle("ガイド一覧"),
+      description: guideIndexPage.description,
+      canonicalPath: "/guide",
+    });
+  });
+
+  test.each(allGuidePages)(
     "gives $path the guide's own name and description",
     (page) => {
       expect(pageMetadataFor(page.path)).toEqual({

@@ -1,5 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { guidePages } from "../../features/guides/guide-pages";
+import {
+  allGuidePages,
+  guideIndexPage,
+} from "../../features/guides/guide-pages";
 import { notFoundHeading } from "../document-title";
 import { contentRoutePaths, pageMetadataFor } from "../page-metadata";
 import { siteText } from "../site-text";
@@ -35,6 +38,12 @@ describe("buildPages", () => {
         "guide/address.html",
         "guide/data.html",
         "guide/how-to-use.html",
+        "guide.html",
+        "guide/history.html",
+        "guide/business-code.html",
+        "guide/writing.html",
+        "guide/barcode.html",
+        "guide/municipality-code.html",
         "privacy.html",
         "404.html",
       ].sort(),
@@ -45,12 +54,15 @@ describe("buildPages", () => {
     expect(contentPages().map(({ path }) => path)).toEqual(contentRoutePaths);
   });
 
-  test.each(guidePages)("renders $path's own h1 and body text", (guide) => {
-    const page = contentPages().find(({ path }) => path === guide.path);
+  test.each([...allGuidePages, guideIndexPage])(
+    "renders $path's own h1 and body text",
+    (guide) => {
+      const page = contentPages().find(({ path }) => path === guide.path);
 
-    expect(page && headingsOf(page)).toEqual([guide.name]);
-    expect(page?.body).toContain(guide.lead);
-  });
+      expect(page && headingsOf(page)).toEqual([guide.name]);
+      expect(page?.body).toContain(guide.lead);
+    },
+  );
 
   test("renders the privacy page's own h1", () => {
     const page = contentPages().find(({ path }) => path === "/privacy");

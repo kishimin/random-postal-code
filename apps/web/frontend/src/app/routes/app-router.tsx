@@ -7,12 +7,18 @@ import {
 import { AppErrorContent } from "../views/AppErrorContent";
 import { AppErrorView } from "../views/AppErrorView";
 import { GeneratorView } from "../views/GeneratorView";
+import { GuideIndexView } from "../views/GuideIndexView";
 import {
   AboutView,
   AddressGuideView,
+  BarcodeGuideView,
+  BusinessCodeGuideView,
   DataGuideView,
+  HistoryGuideView,
   HowToUseGuideView,
+  MunicipalityCodeGuideView,
   PostalCodeGuideView,
+  WritingGuideView,
 } from "../views/GuideViews";
 import { NotFoundView } from "../views/NotFoundView";
 import { PrivacyView } from "../views/PrivacyView";
@@ -75,6 +81,43 @@ const howToUseGuideRoute = createRoute({
   component: HowToUseGuideView,
 });
 
+// The guide index and the guides Issue #170 added, prerendered like the rest.
+const guideIndexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/guide",
+  component: GuideIndexView,
+});
+
+const historyGuideRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/guide/history",
+  component: HistoryGuideView,
+});
+
+const businessCodeGuideRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/guide/business-code",
+  component: BusinessCodeGuideView,
+});
+
+const writingGuideRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/guide/writing",
+  component: WritingGuideView,
+});
+
+const barcodeGuideRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/guide/barcode",
+  component: BarcodeGuideView,
+});
+
+const municipalityCodeGuideRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/guide/municipality-code",
+  component: MunicipalityCodeGuideView,
+});
+
 const routeTree = rootRoute.addChildren([
   generatorRoute,
   privacyRoute,
@@ -83,6 +126,12 @@ const routeTree = rootRoute.addChildren([
   addressGuideRoute,
   dataGuideRoute,
   howToUseGuideRoute,
+  guideIndexRoute,
+  historyGuideRoute,
+  businessCodeGuideRoute,
+  writingGuideRoute,
+  barcodeGuideRoute,
+  municipalityCodeGuideRoute,
 ]);
 
 /**

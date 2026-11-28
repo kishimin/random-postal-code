@@ -72,9 +72,15 @@ export const RootLayout = () => {
         <GuideNavigation
           renderLink={(page) => (
             // The router marks the link of the page on display with
-            // aria-current="page" itself, so the five links read the same on
-            // every screen and only the current guide's says where we are.
-            <Link className={guideLinkClass} to={page.path}>
+            // aria-current="page" itself, so the links read the same on every
+            // screen and only the current page's says where we are. Exact:
+            // the router would otherwise also mark /guide current on every
+            // /guide/* page, which is not the page on display.
+            <Link
+              className={guideLinkClass}
+              to={page.path}
+              activeOptions={{ exact: true }}
+            >
               {page.name}
             </Link>
           )}

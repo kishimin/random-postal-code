@@ -41,6 +41,13 @@ describe("titleForPathname", () => {
     ["/guide/address", "郵便番号と住所"],
     ["/guide/data", "データについて"],
     ["/guide/how-to-use", "使い方"],
+    // Issue #170's index and guides, which are not in the footer's five.
+    ["/guide", "ガイド一覧"],
+    ["/guide/history", "7桁の郵便番号になるまで"],
+    ["/guide/business-code", "事業所の個別郵便番号"],
+    ["/guide/writing", "郵便番号の書き方と調べ方"],
+    ["/guide/barcode", "郵便番号とバーコード"],
+    ["/guide/municipality-code", "郵便番号と地方公共団体コード"],
   ])("names the guide at %s as %s", (pathname, name) => {
     expect(titleForPathname(pathname)).toBe(`${name} | ${siteText.name}`);
     expect(titleForPathname(`${pathname}/`)).toBe(`${name} | ${siteText.name}`);

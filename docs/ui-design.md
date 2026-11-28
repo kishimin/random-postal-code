@@ -18,15 +18,21 @@ The Web UI owns presentation, client state, browser-local history, map actions, 
 
 ### 3.1 Web Routes
 
-| Route                | Page             | Purpose                                                                    |
-| -------------------- | ---------------- | -------------------------------------------------------------------------- |
-| `/`                  | Generator        | Generate, inspect, copy, map, and revisit results                          |
-| `/privacy`           | Privacy          | Explain what is collected, why, ads and analytics, history, and contact    |
-| `/about`             | About            | What Zipnami does, why, its limits, and links to privacy and the data page |
-| `/guide/postal-code` | Postal codes     | How Japanese postal codes are assigned, with sourced examples              |
-| `/guide/address`     | Codes and places | Why a postal code and an address are not one-to-one, with dataset examples |
-| `/guide/data`        | Data             | Where Zipnami's data comes from, when it was retrieved, how it is changed  |
-| `/guide/how-to-use`  | How to use       | Generating, addresses, maps, copying, and the browser-local history        |
+| Route                      | Page               | Purpose                                                                    |
+| -------------------------- | ------------------ | -------------------------------------------------------------------------- |
+| `/`                        | Generator          | Generate, inspect, copy, map, and revisit results                          |
+| `/privacy`                 | Privacy            | Explain what is collected, why, ads and analytics, history, and contact    |
+| `/about`                   | About              | What Zipnami does, why, its limits, and links to privacy and the data page |
+| `/guide/postal-code`       | Postal codes       | How Japanese postal codes are assigned, with sourced examples              |
+| `/guide/address`           | Codes and places   | Why a postal code and an address are not one-to-one, with dataset examples |
+| `/guide/data`              | Data               | Where Zipnami's data comes from, when it was retrieved, how it is changed  |
+| `/guide/how-to-use`        | How to use         | Generating, addresses, maps, copying, and the browser-local history        |
+| `/guide`                   | Guide index        | Every guide, grouped by category (section 5.5, Issue #170)                 |
+| `/guide/history`           | Seven digits       | How the 7-digit code replaced the old 3- and 5-digit codes, and why        |
+| `/guide/business-code`     | Business codes     | Codes Japan Post assigns to large businesses and post office boxes         |
+| `/guide/writing`           | Writing and lookup | Writing a code on mail, the code box, address omission, looking one up     |
+| `/guide/barcode`           | Barcodes           | The customer barcode built from a postal code and the address numbers      |
+| `/guide/municipality-code` | Municipality codes | The local government code next to the postal code in Japan Post's data     |
 
 Two further destinations have no route of their own.
 
@@ -175,6 +181,27 @@ AdSense rejected the site for screens without publisher content (Issue #120). Is
 
 **Navigation.** The footer of every screen carries one navigation landmark named `ガイド`, with five links in this order: `サイトについて` (`/about`), `郵便番号のしくみ` (`/guide/postal-code`), `郵便番号と住所` (`/guide/address`), `データについて` (`/guide/data`), and `使い方` (`/guide/how-to-use`). This applies to the generator in every state, `/privacy`, the guide pages themselves, the not-found destination, and the global error destination. On a guide page, the link to that page stays and carries `aria-current="page"`, so the five links read the same on every screen. The header is unchanged.
 
+**Guide index and categories (Issue #170).** AdSense rejected the site a second time on 2026-11-25 for low-value content, so Issue #170 expands the five pages and adds five more articles. The footer's `ガイド` navigation keeps its five links unchanged. Right after it, the footer of every screen carries a second navigation landmark named `すべてのガイド` with one link, `ガイド一覧`, that opens `/guide`. On `/guide` that link carries `aria-current="page"`. The guide index lists every guide under its category, so every guide is two clicks from any screen: `ガイド一覧` in the footer, then the guide.
+
+The ten guides, their categories, and where each is linked:
+
+| Route                      | Page name (h1)                 | Category                 | Footer `ガイド` | Guide index |
+| -------------------------- | ------------------------------ | ------------------------ | --------------- | ----------- |
+| `/about`                   | `サイトについて`               | `Zipnamiについて`        | Yes             | Yes         |
+| `/guide/how-to-use`        | `使い方`                       | `Zipnamiについて`        | Yes             | Yes         |
+| `/guide/data`              | `データについて`               | `Zipnamiについて`        | Yes             | Yes         |
+| `/guide/postal-code`       | `郵便番号のしくみ`             | `郵便番号の基本`         | Yes             | Yes         |
+| `/guide/address`           | `郵便番号と住所`               | `郵便番号の基本`         | Yes             | Yes         |
+| `/guide/history`           | `7桁の郵便番号になるまで`      | `郵便番号の基本`         | No              | Yes         |
+| `/guide/writing`           | `郵便番号の書き方と調べ方`     | `郵便番号の基本`         | No              | Yes         |
+| `/guide/business-code`     | `事業所の個別郵便番号`         | `郵便番号をもっと詳しく` | No              | Yes         |
+| `/guide/barcode`           | `郵便番号とバーコード`         | `郵便番号をもっと詳しく` | No              | Yes         |
+| `/guide/municipality-code` | `郵便番号と地方公共団体コード` | `郵便番号をもっと詳しく` | No              | Yes         |
+
+The guide index (`/guide`) has one `h1`, `ガイド一覧`, a lead, and one region per category in the order above, each named by its visible `h2` (the category name). Each region says in a sentence what its guides cover and links to its guides by their page names, in the table's order. The index ends with the same `トップへ戻る` link as every guide. It has no sources section, because it states no facts of its own. Its document title is `ガイド一覧 | Zipnami`, and it has its own meta description.
+
+**Related guides.** Each of the ten guides has a region named `関連するガイド`, placed after its body sections and before `参考にした資料`. It links to at least two other guides by their page names. These links are navigation, not body text.
+
 **Generator overview.** While the generator shows no result (`idle`, the first `loading`, and `error` with no result shown; section 4), two sections follow the start card:
 
 - `Zipnamiでできること` names the three core capabilities: drawing a postal code at random, seeing every address it covers with a map, and copying it and finding it again in the browser-local history.
@@ -194,14 +221,17 @@ Page names (the `h1`, the footer link, and the title) are: `サイトについ�
 
 **Content rules.** The copy lives in UI-owned resources (section 9). These pages have no Figma node, so their copy is not taken from Figma. It follows these rules:
 
-- Every claim about postal codes cites Japan Post's own pages: the KEN_ALL readme (<https://www.post.japanpost.jp/service/search/zipcode/download/readme.html>) and the download page (<https://www.post.japanpost.jp/service/search/zipcode/download/>).
+- Every factual claim names its source on the page, in the `参考にした資料` section, and dates and numbers are written as the source writes them. The sources are official pages only (Issue #170):
+  - Japan Post (日本郵便): the KEN_ALL readme (<https://www.post.japanpost.jp/service/search/zipcode/download/readme.html>), the download page (<https://www.post.japanpost.jp/service/search/zipcode/download/>), the business-code readme (<https://www.post.japanpost.jp/service/search/zipcode/download/office/readme.html>), the 郵便番号・バーコードマニュアル (<https://www.post.japanpost.jp/service/search/zipcode/zipmanual/>), the address-omission FAQ (<https://www.post.japanpost.jp/question/35.html>), and the postal code search (<https://www.post.japanpost.jp/service/search/zipcode/>).
+  - 総務省: the 全国地方公共団体コード仕様 (<https://www.soumu.go.jp/main_content/000137948.pdf>) and its code page (<https://www.soumu.go.jp/denshijiti/code.html>).
 - Every claim about Zipnami's data cites `packages/postal-data/README.md`.
-- A claim neither of those pages states is not made. That includes when the 7-digit code was introduced, what each digit means, and how often Japan Post updates the data.
-- The examples are real entries of the committed dataset (`packages/postal-data/data/ken-all.source.csv`), shown as Zipnami shows them.
+- A claim none of those sources states is not made. That includes the date the postal code system started (the sources give only 平成10年2月 for the 7-digit system), any meaning of the digits beyond what the manual says about how the old 3- and 5-digit codes were extended, and how often Japan Post updates the data.
+- The examples are real entries of the committed dataset (`packages/postal-data/data/ken-all.source.csv`), shown as Zipnami shows them. Every postal code a guide writes in the `NNN-NNNN` form is a code of that dataset, at the version `/guide/data` names. A code that is not in it (an old 3- or 5-digit code, a 私書箱 suffix, a business code) is never written in that form.
+- Each of the ten guides has at least 2,000 Japanese characters of body text, counted without whitespace, headings, the related-guides links and the sources. No two guides repeat the same paragraph.
 - The data page states the retrieval date and the record counts that `packages/postal-data/README.md` records. It says that Zipnami's data is updated by hand, with no fixed schedule. It never says the data is updated continuously.
 - No guide page publishes a means of contact (owner decision on Issue #121, 2026-11-10). The only means of contact is the Google Form linked from `/privacy` (Issue #105). No page names an operator other than the footer's `© kishimin 2026`.
 
-The pages are not eligible for ads (section 7.1).
+The pages, the guide index included, are not eligible for ads (section 7.1).
 
 ## 6. Android V2 Boundary
 
@@ -232,18 +262,18 @@ Google ads may be requested only on screens that carry publisher content. AdSens
 
 "Requesting an ad" means any of: loading the AdSense loader (`adsbygoogle.js`), rendering an `ins.adsbygoogle` unit, or calling `adsbygoogle.push`. A screen that is not eligible does none of the three. Hiding or collapsing the slot alone does not make a screen ineligible.
 
-| Route                | State (section 4)                                         | Eligible |
-| -------------------- | --------------------------------------------------------- | -------- |
-| `/`                  | `success`: a result is shown                              | Yes      |
-| `/`                  | `loading` or `error` while an earlier result stays shown  | Yes      |
-| `/`                  | `idle`: before any result, with or without stored history | No       |
-| `/`                  | `loading` of the first generation (no result shown yet)   | No       |
-| `/`                  | `error` with no result shown                              | No       |
-| `/privacy`           | Any                                                       | No       |
-| `/about`, `/guide/*` | Any (Issue #121's guide pages; decided again later)       | No       |
-| Not found            | Any                                                       | No       |
-| Global error         | Any                                                       | No       |
-| Any other route      | Any                                                       | No       |
+| Route                          | State (section 4)                                                  | Eligible |
+| ------------------------------ | ------------------------------------------------------------------ | -------- |
+| `/`                            | `success`: a result is shown                                       | Yes      |
+| `/`                            | `loading` or `error` while an earlier result stays shown           | Yes      |
+| `/`                            | `idle`: before any result, with or without stored history          | No       |
+| `/`                            | `loading` of the first generation (no result shown yet)            | No       |
+| `/`                            | `error` with no result shown                                       | No       |
+| `/privacy`                     | Any                                                                | No       |
+| `/about`, `/guide`, `/guide/*` | Any (the guide pages of Issues #121 and #170; decided again later) | No       |
+| Not found                      | Any                                                                | No       |
+| Global error                   | Any                                                                | No       |
+| Any other route                | Any                                                                | No       |
 
 Each row is its own condition, not a single "has a result" flag: a route not listed as eligible stays ineligible even if a result exists somewhere in the application's state.
 
